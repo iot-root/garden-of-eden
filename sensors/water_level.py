@@ -1,7 +1,8 @@
 # coding=utf-8
 import time
 import RPi.GPIO as GPIO
-from .config import (
+
+from config import (
     CHANNEL_WATER_LVL_IN,
     CHANNEL_WATER_LVL_OUT,
     TIMEOUT_WATER_LVL,
@@ -124,10 +125,10 @@ class WaterLevel:
             return (sorted_data[mid - 1] + sorted_data[mid]) / 2
 
 if __name__ == "__main__":
-    water_level_instance = water_level()
+    water_level_instance = WaterLevel()
 
     try:
-        print("Measuring water level:")
+        print("Measuring water distance")
         water_level_value = water_level_instance.measure()
         print("Level is:")
         print(water_level_value)

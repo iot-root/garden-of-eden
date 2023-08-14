@@ -1,12 +1,24 @@
+<hr>
+
+<img src="docs/banner.svg" width="800px">
+
 # Gardyn-of-eden
+
 Truly own that which is yours!
 
-Working in progress, but we should be picking up some steam here to give the DYI community the featuers you deserve.
+Work is in progress, but we should be picking up some steam here to give the DYI community the features you deserve.
 
 If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBUTORS.md) for commit styling guides. 
 
 ## Milestones
-- [ ] [Sensor Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
+- [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
+    - [ ] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
+    - [ ] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
+    - [ ] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/34)
+    - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
+    - [ ] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
+    - [ ] [waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
+    - [ ] [camera](https://github.com/iot-root/gardyn-of-eden/issues/40)
 - [ ] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
 - [ ] [Dashboard](https://github.com/iot-root/gardyn-of-eden/milestone/8)
 
