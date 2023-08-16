@@ -2,7 +2,7 @@
 import pigpio
 import time
 
-from config import CHANNEL_LED, FREQ_LED
+from .config import CHANNEL_LED, FREQ_LED
 
 class LED:
     # 0 => off

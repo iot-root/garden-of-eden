@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import time
 import os
 
-from config import CHANNEL_WATER_PUMP, FREQ_WATER_PUMP, MAX_DUTY_PUMP, INIT_DUTY_WATER_PUMP, LAST_SECS_WATER_PUMP
+from .config import CHANNEL_WATER_PUMP, FREQ_WATER_PUMP, MAX_DUTY_PUMP, INIT_DUTY_WATER_PUMP, LAST_SECS_WATER_PUMP
 
 class Pump:
     PUMP_STATUS = 0
@@ -18,6 +18,9 @@ class Pump:
         print('Water Pump stopped at channel {}, GPIO has been cleaned up'.format(CHANNEL_WATER_PUMP))
         print('----------------------------------------')
         # read_ina219()
+
+    def status(self):
+        return 'Running' if self.started else 'Stopped'
 
     def turn_off(self):
         self.start_time = int(time.time())
