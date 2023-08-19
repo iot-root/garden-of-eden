@@ -3,10 +3,11 @@ import os
 from threading import Thread
 from flask import Flask, request, jsonify
 from sensors.led import LED
+from sensors.pump import Pump
 
 app = Flask('app')
 lights = None
-
+pump = Pump()
 
 @app.route('/ping', methods=['GET', 'POST'])
 def ping():
@@ -56,6 +57,21 @@ def led():
             'page': ''
         }
     return jsonify(res)
+
+@app.route('/pump', methods=['GET'])
+def pump_status():
+    res = {'pump_status': pump.status(), 'code': 200}
+    return jsonify(res)
+
+@app.route('/pump/on', methods=['POST'])
+def pump_on():
+    pump.turn_on()
+    return pump_status()
+
+@app.route('/pump/off', methods=['POST'])
+def pump_off():
+    pump.turn_off()
+    return pump_status()
 
 
 # TODO: Implement waterlevel endpoints #29
