@@ -35,6 +35,15 @@ class Motor:
         """
         self.set_duty_cycle(speed_percentage)
 
+    def get_speed(self, speed_percentage):
+        """
+        Wrapper function around get_duty_cycle. Provides more intuitive function name.
+
+        Returns:
+        - float: The current duty cycle percentage.
+        """
+        self.set_duty_cycle(speed_percentage)
+
     def set_frequency(self, frequency):
         """
         Change driving frequency.
@@ -54,6 +63,15 @@ class Motor:
             self.motor.value = duty
         else:
             raise ValueError("Speed must be between 0 and 1")
+    
+    def get_duty_cycle(self):
+        """
+        Get the current duty cycle percentage.
+
+        Returns:
+        - float: The current duty cycle percentage.
+        """
+        return self.motor.value * 100
 
     def close(self):
         self.motor.close()
