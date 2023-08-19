@@ -14,7 +14,7 @@ If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBU
 - [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
     - [ ] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
     - [ ] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
-    - [ ] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/34)
+    - [ ] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
     - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
     - [ ] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
     - [ ] [waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
@@ -24,10 +24,20 @@ If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBU
 
 ## ToDo
 - [x] Reverse engineer and document hardware, software
+    - [x] [Electrical Diagrams](#electrical-diagrams)
+- [ ] Figure out temp humidity and onboard motor sensor via i2c
 - [ ] Add homeassistant support
 - [ ] Rewrite for to collect data for graphs and analytics
 - [ ] Dockerize?
 
+## Getting Started
+
+### Recomendations
+
+**Pi Zero 2**
+I replaced my pi zero with a pi-zero-2, it is signifantly faster and I can use VS Code remote server to edit files and debug the python code remotely. 
+> Buy one `without` a header, you will need to solder one on in the opposite direction.
+ 
 ## System Overview
 
 Depending on the system you have, here is a breakdown of the hardware.
