@@ -1,5 +1,8 @@
 import unittest
 from unittest.mock import patch, Mock
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from light import Light
 
 class TestLight(unittest.TestCase):
@@ -7,8 +10,8 @@ class TestLight(unittest.TestCase):
     @patch('light.PWMLED')
     @patch('light.PiGPIOFactory')
     @patch('light.pigpio.pi')
-    def setUp(self, MockPi, MockFactory, MockLED):
-        self.mock_led = MockLED.return_value
+    def setUp(self, MockPi, MockFactory, MockPWMLED):
+        self.mock_led = MockPWMLED.return_value
         self.mock_pi = MockPi.return_value
         self.light = Light(18)
 
