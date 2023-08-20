@@ -2,14 +2,15 @@ import unittest
 from unittest.mock import patch, Mock
 import sys
 import os
+# Add the root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from light import Light
+from app.sensors.light.light import Light
 
 class TestLight(unittest.TestCase):
 
-    @patch('light.PWMLED')
-    @patch('light.PiGPIOFactory')
-    @patch('light.pigpio.pi')
+    @patch('app.sensors.light.light.PWMLED')
+    @patch('app.sensors.light.light.PiGPIOFactory')
+    @patch('app.sensors.light.light.pigpio.pi')
     def setUp(self, MockPi, MockFactory, MockPWMLED):
         self.mock_led = MockPWMLED.return_value
         self.mock_pi = MockPi.return_value
@@ -23,14 +24,14 @@ class TestLight(unittest.TestCase):
         self.light.off()
         self.assertEqual(self.mock_led.value, 0)
 
-    def test_adjust_valid(self):
-        valid_brightness = 0.7
-        self.light.adjust(valid_brightness)
-        self.assertEqual(self.mock_led.value, valid_brightness)
+    def test_set_brightness_valid(self):
+        valid_brightness = 70
+        self.light.set_brightness(valid_brightness)
+        self.assertEqual(self.mock_led.value * 100, valid_brightness)
 
-    def test_adjust_invalid(self):
+    def test_set_brightness_invalid(self):
         with self.assertRaises(ValueError):
-            self.light.adjust(1.5)
+            self.light.set_brightness(110)
 
     def test_set_frequency(self):
         freq = 10000  # 10kHz

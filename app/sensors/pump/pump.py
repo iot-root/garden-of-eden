@@ -4,7 +4,7 @@ import pigpio
 from time import sleep
 
 class Pump:
-    def __init__(self, pin, frequency=50):
+    def __init__(self, pin=24, frequency=50):
         # Specify the pigpiod address and port
         self.factory = PiGPIOFactory()
         # For Docker will will do...
@@ -16,14 +16,16 @@ class Pump:
 
     def on(self):
         """
-        Turn pump on
+        Turn pump on. Default to 30 percent duty.
         """
+        print(f"Turning pump on")
         self.pump.value = 1
 
     def off(self):
         """
         Turn pump off.
         """
+        print(f"Turning pump off")
         self.pump.value = 0
 
     def set_speed(self, speed_percentage):
@@ -35,19 +37,20 @@ class Pump:
         """
         self.set_duty_cycle(speed_percentage)
 
-    def get_speed(self, speed_percentage):
+    def get_speed(self):
         """
         Wrapper function around get_duty_cycle. Provides more intuitive function name.
 
         Returns:
         - float: The current duty cycle percentage.
         """
-        self.set_duty_cycle(speed_percentage)
+        return self.get_duty_cycle()
 
     def set_frequency(self, frequency):
         """
         Change driving frequency.
         """
+        print(f"Setting pump frequency to {frequency}")
         self.pi.set_PWM_frequency(self.pin, frequency)
 
     def set_duty_cycle(self, duty_cycle_percentage):
@@ -60,6 +63,7 @@ class Pump:
         if 0 <= duty_cycle_percentage <= 100:
             # gpiozero's PWMLED uses a 0-1 scale for duty cycle
             duty = duty_cycle_percentage / 100.0
+            print(f"Setting pump duty_cycle to {duty_cycle_percentage}%")
             self.pump.value = duty
         else:
             raise ValueError("Speed must be between 0 and 1")
@@ -71,7 +75,9 @@ class Pump:
         Returns:
         - float: The current duty cycle percentage.
         """
-        return self.pump.value * 100
+        duty_cycle_percentage = self.pump.value * 100
+        print(f"Pump duty_cycle is {duty_cycle_percentage}%")
+        return duty_cycle_percentage
 
     def close(self):
         self.pump.close()
@@ -81,7 +87,8 @@ if __name__ == '__main__':
     # Usage example:
     pump = Pump(24)  # Default frequency of 8kHz
     pump.on()
+    sleep(1)
     pump.set_speed(30)  # Adjust to 30% brightness
-    sleep(4)
+    sleep(1)
     pump.off()
     pump.close()

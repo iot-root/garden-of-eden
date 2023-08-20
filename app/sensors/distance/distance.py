@@ -1,7 +1,7 @@
 # coding=utf-8
 from gpiozero import DistanceSensor, Device
 from gpiozero.pins.pigpio import PiGPIOFactory
-import time
+from time import sleep
 
 Device.pin_factory = PiGPIOFactory()
 

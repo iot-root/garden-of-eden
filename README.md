@@ -10,6 +10,43 @@ Work is in progress, but we should be picking up some steam here to give the DYI
 
 If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBUTORS.md) for commit styling guides. 
 
+Checkout the [Electrical Diagrams](#electrical-diagrams)
+
+## Quick Run
+
+usage `python run.py` will launch the flask api.
+
+**Physical Testing of Rest API**
+
+run `./bin/api-test.sh` to cycle through the various endpoint tests.
+
+**Unit Tests**
+
+run `python -m unittest -v`
+
+or for example: `python tests/test_distance.py`
+
+
+**Individual sensor controls**
+
+```
+python app/sensors/distance/distance.py
+Measured Distance: 31.84 cm
+
+python app/sensors/pump/pump.py
+Setting pump frequency to 50
+Turning pump on
+Setting pump 1duty_cycle_percentage to 30
+Turning pump off
+
+python app/sensors/light/light.py
+Setting light frequency to 8000
+Turning light on
+Setting light duty_cycle_percentage to 50
+Turning light off
+```
+
+
 ## Milestones
 - [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
     - [ ] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
@@ -25,10 +62,42 @@ If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBU
 ## ToDo
 - [x] Reverse engineer and document hardware, software
     - [x] [Electrical Diagrams](#electrical-diagrams)
+- [ ] document API endpoints
 - [ ] Figure out temp humidity and onboard motor sensor via i2c
 - [ ] Add homeassistant support
 - [ ] Rewrite for to collect data for graphs and analytics
 - [ ] Dockerize?
+
+## Design Decisions
+
+Reading sensor values with inheritly long delays and responding to the REST API.
+
+```
+<gardyn-of-eden>
+├── run.py
+├── app
+│   ├── __init__.py
+│   └── sensors
+│       ├── config.py
+│       ├── distance
+│       │   ├── distance.py
+│       │   ├── __init__.py
+│       │   └── routes.py
+│       ├── __init__.py
+│       ├── light
+│       │   ├── __init__.py
+│       │   ├── light.py
+│       │   └── routes.py
+│       └── pump
+│           ├── __init__.py
+│           ├── pump.py
+│           └── routes.py
+└── tests
+    ├── __init__.py
+    ├── test_distance.py
+    ├── test_light.py
+    └── test_pump.py
+```
 
 ## Getting Started
 

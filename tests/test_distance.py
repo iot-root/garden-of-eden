@@ -1,24 +1,27 @@
 import unittest
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 import sys
 import os
-# Use sys path so test_distance can find the distance module. 
-# Note: I am not sure why the others work without this, likely due to the patch
+# Add the root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from distance import Distance, MeasurementError
+from app.sensors.distance.distance import Distance, MeasurementError
 
 class TestDistance(unittest.TestCase):
 
-    @patch('distance.DistanceSensor', autospec=True)
+    @patch('app.sensors.distance.distance.DistanceSensor', autospec=True)
     def setUp(self, MockDistanceSensor):
         # Mock the behavior of the DistanceSensor so it returns some fixed values
         self.mock_sensor = MockDistanceSensor.return_value
         self.mock_sensor.distance = 0.5
         self.distance = Distance()
 
+    def assertAlmostEqual(self, a, b, places=5):
+        # An epsilon check for floating-point comparisons
+        self.assertTrue(abs(a-b) < 10**(-places))
+
     def test_measure_once(self):
         measured_distance = self.distance.measure_once()
-        self.assertEqual(measured_distance, 50.00)
+        self.assertAlmostEqual(measured_distance, 50.00)
 
     def test_median_odd_length(self):
         data = [1, 2, 3, 4, 5]
@@ -38,11 +41,11 @@ class TestDistance(unittest.TestCase):
         with self.assertRaises(MeasurementError):
             self.distance.median("string")
 
-    @patch('distance.Distance.measure_once', autospec=True) 
+    @patch('app.sensors.distance.distance.Distance.measure_once', autospec=True) 
     def test_measure(self, mock_measure_once):
         mock_measure_once.side_effect = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         measured_distance = self.distance.measure()
-        self.assertEqual(measured_distance, 55.00)
+        self.assertAlmostEqual(measured_distance, 55.00)
 
 if __name__ == "__main__":
     unittest.main()

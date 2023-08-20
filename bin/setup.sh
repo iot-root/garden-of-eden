@@ -23,7 +23,7 @@ sudo apt update
 
 # Using gpiozero to leverage pigpio daemon which is hardware driven and more efficient.
 # This ensures better accuracy of the distance sensor and is less cpu intesive when using PWMs.
-sudo apt install -y python3-gpiozero python3-pigpio 
+sudo apt install -y python3-gpiozero python3-pigpio python3-flask
 
 # for i2c troubleshooting...
 sudo apt-get install i2c-tools
