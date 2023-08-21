@@ -10,6 +10,8 @@
    inkscape:export-filename="gardyn_of_eden_banner.png"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
+   sodipodi:docname="garden_of_eden_banner.svg"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -24,7 +26,17 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:export-bgcolor="#393536ff" />
+     inkscape:export-bgcolor="#393536ff"
+     showgrid="false"
+     inkscape:zoom="3.65375"
+     inkscape:cx="400"
+     inkscape:cy="100.03421"
+     inkscape:window-width="3440"
+     inkscape:window-height="1369"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
   <defs
      id="defs1">
     <rect
@@ -56,11 +68,11 @@
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,2.2878945,3.4321647)"
        id="text1"
-       style="font-size:53.3333px;white-space:pre;shape-inside:url(#rect1);fill:#000000"><tspan
+       style="font-size:53.3333px;white-space:pre;shape-inside:url(#rect1);display:inline;fill:#000000"><tspan
          x="265.84766"
-         y="102.05407"
-         id="tspan3"><tspan
+         y="101.92281"
+         id="tspan4"><tspan
            style="font-family:'Myanmar MN';-inkscape-font-specification:'Myanmar MN';fill:#ffffff"
-           id="tspan2">Gardyn of Eden</tspan></tspan></text>
+           id="tspan1">Garden of Eden</tspan></tspan></text>
   </g>
 </svg>
