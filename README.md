@@ -2,7 +2,7 @@
 
 <img src="docs/banner.svg" width="800px">
 
-# Garden-of-eden
+# Garden of Eden
 
 Truly own that which is yours!
 
@@ -48,16 +48,16 @@ Turning light off
 
 
 ## Milestones
-- [ ] [Hardware Interface](https://github.com/iot-root/garden-of-eden/milestone/6)
-    - [x] [pump](https://github.com/iot-root/garden-of-eden/issues/33)
-    - [x] [lights](https://github.com/iot-root/garden-of-eden/issues/34)
-    - [x] [temp & humidty](https://github.com/iot-root/garden-of-eden/issues/35)
-    - [ ] [button](https://github.com/iot-root/garden-of-eden/issues/36)
-    - [x] [motor current & overtemp](https://github.com/iot-root/garden-of-eden/issues/37)
-    - [x] [distance/waterlevel](https://github.com/iot-root/garden-of-eden/issues/38)
-    - [ ] [camera](https://github.com/iot-root/garden-of-eden/issues/40)
-- [x] [Rest API](https://github.com/iot-root/garden-of-eden/milestone/7)
-- [ ] [Dashboard](https://github.com/iot-root/garden-of-eden/milestone/8)
+- [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
+    - [x] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
+    - [x] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
+    - [x] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
+    - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
+    - [x] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
+    - [x] [distance/waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
+    - [ ] [camera](https://github.com/iot-root/gardyn-of-eden/issues/40)
+- [x] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
+- [ ] [Dashboard](https://github.com/iot-root/gardyn-of-eden/milestone/8)
 
 ## ToDo
 - [ ] test compatibility pi models: pi-zero, pi-zero 2
@@ -75,7 +75,7 @@ Turning light off
 Reading sensor values with inheritly long delays and responding to the REST API.
 
 ```
-<garden-of-eden>
+<gardyn-of-eden>
 ├── run.py
 ├── app
 │   ├── __init__.py
