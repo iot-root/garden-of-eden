@@ -1,6 +1,6 @@
 <hr>
 
-<img src="docs/banner.svg" width="800px">
+<img src="docs/_banner.svg" width="800px">
 
 # Garden of Eden
 
