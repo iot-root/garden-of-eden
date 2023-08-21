@@ -2,7 +2,7 @@
 
 <img src="docs/banner.svg" width="800px">
 
-# Gardyn-of-eden
+# Garden-of-eden
 
 Truly own that which is yours!
 
