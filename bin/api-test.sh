@@ -49,6 +49,25 @@ post_data "/pump/on" ""
 sleep "$SLEEP_DURATION"
 post_data "/pump/off" ""
 
+# pump current usage
+control_pump 30
+get_data "/pump/stats"
+control_pump 10
+get_data "/pump/stats"
+post_data "/pump/off" ""
+sleep "$SLEEP_DURATION"
+get_data "/pump/stats"
+
 # Distance Measure
 get_data "/distance/measure"
 
+# Ambient temp
+get_data "/temperature"
+
+# humidity
+get_data "/humidity"
+
+# temperature on the PCB in case of the event that
+# the motor or lights are causing board to get too hot
+# from current draw
+get_data "/pcb-temp"

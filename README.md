@@ -49,14 +49,14 @@ Turning light off
 
 ## Milestones
 - [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
-    - [ ] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
-    - [ ] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
-    - [ ] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
+    - [x] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
+    - [x] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
+    - [x] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
     - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
-    - [ ] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
-    - [ ] [waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
+    - [x] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
+    - [x] [distance/waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
     - [ ] [camera](https://github.com/iot-root/gardyn-of-eden/issues/40)
-- [ ] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
+- [x] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
 - [ ] [Dashboard](https://github.com/iot-root/gardyn-of-eden/milestone/8)
 
 ## ToDo

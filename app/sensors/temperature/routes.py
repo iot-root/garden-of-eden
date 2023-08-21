@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify
-from sensors import temp_sensor
+from .temperature import temp_sensor
 
-bp = Blueprint('temperature', __name__)
+temperature_blueprint = Blueprint('temperature', __name__)
 
-@bp.route('', methods=['GET'])
-def temperature():
+@temperature_blueprint.route('', methods=['GET'])
+def get_temperature():
     return jsonify(temperature=temp_sensor.get_value())

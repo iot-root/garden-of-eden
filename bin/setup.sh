@@ -28,6 +28,22 @@ sudo apt install -y python3-gpiozero python3-pigpio python3-flask
 # for i2c troubleshooting...
 sudo apt-get install i2c-tools
 
+# for ina219 pump current monitor
+pip3 install pi-ina219
+
+# pcb_temp monitor with overtemp trigger
+sudo pip3 install adafruit-circuitpython-pct2075
+
+# Note: Gardyn 3.0 temp-humidity sensor is clearly marked
+# as AM2320 and per the datasheet specifies i2c_addr of "0x5c".
+# However, something is afoot as the sensor actually behaves per
+# the AHT20 spec: using i2cdetect the sensor shows up as 0x38, 
+# implying it is a AHT20 sensor. Meaning, the temp and humidity does 
+# not work on gardyn devices at all .... but it will now :-)
+# My thinking is that the temp and humidity values are just hardcoded 
+# in the system as I could not find any updating of the sensor readings.
+sudo pip3 install adafruit-circuitpython-ahtx0
+
 # Check if I2C is enabled
 i2c_status=$(sudo raspi-config nonint get_i2c)
 

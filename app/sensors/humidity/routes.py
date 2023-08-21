@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify
 from .humidity import humidity_sensor
 
-bp = Blueprint('humidity_routes', __name__)
+humidity_blueprint = Blueprint('humidity', __name__)
 
-@bp.route('/humidity', methods=['GET'])
-def humidity():
+@humidity_blueprint.route('', methods=['GET'])
+def get_humidity():
     return jsonify(humidity=humidity_sensor.get_value())

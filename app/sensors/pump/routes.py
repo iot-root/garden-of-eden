@@ -1,20 +1,21 @@
 from flask import Blueprint, request, jsonify
-from .pump import Pump as PumpControl # Assuming you have a model for Pump
+from .pump import Pump as PumpControl 
+from .pump_power import fetch_ina219_data
 
-pump = Blueprint('pump', __name__)
+pump_blueprint = Blueprint('pump', __name__)
 pump_control = PumpControl()
 
-@pump.route('/on', methods=['POST'])
+@pump_blueprint.route('/on', methods=['POST'])
 def turn_on():
     pump_control.on()
     return jsonify(message="Pump turned on!"), 200
 
-@pump.route('/off', methods=['POST'])
+@pump_blueprint.route('/off', methods=['POST'])
 def turn_off():
     pump_control.off()
     return jsonify(message="Pump turned off!"), 200
 
-@pump.route('/speed', methods=['POST'])
+@pump_blueprint.route('/speed', methods=['POST'])
 def adjust_speed():
     data = request.get_json()
     speed_value = data.get('value', 30)  # default to 30 percent
@@ -24,8 +25,12 @@ def adjust_speed():
     except ValueError as e:
         return jsonify(message=str(e)), 400
 
-@pump.route('/speed', methods=['GET'])
+@pump_blueprint.route('/speed', methods=['GET'])
 def get_speed():
     current_speed = pump_control.get_speed()
     return jsonify(value=current_speed), 200
 
+@pump_blueprint.route('/stats', methods=['GET'])
+def get_pump_data():
+    data = fetch_ina219_data()
+    return jsonify(data)
