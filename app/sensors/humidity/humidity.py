@@ -54,9 +54,13 @@ class HumiditySensor(CachedSensor):
         """
         return self._sensor.relative_humidity
 
-i2c = board.I2C()
-base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-humidity_sensor = HumiditySensor(base_sensor)
+humidity_sensor = None
+try:
+    i2c = board.I2C()
+    base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
+    humidity_sensor = HumiditySensor(base_sensor)
+except:
+    print("Failed to initiate humidity sensor")
 
 if __name__ == "__main__":
     """
