@@ -58,9 +58,14 @@ class TemperatureSensor(CachedSensor):
         """
         return self._sensor.temperature
 
-i2c = board.I2C()
-base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-temp_sensor = TemperatureSensor(base_sensor)
+temp_sensor = None 
+
+try:
+    i2c = board.I2C()
+    tbase_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
+    temp_sensor = TemperatureSensor(base_sensor)
+except:
+    print("Failed to initiate temperature sensor")
 
 if __name__ == "__main__":
     """
