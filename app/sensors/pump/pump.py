@@ -1,3 +1,4 @@
+import argparse
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
@@ -84,11 +85,23 @@ class Pump:
         self.pi.stop()
 
 if __name__ == '__main__':
-    # Usage example:
-    pump = Pump(24)  # Default frequency of 8kHz
-    pump.on()
-    sleep(1)
-    pump.set_speed(30)  # Adjust to 30% brightness
-    sleep(1)
-    pump.off()
-    pump.close()
+    parser = argparse.ArgumentParser(description='Control a pump.')
+    parser.add_argument('--on', action='store_true', help='Turn the pump on.')
+    parser.add_argument('--off', action='store_true', help='Turn the pump off.')
+    parser.add_argument('--speed', type=int, default=None, help='Set the pump speed (0-100).')
+
+    args = parser.parse_args()
+
+    pump = Pump(24)  # Default frequency of 50Hz
+
+    if args.on:
+        pump.on()
+        if args.speed is not None:
+            pump.set_speed(args.speed)
+    elif args.off:
+        pump.off()
+    elif args.speed is not None:
+        pump.on()
+        pump.set_speed(args.speed)
+    else:
+        print("No action specified. Use --on, --off, or --speed.")
