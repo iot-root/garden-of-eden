@@ -1,3 +1,4 @@
+import argparse
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
@@ -74,11 +75,24 @@ class Light:
         self.pi.stop()
 
 if __name__ == '__main__':
-    # Usage example:
+    parser = argparse.ArgumentParser(description='Control an IoT light.')
+    parser.add_argument('--on', action='store_true', help='Turn the light on.')
+    parser.add_argument('--off', action='store_true', help='Turn the light off.')
+    parser.add_argument('--brightness', type=int, default=None,
+                        help='Set the brightness level (0-100).')
+
+    args = parser.parse_args()
+
     light = Light(18)  # Default frequency of 8kHz
-    light.on()
-    sleep(1)
-    light.set_brightness(50)  # Adjust to 50% brightness
-    sleep(1)
-    light.off()
-    light.close()
+
+    if args.on:
+        light.on()
+        if args.brightness is not None:
+            light.set_brightness(args.brightness)
+    elif args.off:
+        light.off()
+    elif args.brightness is not None:
+        light.on()
+        light.set_brightness(args.brightness)
+    else:
+        print("No action specified. Use --on, --off, or --brightness.")
