@@ -1,0 +1,15 @@
+version: '3.0'
+services:
+  gardyn-tb:
+    restart: always
+    image: "thingsboard/tb-postgres"
+    ports:
+      - "8080:9090"
+      - "1883:1883"
+      - "7070:7070"
+      - "5683-5688:5683-5688/udp"
+    environment:
+      TB_QUEUE_TYPE: in-memory
+    volumes:
+      - ~/.tb-data:/data
+      - ~/.tb-logs:/var/log/thingsboard
