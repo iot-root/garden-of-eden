@@ -58,20 +58,23 @@ class TemperatureSensor(CachedSensor):
         """
         return self._sensor.temperature
 
-temp_sensor = None 
+temperature_sensor = None 
 
 try:
     i2c = board.I2C()
-    tbase_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-    temp_sensor = TemperatureSensor(base_sensor)
+    base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
+    temperature_sensor = TemperatureSensor(base_sensor)
 except:
     print("Failed to initiate temperature sensor")
 
 if __name__ == "__main__":
     """
-    If the module is executed as a standalone script, it will continuously print 
-    the temperature values at 2-second intervals.
+    If the module is executed as a standalone script, it will return the temperature in a telegraf friendly format. 
     """
-    while True:
-        print("Temperature: %0.1f C" % temp_sensor.get_value())
-        time.sleep(2)
+    try:
+        temperature = temperature_sensor.get_value()
+        print(f"temperature, value={temperature:.2f}")
+    except Exception as e:
+        print(f"Error: {e}")
+    except KeyboardInterrupt:
+        print("Script interrupted.")

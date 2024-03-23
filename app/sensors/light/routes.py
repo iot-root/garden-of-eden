@@ -15,7 +15,7 @@ def turn_off():
     return jsonify(message="Light turned off!"), 200
 
 @light_blueprint.route('/brightness', methods=['POST'])
-def adjust_brightness():
+def set_brightness():
     data = request.get_json()
     brightness_value = data.get('value', 50) 
     try:
@@ -25,6 +25,6 @@ def adjust_brightness():
         return jsonify(message=str(e)), 400
 
 @light_blueprint.route('/brightness', methods=['GET'])
-def get_speed():
+def get_brightness():
     brightness_value = light_control.get_brightness()
     return jsonify(value=brightness_value), 200

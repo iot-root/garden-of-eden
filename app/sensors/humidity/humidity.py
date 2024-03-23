@@ -62,10 +62,19 @@ try:
 except:
     print("Failed to initiate humidity sensor")
 
+#todo: add support for AM2320...
+# i2c = board.I2C()
+# base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
+# humidity_sensor = HumiditySensor(base_sensor)
+
 if __name__ == "__main__":
     """
-    If executed as a standalone script, continuously print the humidity values every 2 seconds.
+    If the module is executed as a standalone script, it will return the humidity in a telegraf friendly format. 
     """
-    while True:
-        print("Humidity: %0.1f %%" % humidity_sensor.get_value())
-        time.sleep(2)
+    try:
+        humidity = humidity_sensor.get_value()
+        print(f"humidity, value={humidity:.2f}")
+    except Exception as e:
+        print(f"Error: {e}")
+    except KeyboardInterrupt:
+        print("Script interrupted.")

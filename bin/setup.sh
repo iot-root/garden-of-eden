@@ -44,6 +44,12 @@ sudo pip3 install adafruit-circuitpython-pct2075
 # in the system as I could not find any updating of the sensor readings.
 sudo pip3 install adafruit-circuitpython-ahtx0
 
+# Rest API testing
+sudo pip3 install parameterized
+
+# mqtt
+pip install paho-mqtt
+
 # Check if I2C is enabled
 i2c_status=$(sudo raspi-config nonint get_i2c)
 
@@ -63,3 +69,6 @@ if [ $? -eq 0 ]; then
 else
     error "FAIL: i2cdetect encountered an error."
 fi
+
+# ensure pigpio daemon runs after system reboots.
+sudo systemctl start pigpiod

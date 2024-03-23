@@ -70,11 +70,13 @@ class Distance:
             return [(sorted_data[mid - 1] + sorted_data[mid]) / 2]
 
 if __name__ == "__main__":
-    distance_instance = Distance()
-
+    """
+    If the module is executed as a standalone script, it will return the distance in a telegraf friendly format. 
+    """
     try:
+        distance_instance = Distance()
         distance = distance_instance.measure()
-        print(f"Measured Distance: {distance:.2f} cm")
+        print(f"distance, value={distance:.2f}")
     except Exception as e:
         print(f"Error: {e}")
     except KeyboardInterrupt:
