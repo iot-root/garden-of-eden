@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from app import create_app
 from flask_cors import CORS
 import paho.mqtt.client as mqtt
