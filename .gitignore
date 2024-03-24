@@ -2,6 +2,6 @@
 __pycache__/
 *.py[cod]
 *.pyo
-
+venv/
 # If using Jython
 *.class
