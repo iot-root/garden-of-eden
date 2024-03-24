@@ -1,4 +1,9 @@
 #!/bin/bash
+# examples:
+# curl http://localhost:5000/distance/measure
+# curl http://localhost:5000/temperature
+# curl -X POST -H "Content-Type: application/json" -d '{"value":30}' http://localhost:5000/pump/speed
+# curl http://localhost:5000/pump/stats
 
 BASE_URL="http://localhost:5000"
 CONTENT_TYPE_HEADER="Content-Type: application/json"
