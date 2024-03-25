@@ -12,7 +12,27 @@ If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBU
 
 Checkout the [Electrical Diagrams](#electrical-diagrams)
 
+## ToDo
+1. crontab -e
+
 ## Quick Run
+
+Activate environment:
+
+    ```
+    git clone git@github.com:iot-root/garden-of-eden.git
+    cd garden-of-eden 
+
+    python -m venv venv
+    source ./venv/bin/activate
+    pip install -r requirements.txt
+
+    ```
+
+    
+    pip freeze > requirements.txt
+
+
 1. Run the `./bin/setup.sh` script to install dependancies
 2. Ensure the `pigpiod` daemon is running `sudo systemctl status pigpiod`, if not to start it run `sudo systemctl start pigpiod` 
 3. usage `python run.py` will launch the flask api.

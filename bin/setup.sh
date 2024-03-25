@@ -21,6 +21,13 @@ fi
 
 sudo apt update
 
+# !!!
+# sudo apt install pigpio
+# sudo systemctl start pigpiod
+# sudo systemctl enable ppython igpiod
+# pip install gpiozero pigpio flask smbus pi-ina219 adafruit-circuitpython-pct2075 adafruit-circuitpython-ahtx0 parameterized paho-mqtt
+# sudo apt-get install mosquitto mosquitto-clients
+
 # Using gpiozero to leverage pigpio daemon which is hardware driven and more efficient.
 # This ensures better accuracy of the distance sensor and is less cpu intesive when using PWMs.
 sudo apt install -y python3-gpiozero python3-pigpio python3-flask
@@ -30,6 +37,9 @@ sudo apt-get install i2c-tools
 
 # for ina219 pump current monitor
 pip3 install pi-ina219
+
+# !!! DONT INSTALL BOARD...
+# pip install board
 
 # pcb_temp monitor with overtemp trigger
 sudo pip3 install adafruit-circuitpython-pct2075
