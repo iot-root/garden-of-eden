@@ -12,6 +12,7 @@ Adafruit-PureIO==1.1.11
 blinker==1.7.0
 click==8.1.7
 colorzero==2.0
+dotenv==0.0.5
 flask==3.0.2
 Flask-Cors==4.0.0
 gpiozero==2.0.1
@@ -25,11 +26,14 @@ paho-mqtt==2.0.0
 parameterized==0.9.0
 pi-ina219==1.4.1
 pigpio==1.78
+pipdeptree==2.16.1
 pyftdi==0.55.0
 pyserial==3.5
+python-dotenv==1.0.1
 pyusb==1.2.1
 rpi-ws281x==5.0.0
 RPi.GPIO==0.7.1
+smbus==1.1.post2
 spidev==3.6
 sysv-ipc==1.1.0
 typing-extensions==4.10.0
