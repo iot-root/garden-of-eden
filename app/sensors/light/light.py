@@ -2,7 +2,8 @@ import argparse
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
-from time import sleep
+import time
+# from time import sleep
 
 class Light:
     def __init__(self, pin=18, frequency=8000):
@@ -15,6 +16,10 @@ class Light:
         self.set_frequency(frequency)
 
     def on(self):
+        if self.led.value > 0:
+            print("Light already on, skipping")
+            return
+
         print(f"Turning light on")
         self.led.value = 1
 

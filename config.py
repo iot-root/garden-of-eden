@@ -6,11 +6,11 @@ load_dotenv()
 
 # MQTT configurations
 BROKER = os.getenv("MQTT_BROKER", "localhost")
-PORT = os.getenv("MQTT_PORT", "1883")
-KEEP_ALIVE_INTERVAL = os.getenv("MQTT_KEEPALIVE_INTERVAL", "60")
+PORT = int(os.getenv("MQTT_PORT", "1883"))
+KEEP_ALIVE_INTERVAL = int(os.getenv("MQTT_KEEPALIVE_INTERVAL", "60"))
 
 # Topic configurations
-BASE_TOPIC = os.getenv("MQTT_BASETOPIC", "eden")
+BASE_TOPIC = os.getenv("MQTT_BASETOPIC", "gardyn")
 
-USERNAME = os.getenv("MQTT_USERNAME", "gardyn")
-PASSWORD = os.getenv("MQTT_PASSWORD", "somepassword")
+USERNAME = os.getenv("MQTT_USERNAME")
+PASSWORD = os.getenv("MQTT_PASSWORD")
