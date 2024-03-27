@@ -8,21 +8,21 @@ from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_T
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 from app.sensors.light.light import Light
-
-# from app.sensors.pump.pump import Pump
+from app.sensors.pump.pump import Pump
 
 # from app.sensors.pcb_temp import PCB
 # from app.sensors import Temperature
 # from app.sensors import Humidity
 
 # Initialize devices
-# pump = Pump()
+pump = Pump()
 light = Light()
 brightness=50
 
 def send_discovery_messages(client):
     # Config for Light
-    LIGHT_CONFIG_TOPIC = "homeassistant/light/iot_device/light/config"
+    #homeassistant/<component>/[<node_id>/]<object_id>/config.
+    LIGHT_CONFIG_TOPIC = "homeassistant/light/gardyn/config"
     light_config_payload = {
         "name": "Gardyn Light",
         "unique_id": "gardyn_light",
@@ -35,16 +35,31 @@ def send_discovery_messages(client):
     }
     client.publish(LIGHT_CONFIG_TOPIC, json.dumps(light_config_payload), retain=True)
 
-    # Config for Pump (as a switch with speed control, for example)
-    # PUMP_CONFIG_TOPIC = "homeassistant/switch/iot_device/pump/config"
-    # pump_config_payload = {
-    #     "name": "IoT Pump",
-    #     "state_topic": BASE_TOPIC + "pump/state",
-    #     "command_topic": BASE_TOPIC + "pump/command",
-    #     "speed_state_topic": BASE_TOPIC + "pump/speed/state",
-    #     "speed_command_topic": BASE_TOPIC + "pump/speed/set"
-    # }
-    # client.publish(PUMP_CONFIG_TOPIC, json.dumps(pump_config_payload), retain=True)
+    #Config for Pump (as a switch with speed control, for example)
+    PUMP_CONFIG_TOPIC = "homeassistant/switch/gardyn/config"
+    pump_config_payload = {
+        "name": "Gardyn Pump Power",
+        "unique_id": "gardyn_pump_power",
+        # "platform": "mqtt",
+        "state_topic": BASE_TOPIC + "/pump/state",
+        "command_topic": BASE_TOPIC + "/pump/command"
+    }
+    client.publish(PUMP_CONFIG_TOPIC, json.dumps(pump_config_payload), retain=True)
+    
+    
+    PUMP_CONFIG_TOPIC = "homeassistant/number/gardyn/config"
+    pump_config_payload = {
+        "name": "Gardyn Pump Speed",
+        "unique_id": "gardyn_pump_speed",
+        "state_topic": BASE_TOPIC + "/pump/speed/state",
+        "command_topic": BASE_TOPIC + "/pump/speed/set",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+    }
+    client.publish(PUMP_CONFIG_TOPIC, json.dumps(pump_config_payload), retain=True)
+    
+    
 
     # Config for Temperature from PCB
     # TEMP_PCB_CONFIG_TOPIC = "homeassistant/sensor/iot_device/pcb_temperature/config"
@@ -71,18 +86,22 @@ def on_message(client, userdata, msg):
     topic = msg.topic.split("/")[-1]
     
     
+    # pump commands
+    if msg.topic == BASE_TOPIC + "/pump/command":
+        if payload.upper() == "ON":
+            logger.info(f"/pump/state ON")
+            pump.on()
+            client.publish(BASE_TOPIC + "/pump/state", "ON")
+        elif payload.upper() == "OFF":
+            logger.info(f"/pump/state off")
+            pump.off()
+            client.publish(BASE_TOPIC + "/pump/state", "OFF")
+    elif msg.topic == BASE_TOPIC + "/pump/speed/set":
+        pump.set_speed(int(payload))
+        logger.info(f"/pump/speed/state {payload}")
+        client.publish(BASE_TOPIC + "/pump/speed/state", payload)
 
-    # if "pump" in msg.topic: 
-    #     if topic == "set_speed":
-    #         pump.set_speed(int(payload))
-    #         client.publish(BASE_TOPIC + "/pump/speed/state", payload)
-    #     elif topic == "on":
-    #         pump.on()
-    #         client.publish(BASE_TOPIC + "/pump/state", "ON")
-    #     elif topic == "off":
-    #         pump.off()
-    #         client.publish(BASE_TOPIC + "/pump/state", "OFF")
-
+    # light commands
     if msg.topic == BASE_TOPIC + "/light/command":
         if payload.upper() == "ON":
             global brightness
