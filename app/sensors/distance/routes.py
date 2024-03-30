@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .distance import Distance as DistanceControl  # Assuming you have a model for Light
+from .distance import Distance as DistanceControl 
 
 distance_blueprint = Blueprint('distance', __name__)
 distance_control = DistanceControl()

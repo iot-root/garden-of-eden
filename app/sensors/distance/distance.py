@@ -1,9 +1,7 @@
 # coding=utf-8
-from gpiozero import DistanceSensor, Device
+from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
 from time import sleep
-
-Device.pin_factory = PiGPIOFactory()
 
 class MeasurementError(Exception):
     """
@@ -18,11 +16,16 @@ class Distance:
     Attributes:
         sensor: DistanceSensor object from gpiozero.
     """
-    def __init__(self):
+    def __init__(self, pin_factory=None):
         """
         Initializes the DistanceSensor object.
         """
-        self.sensor = DistanceSensor(echo=19, trigger=26)
+        
+        # Ensure the pin factory is either provided or defaults to PiGPIOFactory
+        self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
+        
+        # Initialize the DistanceSensor with the specified or default pin factory
+        self.sensor = DistanceSensor(echo=19, trigger=26, pin_factory=self.pin_factory)
 
     def measure_once(self):
         """

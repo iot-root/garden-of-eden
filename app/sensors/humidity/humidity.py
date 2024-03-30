@@ -11,7 +11,7 @@ class CachedSensor:
     """
     Base class for sensors that caches the readings for a specified duration.
     """
-    def __init__(self, sensor, cache_duration=2):
+    def __init__(self, sensor, cache_duration=200):
         """
         Initialize the CachedSensor object.
 

@@ -5,14 +5,32 @@ import pigpio
 import time
 # from time import sleep
 
-class Light:
-    def __init__(self, pin=18, frequency=8000):
-        # pigpiod is running on port 8888
-        # self.factory = PiGPIOFactory(host='pigpiod', port=8888)  # Specify the address and port
-        self.factory = PiGPIOFactory()
+class GPIOController:
+    def __init__(self, pin, pin_factory=None):
         self.pin = pin
-        self.led = PWMLED(self.pin, pin_factory=self.factory)
-        self.pi = pigpio.pi()
+        self.factory = pin_factory
+        if pin_factory:
+            self.pi = pigpio.pi()
+        else:
+            self.pi = pigpio.pi()
+        
+        if not self.pi.connected:
+            raise RuntimeError("Failed to connect to pigpiod daemon. Ensure it's running and accessible.")
+
+    def set_frequency(self, frequency):
+        if self.pi:
+            self.pi.set_PWM_frequency(self.pin, frequency)
+        else:
+            raise RuntimeError("pigpio.pi client is not initialized.")
+
+class Light:
+    def __init__(self, pin=18, frequency=8000, pin_factory=None):
+        # pigpiod is running on port 8888
+        #Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
+        self.pin = pin
+        self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
+        self.led = PWMLED(self.pin, pin_factory=self.pin_factory)
+        self.gpio = GPIOController(pin, pin_factory)
         self.set_frequency(frequency)
 
     def on(self):
@@ -47,7 +65,7 @@ class Light:
 
     def set_frequency(self, frequency):
         print(f"Setting light frequency to {frequency}")
-        self.pi.set_PWM_frequency(self.pin, frequency)
+        self.gpio.set_frequency(frequency)
     
     def set_duty_cycle(self, duty_cycle_percentage):
         """
@@ -77,7 +95,7 @@ class Light:
 
     def close(self):
         self.led.close()
-        self.pi.stop()
+        self.gpio.stop()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Control an IoT light.')
