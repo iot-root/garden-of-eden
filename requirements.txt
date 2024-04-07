@@ -25,6 +25,7 @@ mock==5.1.0
 paho-mqtt==2.0.0
 parameterized==0.9.0
 pi-ina219==1.4.1
+picamera==1.13
 pigpio==1.78
 pipdeptree==2.16.1
 pyftdi==0.55.0

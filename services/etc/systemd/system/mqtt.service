@@ -1,0 +1,12 @@
+[Unit]
+Description=MQTT Service
+After=network.target
+
+[Service]
+User=gardyn
+WorkingDirectory=/home/gardyn/projects/garden-of-eden
+ExecStart=/home/gardyn/projects/garden-of-eden/venv/bin/python /home/gardyn/projects/garden-of-eden/mqtt.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
