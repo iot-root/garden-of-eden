@@ -1,6 +1,7 @@
 [Unit]
 Description=MQTT Service
-After=network.target
+Requires=pigpiod.service
+After=network.target pigpiod.service
 
 [Service]
 User=gardyn
