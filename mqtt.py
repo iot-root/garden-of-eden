@@ -71,16 +71,16 @@ def send_discovery_messages(client):
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
     #Config for Pump (as a switch with speed control, for example)
-    TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/"+IDENTIFIER+"_pump/config"
+    TEMP_CONFIG_TOPIC = "homeassistant/pump/gardyn/"+IDENTIFIER+"_pump/config"
     temp_config_payload = {
         "name": "Pump",
         "unique_id": IDENTIFIER + "_pump",
         "platform": "mqtt",
         "state_topic": BASE_TOPIC + "/pump/state",
         "command_topic": BASE_TOPIC + "/pump/command",
-        "brightness_state_topic": BASE_TOPIC + "/pump/speed/state",
-        "brightness_command_topic": BASE_TOPIC + "/pump/speed/set",
-        "brightness_scale": 100,
+        "percentage_state_topic": BASE_TOPIC + "/pump/speed/state",
+        "percentage_command_topic": BASE_TOPIC + "/pump/speed/set",
+        "speed_range_max": 100,
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
