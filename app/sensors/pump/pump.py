@@ -112,11 +112,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    factory = None
+    pin_factory = None
     if args.factory_host and args.factory_port:
-        factory = {'host': args.factory_host, 'port': args.factory_port}
+        pin_factory = {'host': args.factory_host, 'port': args.factory_port}
 
-    pump = Pump(24, factory=factory)  # Default frequency of 50Hz
+    pump = Pump(24, pin_factory=pin_factory)  # Default frequency of 50Hz
 
     if args.on:
         pump.on()
