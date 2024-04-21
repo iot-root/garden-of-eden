@@ -120,13 +120,14 @@ Run `run.py`, this will print the ip to send requests.
 
 #### Endpoints
 
+```
 [GET] http://<pi-ip>:5000/distance
 
 [GET] http://<pi-ip>:5000/humidity
 
 [POST] http://<pi-ip>:5000/light/on
 [POST] http://<pi-ip>:5000/light/off
-[POST] http://<pi-ip>:5000/light/brightness body: {"value": 50 }
+[POST] http://<pi-ip>:5000/light/brightness body:{"value": 50 }
 [GET] http://<pi-ip>:5000/light/brightness
 
 [GET] http://<pi-ip>:5000/temperature
@@ -135,9 +136,10 @@ Run `run.py`, this will print the ip to send requests.
 
 [POST] http://<pi-ip>:5000/pump/on
 [POST] http://<pi-ip>:5000/pump/off
-[POST] http://<pi-ip>:5000/pump/speed body: {"value": 50 }
+[POST] http://<pi-ip>:5000/pump/speed body:{"value": 50 }
 [GET] http://<pi-ip>:5000/pump/speed
 [GET] http://<pi-ip>:5000/pump/stats
+```
 
 ### Cron Job
 
