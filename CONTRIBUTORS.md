@@ -1,24 +1,20 @@
-# CONTRIBUTORS
+# Contributors
 
-Thank you to all the contributors who have helped improve this project!
+Please follow the below guidelines for commit messages. Thank you to all the contributors who have helped improve this project!
 
 ## Commit Message Guidelines
 
-Please follow the below guidelines for your commit messages:
-
-## Format
-
-Your commit messages should follow the Conventional Commit format:
+Your commit messages should follow the conventional commit format:
 
 ```
-<type>(<optional scope>)<place-!-if-breakingchange>: <description>
+<type>(<optional scope>)<place-!-for-breaking-changes>: <description>
 
 [optional body]
 
 [optional footer]
 ```
 
-## Type
+### Type
 
 The `<type>` should be one of the following:
 
@@ -34,22 +30,21 @@ The `<type>` should be one of the following:
 
 The `<scope>` should indicate the scope of the commit (e.g., component, module, etc.). It is optional if the commit applies globally.
 
+### Description
 
-### Breaking Changes !
+The `<description>` should provide a brief summary of the change.
 
-For breaking changes include a '!' after the <type>(<scope>)!: some breaking change.
+### Breaking Changes
+
+For breaking changes include an '!' after the scope and elaborate a bit in the body.
 
 ```
-feat!: some breaking change
+feat!: some breaking change description
 
 <body description>
 
 BREAKING CHANGE: <what-broke-description>
 ```
-
-### Description
-
-The `<description>` should provide a brief summary of the change.
 
 ### Body (optional)
 
@@ -94,9 +89,6 @@ Remember to follow these guidelines when making contributions. Consistent and cl
 
 Thank you again for your contributions! 🙌
 
-## Volunteer
+## Community and Volunteering
 
-Very nice!! :)
-
-Please have a look at the [Volunteer](https://github.com/iot-root/gardyn-of-eden/wiki/Volunteer)
-page for instructions on where to start and more.
+Please have a look at the [Volunteer](https://github.com/iot-root/gardyn-of-eden/wiki/Volunteer) page for instructions on where to start and more.
