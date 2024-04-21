@@ -98,20 +98,12 @@ python tests/test_distance.py
 ### Controlling Individual Sensors
 
 ```bash
-$ python app/sensors/distance/distance.py
-Measured Distance: 31.84 cm
-
-$ python app/sensors/pump/pump.py
-Setting pump frequency to 50
-Turning pump on
-Setting pump 1duty_cycle_percentage to 30
-Turning pump off
-
-$ python app/sensors/light/light.py
-Setting light frequency to 8000
-Turning light on
-Setting light duty_cycle_percentage to 50
-Turning light off
+python app/sensors/distance/distance.py
+python app/sensors/humidity/humidity.py
+python app/sensors/light/light.py [--on] [--off] [--brightness INT%]
+python app/sensors/pcb_temp/pcb_temp.py
+python app/sensors/pump/pump.py [--on] [--off] [--speed INT%] [--factory-host STR%] [--factory-port INT%]
+python app/sensors/temperature/temperature.py
 ```
 
 ### REST API
