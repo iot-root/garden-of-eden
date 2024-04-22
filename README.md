@@ -24,6 +24,7 @@ Work in progress. We should be picking up some steam here to give the DYI commun
     - [Controlling Individual Sensors](#controlling-individual-sensors)
     - [REST API](#rest-api)
       - [Endpoints](#endpoints)
+      - [Postman](#postman)
     - [Cron Job](#cron-job)
     - [MQTT](#mqtt)
   - [Hardware Overview](#hardware-overview)
@@ -136,6 +137,10 @@ Run `run.py`, this will print the ip to send requests.
 [GET] http://<pi-ip>:5000/pump/speed
 [GET] http://<pi-ip>:5000/pump/stats
 ```
+
+#### Postman
+
+Export this [Postman collection](https://www.postman.com/orange-shadow-8689/workspace/garden-of-eden/collection/8244324-e9d8f79e-d3f2-423e-b0d1-a4ca5b1b08ca?action=share&creator=8244324&active-environment=8244324-861384b4-b4e3-48a3-8da1-181705bd2d8c), add to your private workspace, add the `pi-ip` env variable and you should be good to go.
 
 ### Cron Job
 
