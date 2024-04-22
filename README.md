@@ -4,11 +4,27 @@
 
 Truly own that which is yours!
 
-Work is in progress, but we should be picking up some steam here to give the DYI community the features you deserve. If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBUTORS.md) for commit styling guides.
+If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBUTORS.md) for commit styling guides.
+
+## Project Status & Milestones
+
+Work is in progress, but we should be picking up some steam here to give the DYI community the features you deserve.
+
+- [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
+  - [x] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
+  - [x] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
+  - [x] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
+  - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
+  - [x] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
+  - [x] [distance/waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
+  - [ ] [camera](https://github.com/iot-root/gardyn-of-eden/issues/40)
+- [x] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
+- [ ] [Dashboard](https://github.com/iot-root/gardyn-of-eden/milestone/8)
 
 ## Table of Contents
 
 - [Garden of Eden](#garden-of-eden)
+  - [Project Status \& Milestones](#project-status--milestones)
   - [Table of Contents](#table-of-contents)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
@@ -47,9 +63,6 @@ Work is in progress, but we should be picking up some steam here to give the DYI
     - [Delays in Reading Temp/Humidity data](#delays-in-reading-temphumidity-data)
     - [GPIO](#gpio)
   - [Folder Structure](#folder-structure)
-  - [Milestones](#milestones)
-  - [TODO](#todo)
-  - [Notes](#notes)
 
 ## Getting Started
 
@@ -321,53 +334,4 @@ Using `gpiozero` to leverage `pigpio` daemon which is hardware driven and more e
     ├── test_distance.py
     ├── test_light.py
     └── test_pump.py
-```
-
-## Milestones
-
-- [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
-  - [x] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
-  - [x] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
-  - [x] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
-  - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
-  - [x] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
-  - [x] [distance/waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
-  - [ ] [camera](https://github.com/iot-root/gardyn-of-eden/issues/40)
-- [x] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
-- [ ] [Dashboard](https://github.com/iot-root/gardyn-of-eden/milestone/8)
-
-## TODO
-
-- [ ] test compatibility pi models: pi-zero, pi-zero 2
-- [ ] simple scheduling interface...
-- [x] Reverse engineer and document hardware, software
-  - [x] [Electrical Diagrams](#electrical-diagrams)
-- [ ] document API endpoints
-- [ ] Figure out temp humidity and onboard motor sensor via i2c
-- [ ] Add HomeAssistant support
-- [ ] Rewrite for to collect data for graphs and analytics
-- [ ] Dockerize?
-- [ ] crontab -e
-- [ ] lighting: do more technical research for optimal PWM driving.
-
-## Notes
-
-```text
-mosquitto_passwd -c /etc/mosquitto/passwd <username>
-
-#/etc/mosquitto/mosquitto.conf
-
-pid_file /run/mosquitto/mosquitto.pid
-
-persistence true
-persistence_location /var/lib/mosquitto/
-
-log_dest file /var/log/mosquitto/mosquitto.log
-
-listener 1883 0.0.0.0
-
-allow_anonymous false
-password_file /etc/mosquitto/passwd
-
-include_dir /etc/mosquitto/conf.d
 ```
