@@ -8,18 +8,9 @@ If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBU
 
 ## Project Status & Milestones
 
-Work is in progress, but we should be picking up some steam here to give the DYI community the features you deserve.
+Work in progress. We should be picking up some steam here to give the DYI community the features you deserve.
 
-- [ ] [Hardware Interface](https://github.com/iot-root/gardyn-of-eden/milestone/6)
-  - [x] [pump](https://github.com/iot-root/gardyn-of-eden/issues/33)
-  - [x] [lights](https://github.com/iot-root/gardyn-of-eden/issues/34)
-  - [x] [temp & humidty](https://github.com/iot-root/gardyn-of-eden/issues/35)
-  - [ ] [button](https://github.com/iot-root/gardyn-of-eden/issues/36)
-  - [x] [motor current & overtemp](https://github.com/iot-root/gardyn-of-eden/issues/37)
-  - [x] [distance/waterlevel](https://github.com/iot-root/gardyn-of-eden/issues/38)
-  - [ ] [camera](https://github.com/iot-root/gardyn-of-eden/issues/40)
-- [x] [Rest API](https://github.com/iot-root/gardyn-of-eden/milestone/7)
-- [ ] [Dashboard](https://github.com/iot-root/gardyn-of-eden/milestone/8)
+[Milestones](https://github.com/iot-root/garden-of-eden/milestones)
 
 ## Table of Contents
 
