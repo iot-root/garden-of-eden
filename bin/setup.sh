@@ -1,6 +1,9 @@
 #!/bin/bash
 #VERBOSE=false
 
+#todo
+# - update mqtt.service with run user as and working directory
+
 pwd=$(dirname $(readlink -f $0))
 wkdir=$(realpath $pwd/..)
 
@@ -20,47 +23,15 @@ else
 fi
 
 sudo apt update
+sudo apt install -y pigpio python3 python3-pip python3-venv
 
-# !!!
-# sudo apt install pigpio
-# sudo systemctl start pigpiod
-# sudo systemctl enable ppython igpiod
-# pip install gpiozero pigpio flask smbus pi-ina219 adafruit-circuitpython-pct2075 adafruit-circuitpython-ahtx0 parameterized paho-mqtt
-# sudo apt-get install mosquitto mosquitto-clients
-
-# Using gpiozero to leverage pigpio daemon which is hardware driven and more efficient.
-# This ensures better accuracy of the distance sensor and is less cpu intesive when using PWMs.
-sudo apt install -y python3-gpiozero python3-pigpio python3-flask
+# do you need a mqtt broker?
+#sudo apt-get install mosquitto mosquitto-clients
 
 # for i2c troubleshooting...
 sudo apt-get install i2c-tools
 
-# for ina219 pump current monitor
-pip3 install pi-ina219
-
-# !!! DONT INSTALL BOARD...
-# pip install board
-
-# pcb_temp monitor with overtemp trigger
-sudo pip3 install adafruit-circuitpython-pct2075
-
-# Note: Gardyn 3.0 temp-humidity sensor is clearly marked
-# as AM2320 and per the datasheet specifies i2c_addr of "0x5c".
-# However, something is afoot as the sensor actually behaves per
-# the AHT20 spec: using i2cdetect the sensor shows up as 0x38, 
-# implying it is a AHT20 sensor. Meaning, the temp and humidity does 
-# not work on gardyn devices at all .... but it will now :-)
-# My thinking is that the temp and humidity values are just hardcoded 
-# in the system as I could not find any updating of the sensor readings.
-sudo pip3 install adafruit-circuitpython-ahtx0
-
-# Rest API testing
-sudo pip3 install parameterized
-
-# mqtt
-pip install paho-mqtt
-
-# Check if I2C is enabled
+# Check if I2C is enabled, need to confirm on pi-zero and pi-zero-2 modeles
 i2c_status=$(sudo raspi-config nonint get_i2c)
 
 # If I2C is not enabled (value is 1), then enable it
@@ -81,4 +52,5 @@ else
 fi
 
 # ensure pigpio daemon runs after system reboots.
+sudo systemctl enable pigpiod
 sudo systemctl start pigpiod
