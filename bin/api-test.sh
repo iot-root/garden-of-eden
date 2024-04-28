@@ -1,4 +1,5 @@
 #!/bin/bash
+# Note requires rest API service to be running `python run.py`
 # examples:
 # curl http://localhost:5000/distance/measure
 # curl http://localhost:5000/temperature
@@ -64,7 +65,7 @@ sleep "$SLEEP_DURATION"
 get_data "/pump/stats"
 
 # Distance Measure
-get_data "/distance/measure"
+get_data "/distance"
 
 # Ambient temp
 get_data "/temperature"

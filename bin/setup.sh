@@ -1,8 +1,11 @@
 #!/bin/bash
 #VERBOSE=false
 
-pwd=$(dirname $(readlink -f $0))
-wkdir=$(realpath $pwd/..)
+#todo
+# - update mqtt.service with run user as and working directory
+
+BIN_DIR=$(dirname $(readlink -f $0))
+INSTALL_DIR=$(realpath $BIN_DIR/..)
 
 GRN="\e[32m"
 RED="\e[31m"
@@ -19,48 +22,23 @@ else
   log() { :; }
 fi
 
+
+# copy files relative to project root
+cd $INSTALL_DIR
+
 sudo apt update
+sudo apt install -y i2c-tools fswebcam pigpio python3 python3-pip python3-venv
 
-# !!!
-# sudo apt install pigpio
-# sudo systemctl start pigpiod
-# sudo systemctl enable ppython igpiod
-# pip install gpiozero pigpio flask smbus pi-ina219 adafruit-circuitpython-pct2075 adafruit-circuitpython-ahtx0 parameterized paho-mqtt
-# sudo apt-get install mosquitto mosquitto-clients
+# do you need a mqtt broker?
+#sudo apt-get install mosquitto mosquitto-clients
 
-# Using gpiozero to leverage pigpio daemon which is hardware driven and more efficient.
-# This ensures better accuracy of the distance sensor and is less cpu intesive when using PWMs.
-sudo apt install -y python3-gpiozero python3-pigpio python3-flask
+info "Creating a python virtual environment and install dependencies"
+python3 -m venv $INSTALL_DIR/venv
+source $INSTALL_DIR/venv/bin/activate
+pip3 install -r $INSTALL_DIR/requirements.txt
+deactivate
 
-# for i2c troubleshooting...
-sudo apt-get install i2c-tools
-
-# for ina219 pump current monitor
-pip3 install pi-ina219
-
-# !!! DONT INSTALL BOARD...
-# pip install board
-
-# pcb_temp monitor with overtemp trigger
-sudo pip3 install adafruit-circuitpython-pct2075
-
-# Note: Gardyn 3.0 temp-humidity sensor is clearly marked
-# as AM2320 and per the datasheet specifies i2c_addr of "0x5c".
-# However, something is afoot as the sensor actually behaves per
-# the AHT20 spec: using i2cdetect the sensor shows up as 0x38, 
-# implying it is a AHT20 sensor. Meaning, the temp and humidity does 
-# not work on gardyn devices at all .... but it will now :-)
-# My thinking is that the temp and humidity values are just hardcoded 
-# in the system as I could not find any updating of the sensor readings.
-sudo pip3 install adafruit-circuitpython-ahtx0
-
-# Rest API testing
-sudo pip3 install parameterized
-
-# mqtt
-pip install paho-mqtt
-
-# Check if I2C is enabled
+# Check if I2C is enabled, need to confirm on pi-zero and pi-zero-2 modeles
 i2c_status=$(sudo raspi-config nonint get_i2c)
 
 # If I2C is not enabled (value is 1), then enable it
@@ -80,5 +58,52 @@ else
     error "FAIL: i2cdetect encountered an error."
 fi
 
+# Check if the .env file exists
+if [ ! -f .env ]; then
+    # Copy .env-dist to .env if .env does not exist
+    cp .env-dist .env
+    info ".env file created from .env-dist, please update the mqtt env variables, etc"
+else
+    info ".env file already exists."
+fi
+
+# Ensure user is part of the required groups
+CURRENT_USER=$(whoami)
+GROUPS="i2c gpio dialout"
+info "The script is being run by: $CURRENT_USER"
+for group in $GROUPS; do
+    if [ $(getent group $group) ]; then
+        sudo usermod -a -G $group $CURRENT_USER
+        info "User $CURRENT_USER added to group $group."
+    else
+        error "Group $group does not exist. Skipping..."
+    fi
+done
+
 # ensure pigpio daemon runs after system reboots.
+sudo systemctl enable pigpiod
 sudo systemctl start pigpiod
+
+# Create the systemd service file with dynamic paths
+SERVICE_FILE="$INSTALL_DIR/services/etc/systemd/system/mqtt.service"
+cat > $SERVICE_FILE <<EOF
+[Unit]
+Description=MQTT Service
+Requires=pigpiod.service
+After=network.target pigpiod.service
+
+[Service]
+User=$USER
+WorkingDirectory=$INSTALL_DIR
+ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/mqtt.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+# Move to the systemd directory, reload daemon, enable start at boot and start the service
+sudo cp $SERVICE_FILE /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable mqtt.service
+sudo systemctl start mqtt.service
+info "MQTT service has been started and enabled on boot."
