@@ -66,29 +66,77 @@ Start with a clean install of Linux. Use the [RaspberryPi Imager](https://www.ra
 # clone repo
 git clone git@github.com:iot-root/garden-of-eden.git
 cd garden-of-eden 
+```
 
-# activate the environment and install dependencies
-python -m venv venv
-source ./venv/bin/activate
-pip install -r requirements.txt
-pip freeze > requirements.txt
-./bin/setup.sh
+# edit .env
+```
+cp .env-dist .env
+nano .env
+```
+
+# install dependencies, and run services pigpiod, mqtt.service
+
+Run `./bin/setup.sh`
 
 # ensure the pigpiod daemon is running
-sudo systemctl start pigpiod
 
-# launch the flask api
-python run.py
-
-# if run.py errors with: AttributeError: module 'dotenv' has no attribute 'find_dotenv'
-pip uninstall python-dotenv
-python run.py
+```
+sudo systemctl status pigpiod
+sudo systemctl status mqtt.service
 ```
 
 ## Usage
 
+### MQTT with HomeAssistant 
+For homeassistant:
+
+You need a mqtt broker either on the gardyn pi or homeassistant. 
+
+To install on the pi run 
+
+```
+sudo apt-get install mosquitto mosquitto-clients
+```
+
+Add mqtt-broker username and password:
+
+`sudo mosquitto_passwd -c /etc/mosquitto/passwd <USERNAME>`
+
+> Note: make sure to update the .env file which is used by `config.py` for `mqtt.py`
+
+Run `sudo nano /etc/mosquitto/mosquitto.conf` and change the following lines to match:
+
+```
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+listener 1883
+```
+
+Restart the service 
+
+```
+sudo systemctl restart mosquitto
+```
+
+you just need to edit the `.env` 
+
+Next run the `./bin/setup.sh`, this will install all OS dependencies, install the python libs, and run services pigpiod, mqtt.service
+
+Ensure the pigpiod, mqtt, and broker daemon is running
+
+```
+sudo systemctl status pigpiod
+sudo systemctl status mqtt.service
+sudo systemctl status mosquitto
+```
+
 ### Testing
 
+Activate python venv `source venv/bin/activate`
+
+Start the Flask REST API `python run.py`
+
+Test options:
 ```bash
 # REST endpoints
 ./bin/api-test.sh
@@ -102,6 +150,9 @@ python tests/test_distance.py
 
 ### Controlling Individual Sensors
 
+Activate python venv `source venv/bin/activate`
+
+Examples:
 ```bash
 python app/sensors/distance/distance.py
 python app/sensors/humidity/humidity.py
@@ -112,8 +163,15 @@ python app/sensors/temperature/temperature.py
 ```
 
 ### REST API
+Activate python venv `source venv/bin/activate`
 
-Run `run.py`, this will print the ip to send requests.
+Then Run `python run.py`, this will print the ip to send requests.
+
+> **Note:** if run.py errors with: AttributeError: module 'dotenv' has no attribute 'find_dotenv'
+```
+pip uninstall python-dotenv
+python run.py
+```
 
 #### Endpoints
 
@@ -146,6 +204,8 @@ Export this [Postman collection](https://www.postman.com/orange-shadow-8689/work
 
 Run `crontab -e`, select your preferred editor and then add the following job. Edit as needed.
 
+> Note: update your paths for the following...
+
 ```text
 # †urn on lights at 6am, 9am, 5pm, and turn off at 8pm
 0 6 * * * /home/gardyn/projects/garden-of-eden/venv/bin/python /home/gardyn/projects/garden-of-eden/app/sensors/light/light.py --on --brightness 50
@@ -168,10 +228,6 @@ Run `crontab -e`, select your preferred editor and then add the following job. E
 # Collect sensor data every 30 mins
 */30 * * * * /home/gardyn/projects/garden-of-eden/bin/get-sensor-data.sh
 ```
-
-### MQTT
-
-`<section incomplete>`
 
 ## Hardware Overview
 
