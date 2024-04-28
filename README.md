@@ -68,17 +68,20 @@ git clone git@github.com:iot-root/garden-of-eden.git
 cd garden-of-eden 
 ```
 
-# edit .env
+Update the `.env` with mqtt broker info
+
 ```
 cp .env-dist .env
 nano .env
 ```
 
-# install dependencies, and run services pigpiod, mqtt.service
+Install dependencies, and run services pigpiod, mqtt.service
 
-Run `./bin/setup.sh`
+```
+./bin/setup.sh`
+```
 
-# ensure the pigpiod daemon is running
+Ensure the pigpiod daemon is running
 
 ```
 sudo systemctl status pigpiod
@@ -120,7 +123,7 @@ sudo systemctl restart mosquitto
 
 you just need to edit the `.env` 
 
-Next run the `./bin/setup.sh`, this will install all OS dependencies, install the python libs, and run services pigpiod, mqtt.service
+If you havent already, run `./bin/setup.sh`, this will install all OS dependencies, install the python libs, and run services pigpiod, mqtt.service
 
 Ensure the pigpiod, mqtt, and broker daemon is running
 
@@ -129,6 +132,9 @@ sudo systemctl status pigpiod
 sudo systemctl status mqtt.service
 sudo systemctl status mosquitto
 ```
+Go to your homeassistant instance:
+If your broker is on the gardyn pi, make sure to install the service mqtt, go to settings->devices&services->mqtt and add your gardyn pi host, port, username and password. 
+The device should then appear in your homeassistant discovery settings.
 
 ### Testing
 
