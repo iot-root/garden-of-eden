@@ -67,9 +67,11 @@ Start with a clean install of Linux. Use the [RaspberryPi Imager](https://www.ra
 git clone git@github.com:iot-root/garden-of-eden.git
 cd garden-of-eden 
 
-# activate the environment and install dependencies
+# activate the environment
 python -m venv venv
 source ./venv/bin/activate
+
+# install dependencies
 pip install -r requirements.txt
 pip freeze > requirements.txt
 ./bin/setup.sh
@@ -79,13 +81,22 @@ sudo systemctl start pigpiod
 
 # launch the flask api
 python run.py
+```
 
+```bash
 # if run.py errors with: AttributeError: module 'dotenv' has no attribute 'find_dotenv'
 pip uninstall python-dotenv
 python run.py
 ```
 
 ## Usage
+
+```bash
+# ensure the environment is ready to run 
+python -m venv venv
+source ./venv/bin/activate
+sudo systemctl start pigpiod
+```
 
 ### Testing
 
