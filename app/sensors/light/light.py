@@ -2,8 +2,10 @@ import argparse
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
-import time
-# from time import sleep
+import logging
+from app.logging_config import setup_logging
+
+setup_logging()
 
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
@@ -26,7 +28,7 @@ class GPIOController:
 class Light:
     def __init__(self, pin=18, frequency=8000, pin_factory=None):
         # pigpiod is running on port 8888
-        #Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
+        # Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
         self.pin = pin
         self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
         self.led = PWMLED(self.pin, pin_factory=self.pin_factory)
@@ -34,15 +36,21 @@ class Light:
         self.set_frequency(frequency)
 
     def on(self):
+        """
+        Turn on lights.
+        """
         if self.led.value > 0:
-            print("Light already on, skipping")
+            logging.info("Light already on, skipping")
             return
 
-        print(f"Turning light on")
+        logging.info("Turning light on")
         self.led.value = 1
 
     def off(self):
-        print(f"Turning light off")
+        """
+        Turn off lights.
+        """
+        logging.info("Turning light off")
         self.led.value = 0
     
     def set_brightness(self, brightness_percentage):
@@ -64,12 +72,12 @@ class Light:
         return self.get_duty_cycle()
 
     def set_frequency(self, frequency):
-        print(f"Setting light frequency to {frequency}")
+        logging.info(f"Setting light frequency to {frequency}")
         self.gpio.set_frequency(frequency)
     
     def set_duty_cycle(self, duty_cycle_percentage):
         """
-        Set the duty cycle percentage, i.e. bightness level.
+        Set the duty cycle percentage, i.e. brightness level.
 
         Args:
         - duty_cycle_percentage (int): A value between 0 (off) and 100 (full brightness).
@@ -77,7 +85,7 @@ class Light:
         if 0 <= duty_cycle_percentage <= 100:
             # gpiozero's PWMLED uses a 0-1 scale for duty cycle
             duty = duty_cycle_percentage / 100.0
-            print(f"Setting light duty_cycle to {duty_cycle_percentage}%")
+            logging.info(f"Setting light duty_cycle to {duty_cycle_percentage}%")
             self.led.value = duty
         else:
             raise ValueError("Speed must be between 0 and 100")
@@ -90,12 +98,11 @@ class Light:
         - float: The current duty cycle percentage.
         """
         duty_cycle = self.led.value * 100
-        print(f"Light duty_cycle is {duty_cycle}%")
+        logging.info(f"Light duty_cycle is {duty_cycle}%")
         return duty_cycle
 
     def close(self):
         self.led.close()
-        self.gpio.stop()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Control an IoT light.')
@@ -118,4 +125,4 @@ if __name__ == '__main__':
         light.on()
         light.set_brightness(args.brightness)
     else:
-        print("No action specified. Use --on, --off, or --brightness.")
+        logging.info("No action specified. Use --on, --off, or --brightness.")
