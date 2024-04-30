@@ -12,7 +12,6 @@ Adafruit-PureIO==1.1.11
 blinker==1.7.0
 click==8.1.7
 colorzero==2.0
-dotenv==0.0.5
 flask==3.0.2
 Flask-Cors==4.0.0
 gpiozero==2.0.1

@@ -1,0 +1,21 @@
+name: Enforce PR Title Format
+
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+
+jobs:
+  check-title:
+    name: 'Enforce PR Title Format'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title
+        uses: deepakputhraya/action-pr-title@v1.0.2
+        with:
+          # regex: '^\[PROJ-\d+\] .+' # Example regex for title format
+          allowed_prefixes: 'feat,fix,hotfix,jira,doc,test,proj-,ci' # title should start with the given prefix
+          # disallowed_prefixes: 'feat/,hotfix' # title should not start with the given prefix
+          prefix_case_sensitive: false # title prefix are case insensitive
+          min_length: 5 # Min length of the title
+          max_length: 50 # Max length of the title
+          github_token: ${{ secrets.GITHUB_TOKEN }}
