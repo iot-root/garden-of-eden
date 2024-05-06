@@ -1,0 +1,21 @@
+.Panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+
+    margin: 10px 0px;
+
+    & > h2 {
+        margin-bottom: 10px;
+    }
+}
+
+.Switches {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+
+    width: fit-content;
+}

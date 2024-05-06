@@ -1,4 +1,4 @@
-<img src="docs/_banner.svg" width="800px">
+<img src="docs/_banner.svg" width="800px" alt="logo">
 
 # Garden of Eden
 
@@ -70,20 +70,20 @@ cd garden-of-eden
 
 Update the `.env` with mqtt broker info
 
-```
+```bash
 cp .env-dist .env
 nano .env
 ```
 
 Install dependencies, and run services pigpiod, mqtt.service
 
-```
-./bin/setup.sh`
+```bash
+./bin/setup.sh
 ```
 
 Ensure the pigpiod daemon is running
 
-```
+```bash
 sudo systemctl status pigpiod
 sudo systemctl status mqtt.service
 ```
@@ -98,7 +98,7 @@ You need a mqtt broker either on the gardyn pi or homeassistant.
 
 To install on the pi run
 
-```
+```bash
 sudo apt-get install mosquitto mosquitto-clients
 ```
 
@@ -110,7 +110,7 @@ Add mqtt-broker username and password:
 
 Run `sudo nano /etc/mosquitto/mosquitto.conf` and change the following lines to match:
 
-```
+```text
 allow_anonymous false
 password_file /etc/mosquitto/passwd
 listener 1883
@@ -118,7 +118,7 @@ listener 1883
 
 Restart the service
 
-```
+```bash
 sudo systemctl restart mosquitto
 ```
 
@@ -128,7 +128,7 @@ If you havent already, run `./bin/setup.sh`, this will install all OS dependenci
 
 Ensure the pigpiod, mqtt, and broker daemon is running
 
-```
+```bash
 sudo systemctl status pigpiod
 sudo systemctl status mqtt.service
 sudo systemctl status mosquitto
@@ -187,7 +187,7 @@ python run.py
 
 #### Endpoints
 
-```
+```text
 [GET] http://<pi-ip>:5000/distance
 
 [GET] http://<pi-ip>:5000/humidity
@@ -238,12 +238,24 @@ Run `crontab -e`, select your preferred editor and then add the following job. E
 5 21 * * * /home/gardyn/projects/garden-of-eden/venv/bin/python /home/gardyn/projects/garden-of-eden/app/sensors/pump/pump.py --off
 
 # Collect sensor data every 30 mins
-*/30 * * * * /home/gardyn/projects/garden-of-eden/bin/get-sensor-data.sh
+*/30 * * * * /home/gardyn/projects/garden-of-eden/bin/log-sensor-data.sh
 ```
 
 ## Hardware Overview
 
 Depending on the system you have, here is a breakdown of the hardware.
+
+**GPIO:**
+
+- Distance (Water Level)
+- Lights
+- Pump
+
+**I2C:**
+
+- Temperature/Humidity
+- PCB
+- Temperature
 
 Notes:
 
@@ -263,7 +275,7 @@ Notes:
 
 When you run `sudo i2cdetect -y 1`, you should see something like:
 
-```
+```text
      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
 00:          -- -- -- -- -- -- -- -- -- -- -- -- --
 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -343,11 +355,11 @@ Incase you need to troubleshoot any problems with your system.
 
 #### Sensors
 
-<img src="docs/pcb1.png" width="800px">
+<img src="docs/pcb1.png" width="800px" alt="schematic">
 
 #### Power and Header
 
-<img src="docs/pcb2.png" width="800px">
+<img src="docs/pcb2.png" width="800px" alt="schematic">
 
 ### Recommendations
 
