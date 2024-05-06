@@ -4,41 +4,46 @@
 #todo
 # - update mqtt.service with run user as and working directory
 
-BIN_DIR=$(dirname $(readlink -f $0))
-INSTALL_DIR=$(realpath $BIN_DIR/..)
-
+# Define color constants for output formatting
 GRN="\e[32m"
 RED="\e[31m"
 RST="\e[0m"
 
+# Define logging functions for different message types
 function error { echo -ne "[${RED}ERROR${RST}]: $*\n" >&2; }
 function info  { echo -ne "[${GRN}INFO${RST}]: $*\n" >&2; }
 function red   { echo -ne "[${RED}INFO${RST}]: $*\n" >&2; }
 
+# Log function based on verbosity setting
 if [ "$VERBOSE" == "true" ]; then
   log() { echo "$@"; }
   #log() {echo -ne "[${RED}INFO${RST}]: $*\n" >&2;}
 else
-  log() { :; }
+  log() { :; } # Do nothing if not verbose
 fi
 
+# Determine script's and project's root directory
+BIN_DIR=$(dirname $(readlink -f $0))
+INSTALL_DIR=$(realpath $BIN_DIR/..)
 
-# copy files relative to project root
+# Change to the installation directory
 cd $INSTALL_DIR
 
+# Update package lists and install essential packages
 sudo apt update
 sudo apt install -y i2c-tools fswebcam pigpio python3 python3-pip python3-venv
 
-# do you need a mqtt broker?
+# Optionally, uncomment to install MQTT broker
 #sudo apt-get install mosquitto mosquitto-clients
 
+# Set up Python virtual environment and install dependencies
 info "Creating a python virtual environment and install dependencies"
 python3 -m venv $INSTALL_DIR/venv
 source $INSTALL_DIR/venv/bin/activate
 pip3 install -r $INSTALL_DIR/requirements.txt
 deactivate
 
-# Check if I2C is enabled, need to confirm on pi-zero and pi-zero-2 modeles
+# Check if I2C is enabled and enable it if necessary
 i2c_status=$(sudo raspi-config nonint get_i2c)
 
 # If I2C is not enabled (value is 1), then enable it
@@ -50,24 +55,24 @@ else
     info "I2C is already enabled."
 fi
 
-# Confirm i2c results
-sudo i2cdetect -y 1 > /dev/null 2>&1
+# Verify i2c hardware detection
+sudo i2cdetect -y 1 > /dev/null 2>&1 # Supress output
 if [ $? -eq 0 ]; then
     info "PASS: i2cdetect executed successfully."
 else
     error "FAIL: i2cdetect encountered an error."
 fi
 
-# Check if the .env file exists
-if [ ! -f .env ]; then
+# Create or update .env file from .env-dist if it doesn't exist
+if [ ! -f ./api/.env ]; then
     # Copy .env-dist to .env if .env does not exist
-    cp .env-dist .env
-    info ".env file created from .env-dist, please update the mqtt env variables, etc"
+    cp ./api/.env-dist ./api/.env
+    info "./api/.env file created from ./api/.env-dist, please update the mqtt env variables, etc"
 else
     info ".env file already exists."
 fi
 
-# Ensure user is part of the required groups
+# Add current user to necessary groups for hardware access
 CURRENT_USER=$(whoami)
 GROUPS="i2c gpio dialout"
 info "The script is being run by: $CURRENT_USER"
@@ -80,11 +85,11 @@ for group in $GROUPS; do
     fi
 done
 
-# ensure pigpio daemon runs after system reboots.
+# Ensure pigpio daemon runs after system reboots
 sudo systemctl enable pigpiod
 sudo systemctl start pigpiod
 
-# Create the systemd service file with dynamic paths
+# Configure systemd service for MQTT, using dynamic paths
 SERVICE_FILE="$INSTALL_DIR/services/etc/systemd/system/mqtt.service"
 cat > $SERVICE_FILE <<EOF
 [Unit]
@@ -101,7 +106,8 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
-# Move to the systemd directory, reload daemon, enable start at boot and start the service
+
+# Install, reload, and start the MQTT service
 sudo cp $SERVICE_FILE /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable mqtt.service

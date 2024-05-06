@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  pigpiod:
+    image: corbosman/pigpiod
+    privileged: true
+    ports:
+      - "8888:8888"
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    privileged: true
+    env_file:
+      - ./api/.env
+    depends_on:
+      - pigpiod
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./api:/app
+    command: ["python", "run.py"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: ["npm", "run", "start"]
