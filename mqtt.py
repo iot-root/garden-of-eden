@@ -227,7 +227,7 @@ def publish_temperature(client):
     while True:
         try:
             temperature = temperature_sensor.get_value()
-            logger.info(f"Publishing PCB Temperature: {temperature:.2f}°C")
+            logger.info(f"Publishing Temperature: {temperature:.2f}°C")
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient temperature: {e}")
@@ -237,7 +237,7 @@ def publish_humidity(client):
     while True:
         try:
             humidity = humidity_sensor.get_value()
-            logger.info(f"Publishing PCB Temperature: {humidity:.2f}%")
+            logger.info(f"Publishing Humidity: {humidity:.2f}%")
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient humidity: {e}")
