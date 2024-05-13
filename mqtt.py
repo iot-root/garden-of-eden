@@ -103,6 +103,7 @@ def send_discovery_messages(client):
         "name": "Temperature",
         "unique_id": IDENTIFIER + "_temperature",
         "state_topic": BASE_TOPIC + "/temperature",
+        "command_topic": BASE_TOPIC + "/temperature/get",
         "unit_of_measurement": "°C",
         "device_class": "temperature",
         "device": device_info
@@ -115,6 +116,7 @@ def send_discovery_messages(client):
         "name": "Humidity",
         "unique_id": IDENTIFIER + "_humidity",
         "state_topic": BASE_TOPIC + "/humidity",
+        "command_topic": BASE_TOPIC + "/humidity/get",
         "unit_of_measurement": "%",
         "device_class": "humidity",
         "device": device_info
@@ -128,12 +130,12 @@ def send_discovery_messages(client):
         "name": "Water Level",
         "unique_id": IDENTIFIER + "_water_level",
         "state_topic": BASE_TOPIC + "/water/level",
+        "command_topic": BASE_TOPIC + "/water/level/get",
         "unit_of_measurement": "cm",
         "device_class": "distance",
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-    
     
     TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraleft/config"
     temp_config_payload = {
@@ -207,7 +209,40 @@ def on_message(client, userdata, msg):
                 client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
             else:
                 logger.error("Invalid brightness value received.")
-
+                
+        # on demand sensor readings
+        if msg.topic == BASE_TOPIC + "/water/level/get":
+            try:
+                distance = distance_sensor.measure_once()
+                logger.info(f"Received on-demand water level request: {distance:.2f}cm")
+                client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
+            except Exception as e:
+                logger.error(f"Failed to fetch and publish on-demand water level: {e}")
+        
+        if msg.topic == BASE_TOPIC + "/pcb/temperature/get":
+            try:
+                pcb_temp = get_pcb_temperature()
+                logger.info(f"Publishing PCB Temperature: {pcb_temp:.2f}°C")
+                client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
+            except Exception as e:
+                logger.error(f"Failed to read or publish pcb temperature: {e}")
+                
+        if msg.topic == BASE_TOPIC + "/temperature/get":
+            try:
+                temperature = temperature_sensor.get_value()
+                logger.info(f"Publishing PCB Temperature: {temperature:.2f}°C")
+                client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
+            except Exception as e:
+                logger.error(f"Failed to read or publish ambient temperature: {e}")
+        
+        if msg.topic == BASE_TOPIC + "/humidity/get":
+            try:
+                humidity = humidity_sensor.get_value()
+                logger.info(f"Publishing Humidity: {humidity:.2f}%")
+                client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
+            except Exception as e:
+                logger.error(f"Failed to read or publish ambient humidity: {e}")
+      
     except UnicodeDecodeError as e:
         logger.error(f"Error decoding message: {e}. Data may not be text.")
     except ValueError as e:
@@ -227,7 +262,7 @@ def publish_temperature(client):
     while True:
         try:
             temperature = temperature_sensor.get_value()
-            logger.info(f"Publishing PCB Temperature: {temperature:.2f}°C")
+            logger.info(f"Publishing Temperature: {temperature:.2f}°C")
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient temperature: {e}")
@@ -237,7 +272,7 @@ def publish_humidity(client):
     while True:
         try:
             humidity = humidity_sensor.get_value()
-            logger.info(f"Publishing PCB Temperature: {humidity:.2f}%")
+            logger.info(f"Publishing Humidity: {humidity:.2f}%")
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient humidity: {e}")
