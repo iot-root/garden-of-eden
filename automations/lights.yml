@@ -1,0 +1,35 @@
+description: Schedule for Gardyn light control
+trigger:
+  - platform: time
+    at: "06:00:00"
+  - platform: time
+    at: "09:00:00"
+  - platform: time
+    at: "17:00:00"
+  - platform: time
+    at: "20:00:00"
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.now.strftime('%H:%M:%S') in ['06:00:00', '17:00:00'] }}"
+        sequence:
+          - service: light.turn_on
+            entity_id: light.gardyn_light
+            data:
+              brightness_pct: 50
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.now.strftime('%H:%M:%S') == '09:00:00' }}"
+        sequence:
+          - service: light.turn_on
+            entity_id: light.gardyn_light
+            data:
+              brightness_pct: 70
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.now.strftime('%H:%M:%S') == '20:00:00' }}"
+        sequence:
+          - service: light.turn_off
+            entity_id: light.gardyn_light
+mode: single

@@ -20,13 +20,13 @@ Work in progress. We should be picking up some steam here to give the DYI commun
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
   - [Usage](#usage)
+    - [MQTT with HomeAssistant](#mqtt-with-homeassistant)
     - [Testing](#testing)
     - [Controlling Individual Sensors](#controlling-individual-sensors)
     - [REST API](#rest-api)
       - [Endpoints](#endpoints)
       - [Postman](#postman)
     - [Cron Job](#cron-job)
-    - [MQTT](#mqtt)
   - [Hardware Overview](#hardware-overview)
     - [Air Temp \& Humidity Sensor](#air-temp--humidity-sensor)
     - [Pump Power Monitor](#pump-power-monitor)
@@ -68,17 +68,20 @@ git clone git@github.com:iot-root/garden-of-eden.git
 cd garden-of-eden 
 ```
 
-# edit .env
+Update the `.env` with mqtt broker info
+
 ```
 cp .env-dist .env
 nano .env
 ```
 
-# install dependencies, and run services pigpiod, mqtt.service
+Install dependencies, and run services pigpiod, mqtt.service
 
-Run `./bin/setup.sh`
+```
+./bin/setup.sh`
+```
 
-# ensure the pigpiod daemon is running
+Ensure the pigpiod daemon is running
 
 ```
 sudo systemctl status pigpiod
@@ -87,12 +90,13 @@ sudo systemctl status mqtt.service
 
 ## Usage
 
-### MQTT with HomeAssistant 
+### MQTT with HomeAssistant
+
 For homeassistant:
 
-You need a mqtt broker either on the gardyn pi or homeassistant. 
+You need a mqtt broker either on the gardyn pi or homeassistant.
 
-To install on the pi run 
+To install on the pi run
 
 ```
 sudo apt-get install mosquitto mosquitto-clients
@@ -112,15 +116,15 @@ password_file /etc/mosquitto/passwd
 listener 1883
 ```
 
-Restart the service 
+Restart the service
 
 ```
 sudo systemctl restart mosquitto
 ```
 
-you just need to edit the `.env` 
+you just need to edit the `.env`
 
-Next run the `./bin/setup.sh`, this will install all OS dependencies, install the python libs, and run services pigpiod, mqtt.service
+If you havent already, run `./bin/setup.sh`, this will install all OS dependencies, install the python libs, and run services pigpiod, mqtt.service
 
 Ensure the pigpiod, mqtt, and broker daemon is running
 
@@ -130,6 +134,10 @@ sudo systemctl status mqtt.service
 sudo systemctl status mosquitto
 ```
 
+Go to your homeassistant instance:
+If your broker is on the gardyn pi, make sure to install the service mqtt, go to settings->devices&services->mqtt and add your gardyn pi host, port, username and password.
+The device should then appear in your homeassistant discovery settings.
+
 ### Testing
 
 Activate python venv `source venv/bin/activate`
@@ -137,6 +145,7 @@ Activate python venv `source venv/bin/activate`
 Start the Flask REST API `python run.py`
 
 Test options:
+
 ```bash
 # REST endpoints
 ./bin/api-test.sh
@@ -153,6 +162,7 @@ python tests/test_distance.py
 Activate python venv `source venv/bin/activate`
 
 Examples:
+
 ```bash
 python app/sensors/distance/distance.py
 python app/sensors/humidity/humidity.py
@@ -163,11 +173,13 @@ python app/sensors/temperature/temperature.py
 ```
 
 ### REST API
+
 Activate python venv `source venv/bin/activate`
 
 Then Run `python run.py`, this will print the ip to send requests.
 
 > **Note:** if run.py errors with: AttributeError: module 'dotenv' has no attribute 'find_dotenv'
+
 ```
 pip uninstall python-dotenv
 python run.py
