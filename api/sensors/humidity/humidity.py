@@ -6,6 +6,7 @@ The CachedSensor class caches the readings for 2 seconds to avoid redundant read
 import time
 import board
 import adafruit_ahtx0
+import logging
 
 class CachedSensor:
     """

@@ -29,6 +29,7 @@ pigpio==1.78
 pipdeptree==2.16.1
 pyftdi==0.55.0
 pyserial==3.5
+python-crontab
 python-dotenv==1.0.1
 pyusb==1.2.1
 rpi-ws281x==5.0.0
@@ -37,5 +38,6 @@ smbus==1.1.post2
 spidev==3.6
 sysv-ipc==1.1.0
 typing-extensions==4.10.0
+uuid
 werkzeug==3.0.1
 zipp==3.18.1

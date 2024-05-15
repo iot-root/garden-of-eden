@@ -1,5 +1,6 @@
 import board
 import adafruit_pct2075
+import logging
 
 def get_pcb_temperature():
     i2c = board.I2C()  # uses board.SCL and board.SDA

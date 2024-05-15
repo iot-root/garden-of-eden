@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js';
 
-// UI
+// ui
 import { Button } from "../components/Button/Button";
 import { Switches } from '../components/Switches/Switches';
 
-// Senors
+// senors
 import { GetDistance } from "../endpoints/distance";
 import { GetHumidity } from "../endpoints/humidity";
 import { GetBrightness, SetBrightness, TurnOffLight, TurnOnLight } from "../endpoints/light";
@@ -12,6 +12,10 @@ import { GetPCBTemp } from "../endpoints/pcb-temp";
 import { GetPumpSpeed, GetPumpStats, SetPumpSpeed, TurnOffPump, TurnOnPump } from "../endpoints/pump";
 import { GetTemp, } from "../endpoints/temperature";
 
+// schedule
+import { SetSchedule } from "../endpoints/schedule";
+
+// styles
 import styles from './App.module.css';
 
 const App: Component = () => {
@@ -37,6 +41,10 @@ const App: Component = () => {
         <Button text='Water Level' cb={GetDistance} />
         <Button text='Pump Stats' cb={GetPumpStats} />
         <Button text='PCB Temp' cb={GetPCBTemp} />
+      </Switches>
+
+      <Switches title="Schedule">
+        <Button text='Set Schedule' cb={SetSchedule} />
       </Switches>
     </div>
   );

@@ -3,6 +3,7 @@ import board
 import adafruit_pct2075
 from gpiozero import Button
 from gpiozero.pins.pigpio import PiGPIOFactory
+import logging
 
 factory = PiGPIOFactory()
 button = Button(25, pull_up=False, pin_factory=factory) # Pull down, use pigpio

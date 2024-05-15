@@ -1,5 +1,12 @@
 from flask import jsonify
 from functools import wraps
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+
+def log(msg):
+    logger.info(msg)
 
 def check_sensor_guard(sensor, sensor_name):
     def decorator(func):

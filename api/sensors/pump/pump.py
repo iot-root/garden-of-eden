@@ -3,6 +3,7 @@ from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
 from time import sleep
+import logging
 
 class GPIOController:
     def __init__(self, pin, pin_factory=None):

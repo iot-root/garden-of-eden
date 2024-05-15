@@ -7,6 +7,8 @@ specified duration to prevent redundant reads.
 import time
 import board
 import adafruit_ahtx0
+import logging
+
 
 class CachedSensor:
     """

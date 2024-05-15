@@ -38,9 +38,9 @@ sudo apt install -y i2c-tools fswebcam pigpio python3 python3-pip python3-venv
 
 # Set up Python virtual environment and install dependencies
 info "Creating a python virtual environment and install dependencies"
-python3 -m venv $INSTALL_DIR/venv
-source $INSTALL_DIR/venv/bin/activate
-pip3 install -r $INSTALL_DIR/requirements.txt
+python3 -m venv $INSTALL_DIR/api/venv
+source $INSTALL_DIR/api/venv/bin/activate
+pip3 install -r $INSTALL_DIR/api/requirements.txt
 deactivate
 
 # Check if I2C is enabled and enable it if necessary

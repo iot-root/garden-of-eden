@@ -6,3 +6,4 @@ venv/
 # If using Jython
 *.class
 .env
+node_modules
