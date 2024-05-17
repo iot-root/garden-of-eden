@@ -1,7 +1,7 @@
 from api.lib.lib import check_sensor_guard
 from flask import Blueprint, request, jsonify
 from .light import Light as LightControl  # Assuming you have a model for Light
-from api.scheduler.scheduler import Scheduler
+from api.scheduler.scheduler import lightScheduler
 
 light_blueprint = Blueprint('light', __name__)
 light_control = LightControl()
@@ -33,33 +33,31 @@ def get_brightness():
     return jsonify(value=brightness_value), 200
 
 # Schedule Routes
-scheduler = Scheduler()
-
 @light_blueprint.route('schedule/add', methods=['POST'])
 def add():
     min = request.json['minutes']
-    scheduler.add(min)
-    return jsonify(msg='added'), 200
+    hour = request.json['hour']
+    day = request.json['day']
+    brightness = request.json['brightness']
+    state = request.json['state']
+   
+    response = lightScheduler.add(min, hour, day, state, brightness)
+    if response["status"] == "error":
+        return jsonify(msg=response["message"]), 400
+
+    return jsonify(msg=response), 200
 
 @light_blueprint.route('schedule/update', methods=['POST'])
 def update():
     min = request.json['minutes']
+    hour = request.json['hour']
+    day = request.json['day']
+    brightness = request.json['brightness']
+    state = request.json['state']
     id = request.json['id']
-    scheduler.update(id, min)
+    
+    response = lightScheduler.update(id, min, hour, day, state, brightness)
+    if response["status"] == "error":
+        return jsonify(msg=response["message"]), 400
+    
     return jsonify(msg='updated'), 200
-
-@light_blueprint.route('schedule/delete', methods=['POST'])
-def delete():
-    id = request.json['id']
-    scheduler.delete(id)
-    return jsonify(msg='deleted'), 200
-
-@light_blueprint.route('schedule/delete-all', methods=['POST'])
-def deleteAll():
-    scheduler.deleteAll()
-    return jsonify(msg='deleted all'), 200
-
-@light_blueprint.route('schedule/get-all', methods=['GET'])
-def getAll():
-    jobs = scheduler.getAll()
-    return jsonify(jobs), 200

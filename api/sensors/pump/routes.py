@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from api.lib.lib import check_sensor_guard
 from .pump import Pump as PumpControl 
 from .pump_power import fetch_ina219_data
+from api.scheduler.scheduler import pumpScheduler
+
 
 pump_blueprint = Blueprint('pump', __name__)
 pump_control = PumpControl()
@@ -35,3 +37,33 @@ def get_speed():
 def get_pump_data():
     data = fetch_ina219_data()
     return jsonify(data)
+
+# Schedule Routes
+@pump_blueprint.route('schedule/add', methods=['POST'])
+def add():
+    min = request.json['minutes']
+    hour = request.json['hour']
+    day = request.json['day']
+    duration = request.json['duration']
+    state = request.json['state']
+   
+    response = pumpScheduler.add(min, hour, day, state, duration)
+    if response["status"] == "error":
+        return jsonify(msg=response["message"]), 400
+
+    return jsonify(msg=response), 200
+
+@pump_blueprint.route('schedule/update', methods=['POST'])
+def update():
+    min = request.json['minutes']
+    hour = request.json['hour']
+    day = request.json['day']
+    speed = request.json['speed']
+    state = request.json['state']
+    id = request.json['id']
+    
+    response = pumpScheduler.update(id, min, hour, day, state, speed)
+    if response["status"] == "error":
+        return jsonify(msg=response["message"]), 400
+    
+    return jsonify(msg='updated'), 200
