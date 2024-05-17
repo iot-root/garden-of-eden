@@ -44,10 +44,10 @@ def add():
     min = request.json['minutes']
     hour = request.json['hour']
     day = request.json['day']
-    duration = request.json['duration']
+    speed = request.json['speed']
     state = request.json['state']
    
-    response = pumpScheduler.add(min, hour, day, state, duration)
+    response = pumpScheduler.add(min, hour, day, state, speed)
     if response["status"] == "error":
         return jsonify(msg=response["message"]), 400
 
