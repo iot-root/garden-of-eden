@@ -17,8 +17,8 @@ export const GetBrightness = async () => {
 export const SetBrightness = async (value: string) => {
     await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/brightness`, {
         method: 'POST',
-        body: {
+        body: JSON.stringify({
             value
-        }
+        })
     })
 }

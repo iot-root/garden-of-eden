@@ -14,12 +14,12 @@ export const GetPumpSpeed = async () => {
     await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/speed`)
 }
 
-export const SetPumpSpeed = async (value) => {
+export const SetPumpSpeed = async (value: number) => {
     await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/speed`, {
         method: 'POST',
-        body: {
+        body: JSON.stringify({
             value
-        }
+        })
     })
 }
 
