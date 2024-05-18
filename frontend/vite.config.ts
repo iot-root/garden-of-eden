@@ -1,6 +1,7 @@
-import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
+import { defineConfig } from 'vite'
+import solidPlugin from 'vite-plugin-solid'
 // import devtools from 'solid-devtools/vite';
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   plugins: [
@@ -10,6 +11,7 @@ export default defineConfig({
     */
     // devtools(),
     solidPlugin(),
+    tsconfigPaths(),
   ],
   server: {
     // If you are trying to access env vars outside your app source code (such as inside vite.config.js), then you have to use loadEnv():
@@ -18,4 +20,4 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
-});
+})

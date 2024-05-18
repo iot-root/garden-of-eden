@@ -5,11 +5,21 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vite/client"],
     "noEmit": true,
     "isolatedModules": true,
-  },
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/root/*": ["./*"],
+      "@/icons/*": ["./src/components/ui/icons/*"],
+      "@/typography/*": ["./src/components/typography/*"],
+      "@/content/*": ["./src/components/content/*"],
+      "@/ui/*": ["./src/components/ui/*"]
+    }
+  }
 }

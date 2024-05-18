@@ -1,0 +1,134 @@
+{
+  "sensors": {
+    "lights": {
+      "on": true,
+      "brightness": "100%"
+    },
+    "pump": {
+      "status": "success",
+      "on": false,
+      "speed": "100%",
+      "current": "0.5 A",
+      "voltage": "2 V"
+    },
+    "temp": {
+      "status": "success",
+      "air": "30 C",
+      "pcb": "30 C"
+    },
+    "humidity": {
+      "status": "failed",
+      "air": "100%"
+    },
+    "water": {
+      "status": "success",
+      "level": "12 cm"
+    }
+  },
+  "schedules": {
+    "lights": [
+      {
+        "day": "Sunday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      },
+      {
+        "day": "Tuesday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      }
+    ],
+    "pump": [
+      {
+        "day": "Sunday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      },
+      {
+        "day": "Tuesday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      }
+    ],
+    "temp": [
+      {
+        "day": "Sunday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      },
+      {
+        "day": "Tuesday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      }
+    ],
+    "humidity": [
+      {
+        "day": "Sunday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      },
+      {
+        "day": "Tuesday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      }
+    ],
+    "water": [
+      {
+        "day": "Sunday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      },
+      {
+        "day": "Tuesday",
+        "time": "9:00 AM",
+        "property": {
+          "name": "Brightness",
+          "value": "100%"
+        }
+      }
+    ]
+  },
+  "notifications": [
+    {
+      "message": "Trim plans.",
+      "severity": "low"
+    },
+    {
+      "message": "Water level is low.",
+      "severity": "mid"
+    },
+    {
+      "message": "Humidity sensor not detected.",
+      "severity": "high"
+    }
+  ]
+}
