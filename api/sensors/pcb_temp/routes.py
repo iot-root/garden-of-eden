@@ -6,6 +6,8 @@ pcb_temp_blueprint = Blueprint('pcb-temp', __name__)
 check_sensor = check_sensor_guard(sensor=get_pcb_temperature, sensor_name='PCB Temp')
 
 @pcb_temp_blueprint.route('', methods=['GET'])
-@check_sensor
 def get_pcb_temp():
-    return jsonify({"pcb-temp": '{:.2f}'.format(get_pcb_temperature())})
+    try:
+         return jsonify({"pcb-temp": '{:.2f}'.format(get_pcb_temperature())})
+    except ValueError as e:
+        return jsonify(message=str(e)), 400

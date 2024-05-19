@@ -14,7 +14,7 @@ def check_sensor_guard(sensor, sensor_name):
         @wraps(func)
         def check_sensor(*args, **kwargs):
             if sensor == None:
-                return jsonify(error=f'{sensor_name} are not initialized'), 400
+                return jsonify(error=f'{sensor_name} is not initialized'), 400
             return func(*args, **kwargs)
         return check_sensor
     return decorator

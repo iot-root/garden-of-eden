@@ -1,28 +1,102 @@
 export const TurnOnPump = async () => {
-    await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/on`, {
-        method: 'POST'
-    })
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/on`,
+      {
+        method: 'POST',
+      }
+    )
+
+    if (!response.ok) {
+      return 'Sensor not detected'
+    }
+
+    return response.json()
+  } catch (e) {
+    console.error('Error turning on pump: ', e)
+    throw e
+  }
 }
 
 export const TurnOffPump = async () => {
-    await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/off`, {
-        method: 'POST'
-    })
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/off`,
+      {
+        method: 'POST',
+      }
+    )
+
+    if (!response.ok) {
+      return 'Sensor not detected'
+    }
+
+    return response.json()
+  } catch (e) {
+    console.error('Error turning off pump: ', e)
+    throw e
+  }
 }
 
 export const GetPumpSpeed = async () => {
-    await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/speed`)
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/speed`
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return 'Sensor not detected'
+    }
+
+    return String(data.value)
+  } catch (e) {
+    console.error('Error fetching pump speed: ', e)
+    throw e
+  }
 }
 
 export const SetPumpSpeed = async (value: number) => {
-    await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/speed`, {
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/speed`,
+      {
         method: 'POST',
         body: JSON.stringify({
-            value
-        })
-    })
+          value,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      return 'Sensor not detected'
+    }
+
+    return response.json()
+  } catch (e) {
+    console.error('Error setting pump speed: ', e)
+    throw e
+  }
 }
 
 export const GetPumpStats = async () => {
-    await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/stats`)
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/pump/stats`
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.log('not ok')
+      return data.error
+    }
+
+    console.log(data)
+    return data
+  } catch (e) {
+    console.error('Error fetching pump stats: ', e)
+    throw e
+  }
 }

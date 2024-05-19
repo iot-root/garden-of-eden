@@ -3,9 +3,11 @@
   max-width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-start;
-  margin: 0px 200px;
+  min-height:100vh;
+
+  @apply relative bg-zinc-100 w-[400px] pt-[40px] pb-[80px];
 }
 
 .header {

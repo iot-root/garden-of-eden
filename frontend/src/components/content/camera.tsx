@@ -13,12 +13,12 @@ export const Camera = () => {
             <Detail class="mb-4">Most recent photos appear first.</Detail>
             <Card>
                 <div class="flex flex-row flex-wrap gap-1">
-                    <div class="w-20 h-20 bg-zinc-400 rounded-[8px]"></div>
-                    <div class="w-20 h-20 bg-zinc-400 rounded-[8px]"></div>
-                    <div class="w-20 h-20 bg-zinc-400 rounded-[8px]"></div>
-                    <div class="w-20 h-20 bg-zinc-400 rounded-[8px]"></div>
-                    <div class="w-20 h-20 bg-zinc-400 rounded-[8px]"></div>
-                    <div class="w-20 h-20 bg-zinc-400 rounded-[8px]"></div>
+                    <div class="w-20 h-20 bg-zinc-200 rounded-[8px]"></div>
+                    <div class="w-20 h-20 bg-zinc-200 rounded-[8px]"></div>
+                    <div class="w-20 h-20 bg-zinc-200 rounded-[8px]"></div>
+                    <div class="w-20 h-20 bg-zinc-200 rounded-[8px]"></div>
+                    <div class="w-20 h-20 bg-zinc-200 rounded-[8px]"></div>
+                    <div class="w-20 h-20 bg-zinc-200 rounded-[8px]"></div>
 
                 </div>
             </Card>

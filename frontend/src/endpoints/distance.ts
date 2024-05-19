@@ -1,3 +1,18 @@
 export const GetDistance = async () => {
-    await fetch(`http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/distance`)
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/distance`
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return data
+    }
+
+    return data.distance
+  } catch (e) {
+    console.error('Error fetching distance: ', e)
+    throw e
+  }
 }

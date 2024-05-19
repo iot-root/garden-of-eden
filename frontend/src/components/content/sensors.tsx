@@ -2,28 +2,72 @@ import Padding from "@/components/containers/padding"
 import { Detail, H1, H3 } from "@/components/typography/heading"
 import { Card } from "@/components/ui/card"
 import SensorToggle from "@/components/ui/toggle/toggle"
+import { GetDistance } from "@/endpoints/distance"
+import { GetHumidity } from "@/endpoints/humidity"
+import { GetBrightness, TurnOffLight, TurnOnLight } from "@/endpoints/light"
+import { GetPCBTemp } from "@/endpoints/pcb-temp"
+import { GetPumpSpeed, GetPumpStats, TurnOffPump, TurnOnPump } from "@/endpoints/pump"
+import { GetTemp } from "@/endpoints/temperature"
 import data from "@/root/data.json"
-import { createSignal } from "solid-js"
-
+import { Match, Suspense, Switch, createEffect, createResource, createSignal } from "solid-js"
 export default () => {
-    const [getLight, setLight] = createSignal(data.sensors.lights)
+    const [distanceData] = createResource(GetDistance);
+    const [brightnessData, { refetch: refetchBrightness }] = createResource(GetBrightness);
+    const [pumpSpeedData, { refetch: refetchPumpSpeed }] = createResource(GetPumpSpeed);
+    const [pumpStatsData] = createResource(GetPumpStats);
+    const [airTempData] = createResource(GetTemp);
+    const [pcbTempData] = createResource(GetPCBTemp);
+    const [humidityData] = createResource(GetHumidity);
+
+
     const [getPump, setPump] = createSignal(data.sensors.pump)
     const [getTemp, setTemp] = createSignal(data.sensors.temp)
     const [getHumidity, setHumidity] = createSignal(data.sensors.humidity)
     const [getWaterLvl, setWaterLvl] = createSignal(data.sensors.water)
 
-    const [getLightState, setLightState] = createSignal(data.sensors.lights.on)
+    const [getLightState, setLightState] = createSignal()
     const [getPumpState, setPumpState] = createSignal(data.sensors.pump.on)
 
-    const handleLightToggle = () => {
+    const handleLightToggle = async () => {
         setLightState(!getLightState())
+
+        if (getLightState()) {
+            try {
+                await TurnOnLight()
+                refetchBrightness()
+            } catch (e) {
+                console.log(e)
+            }
+        } else {
+            try {
+                await TurnOffLight()
+                refetchBrightness()
+            } catch (e) {
+                console.log(e)
+            }
+        }
     }
 
-    const handlePumpToggle = () => {
+    const handlePumpToggle = async () => {
         setPumpState(!getPumpState())
+
+        if (getPumpState()) {
+            try {
+                await TurnOnPump()
+                refetchPumpSpeed()
+            } catch (e) {
+                console.log(e)
+            }
+        } else {
+            try {
+                await TurnOffPump()
+                refetchPumpSpeed()
+            } catch (e) {
+                console.log(e)
+            }
+        }
     }
 
-    "Returns value or the string 'failed'"
     const getValue = (sensor, prop) => {
         if (isFailed(sensor)) {
             return "failed"
@@ -34,6 +78,18 @@ export default () => {
     const isFailed = (sensor) => {
         return sensor.status === "failed"
     }
+
+    createEffect(async () => {
+        // initialize lights state
+        const brightness = await GetBrightness()
+        let isLightOn = brightness > 0 ? true : false
+        setLightState(isLightOn)
+
+        // initialize pump state
+        const speed = await GetPumpSpeed()
+        let isPumpOn = speed > 0 ? true : false
+        setPumpState(isPumpOn)
+    }, [])
 
 
     return (
@@ -50,7 +106,7 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Brightness</Detail>
-                        <Detail isFailed={isFailed(getLight())}>{getValue(getLight(), "brightness")}</Detail>
+                        <AsyncDataPoint data={brightnessData} />
                     </div>
                 </div>
 
@@ -63,17 +119,17 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Speed</Detail>
-                        <Detail isFailed={isFailed(getPump())}>{getValue(getPump(), "speed")}</Detail>
+                        <AsyncDataPoint data={pumpSpeedData} />
                     </div>
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Current</Detail>
-                        <Detail isFailed={isFailed(getPump())}>{getValue(getPump(), "current")}</Detail>
+                        <AsyncDataPoint data={pumpStatsData.current} />
                     </div>
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Voltage</Detail>
-                        <Detail isFailed={isFailed(getPump())}>{getValue(getPump(), "voltage")}</Detail>
+                        <AsyncDataPoint data={pumpStatsData.voltage} />
                     </div>
                 </div>
 
@@ -85,12 +141,12 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Air</Detail>
-                        <Detail isFailed={isFailed(getTemp())}>{getValue(getTemp(), "air")}</Detail>
+                        <AsyncDataPoint data={airTempData} />
                     </div>
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">PCB</Detail>
-                        <Detail isFailed={isFailed(getTemp())}>{getValue(getTemp(), "pcb")}</Detail>
+                        <AsyncDataPoint data={pcbTempData} />
                     </div>
                 </div>
 
@@ -102,7 +158,7 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Air</Detail>
-                        <Detail isFailed={isFailed(getHumidity())}>{getValue(getHumidity(), "air")}</Detail>
+                        <AsyncDataPoint data={humidityData} />
                     </div>
                 </div>
 
@@ -114,11 +170,27 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Level</Detail>
-                        <Detail isFailed={isFailed(getWaterLvl())}>{getValue(getWaterLvl(), "level")}</Detail>
+                        <AsyncDataPoint data={distanceData} />
                     </div>
                 </div>
 
             </Card>
         </Padding>
+    )
+}
+
+const AsyncDataPoint = (props) => {
+    return (
+        <Suspense fallback={<Detail>Loading...</Detail>}>
+            <Switch>
+                <Match when={props.data()?.error}>
+                    <Detail>Sensor not detected</Detail>
+                </Match>
+
+                <Match when={props.data()}>
+                    <Detail>{props.data()}</Detail>
+                </Match>
+            </Switch>
+        </Suspense>
     )
 }
