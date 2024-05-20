@@ -93,7 +93,7 @@ export const CreateSchedule = (props) => {
     }
 
     const onCancel = () => {
-        props.onClose(false)
+        props.onClose()
     }
 
     return (

@@ -12,29 +12,29 @@ import SensorToggle from "../ui/toggle/toggle";
 import { ErrorMessage } from "./error-message";
 
 export const UpdateSchedule = (props) => {
-    console.log(props.job)
+    const job = props.job
     // days
-    const [sun, setSun] = createSignal(props.job.day === "Sunday")
-    const [mon, setMon] = createSignal(props.job.day === "Monday")
-    const [tues, setTues] = createSignal(props.job.day === "Tuesday")
-    const [wed, setWed] = createSignal(props.job.day === "Wednesday")
-    const [thurs, setThurs] = createSignal(props.job.day === "Thursday")
-    const [fri, setFri] = createSignal(props.job.day === "Friday")
-    const [sat, setSat] = createSignal(props.job.day === "Saturday")
+    const [sun, setSun] = createSignal(job.day === "Sunday")
+    const [mon, setMon] = createSignal(job.day === "Monday")
+    const [tues, setTues] = createSignal(job.day === "Tuesday")
+    const [wed, setWed] = createSignal(job.day === "Wednesday")
+    const [thurs, setThurs] = createSignal(job.day === "Thursday")
+    const [fri, setFri] = createSignal(job.day === "Friday")
+    const [sat, setSat] = createSignal(job.day === "Saturday")
 
     // time
-    const [time, setTime] = createSignal(props.job.time)
+    const [time, setTime] = createSignal(job.time)
     const timeString = String(time()).split(":")
     const [hour, setHour] = createSignal(timeString[0])
     const [min, setMin] = createSignal(timeString[1])
 
     // lights
-    const [lightsRun, setLightsRun] = createSignal(String(props.job.details).split(" ")[0] === "Brightness:")
+    const [lightsRun, setLightsRun] = createSignal(String(job.details).split(" ")[0] === "Brightness:")
     const [lightsDuration, setLightsDuration] = createSignal(0)
     const [lightsBrightness, setLightsBrightness] = createSignal(0)
 
     // pump
-    const [pumpRun, setPumpRun] = createSignal(String(props.job.details).split(" ")[0] === "Speed:")
+    const [pumpRun, setPumpRun] = createSignal(String(job.details).split(" ")[0] === "Speed:")
     const [pumpDuration, setPumpDuration] = createSignal(0)
     const [pumpSpeed, setPumpSpeed] = createSignal(0)
 
@@ -68,7 +68,7 @@ export const UpdateSchedule = (props) => {
                 if (days[i]) {
                     if (lightsRun()) {
                         await updateSchedule('light', {
-                            id: props.job.id,
+                            id: job.id,
                             minutes: Number(mins),
                             hour: Number(hour),
                             day: Number(i),
@@ -77,7 +77,7 @@ export const UpdateSchedule = (props) => {
                         })
                     } else if (pumpRun()) {
                         await updateSchedule('pump', {
-                            id: props.job.id,
+                            id: job.id,
                             minutes: Number(mins),
                             hour: Number(hour),
                             day: Number(i),
@@ -89,7 +89,7 @@ export const UpdateSchedule = (props) => {
                 }
 
             }
-            await props.refetch().then(props.onClose())
+            await job.refetch().then(job.onClose())
         } catch (e) {
             console.log("Submission failed: ", e)
         }
@@ -98,13 +98,13 @@ export const UpdateSchedule = (props) => {
     }
 
     const onDelete = async () => {
-        await deleteScheduleById({ id: props.job.id })
+        await deleteScheduleById({ id: job.id })
         await props.refetch().then(props.onClose())
     }
 
     return (
         <Padding>
-            <Card class="flex flex-col justify-start items-start">
+            <Card class="flex flex-col justify-start items-start min-w-[300px]">
                 <div class="flex flex-col items-start mb-8">
                     <p class="font-bold">Update Schedule</p>
                     <p class="text-sm text-zinc-400">Change the details of this schedule.</p>
