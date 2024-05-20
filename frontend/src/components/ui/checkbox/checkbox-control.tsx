@@ -1,7 +1,7 @@
 import { cn } from "@/libs/cn";
 import * as CheckboxPrimitive from "@kobalte/core/checkbox";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
-import { type ValidComponent, type VoidProps, splitProps } from "solid-js";
+import { splitProps, type ValidComponent, type VoidProps } from "solid-js";
 
 export const CheckboxLabel = CheckboxPrimitive.Label;
 export const Checkbox = CheckboxPrimitive.Root;

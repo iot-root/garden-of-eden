@@ -1,0 +1,42 @@
+export const parseCronJob = (cronJob) => {
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    function getCronTime(schedule) {
+        const parts = schedule.split(' ');
+        const minute = parseInt(parts[0], 10);
+        const hour = parseInt(parts[1], 10);
+        const dayOfWeek = parseInt(parts[4], 10);
+
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour;
+        // const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+        const formattedMinute = minute < 10 ? '0' + minute : minute;
+        return `${daysOfWeek[dayOfWeek]}, ${formattedHour}:${formattedMinute}`;
+    }
+
+    function parseCommand(command) {
+        const cmdDetails = {
+            on: command.includes('--on'),
+            off: command.includes('--off'),
+            brightness: command.match(/--brightness (\d+)/)?.[1],
+            speed: command.match(/--speed (\d+)/)?.[1]
+        };
+
+        return {
+            state: cmdDetails.on ? 'On' : 'Off',
+            brightness: cmdDetails.brightness ? `Brightness: ${cmdDetails.brightness}` : '',
+            speed: cmdDetails.speed ? `Speed: ${cmdDetails.speed}` : ''
+        };
+    }
+
+    const readableTime = getCronTime(cronJob.schedule);
+    const commandDetails = parseCommand(cronJob.command);
+
+    return {
+        id: cronJob.id,
+        day: readableTime.split(',')[0],
+        time: readableTime.split(', ')[1],
+        state: commandDetails.state,
+        details: commandDetails.brightness || commandDetails.speed
+    };
+}

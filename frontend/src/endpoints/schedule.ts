@@ -5,8 +5,8 @@ export const addSchedule = async (
     hour: number
     day: number
     state: string
-    brightness: number
-    speed: number
+    brightness?: number
+    speed?: number
   }
 ) => {
   try {
@@ -33,12 +33,13 @@ export const addSchedule = async (
 export const updateSchedule = async (
   sensor: string,
   body: {
+    id: string
     minutes: number
     hour: number
     day: number
     state: string
-    brightness: number
-    speed: number
+    brightness?: number
+    speed?: number
   }
 ) => {
   try {
@@ -89,6 +90,7 @@ export const deleteScheduleById = async (body: { id: string }) => {
       {
         method: 'POST',
         body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
       }
     )
 

@@ -8,7 +8,6 @@ import { GetBrightness, TurnOffLight, TurnOnLight } from "@/endpoints/light"
 import { GetPCBTemp } from "@/endpoints/pcb-temp"
 import { GetPumpSpeed, GetPumpStats, TurnOffPump, TurnOnPump } from "@/endpoints/pump"
 import { GetTemp } from "@/endpoints/temperature"
-import data from "@/root/data.json"
 import { Match, Suspense, Switch, createEffect, createResource, createSignal } from "solid-js"
 export default () => {
     const [distanceData] = createResource(GetDistance);
@@ -19,14 +18,8 @@ export default () => {
     const [pcbTempData] = createResource(GetPCBTemp);
     const [humidityData] = createResource(GetHumidity);
 
-
-    const [getPump, setPump] = createSignal(data.sensors.pump)
-    const [getTemp, setTemp] = createSignal(data.sensors.temp)
-    const [getHumidity, setHumidity] = createSignal(data.sensors.humidity)
-    const [getWaterLvl, setWaterLvl] = createSignal(data.sensors.water)
-
     const [getLightState, setLightState] = createSignal()
-    const [getPumpState, setPumpState] = createSignal(data.sensors.pump.on)
+    const [getPumpState, setPumpState] = createSignal()
 
     const handleLightToggle = async () => {
         setLightState(!getLightState())
@@ -153,7 +146,7 @@ export default () => {
                     </div>
 
 
- <div class="w-full flex justify-between mb-1">
+                    <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Power</Detail>
                         <Suspense fallback={<Detail>Loading...</Detail>}>
                             <Switch>
@@ -169,7 +162,7 @@ export default () => {
                     </div>
 
 
- <div class="w-full flex justify-between mb-1">
+                    <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Shunt Voltage</Detail>
                         <Suspense fallback={<Detail>Loading...</Detail>}>
                             <Switch>

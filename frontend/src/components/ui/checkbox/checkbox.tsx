@@ -2,7 +2,7 @@ import { Checkbox as CheckboxComp, CheckboxControl, CheckboxLabel } from "./chec
 
 export const Checkbox = (props) => {
     return (
-        <CheckboxComp class="flex items-start space-x-0 mb-2">
+        <CheckboxComp class="flex items-start space-x-0 mb-2" checked={props.checked} onChange={props.onChange} >
             <div class="mr-2">
                 <CheckboxControl />
             </div>

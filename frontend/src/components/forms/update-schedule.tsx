@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TextField, TextFieldRoot } from "@/components/ui/textfield";
-import { addSchedule } from "@/endpoints/schedule";
+import { deleteScheduleById, updateSchedule } from "@/endpoints/schedule";
 import { Checkbox } from "@/ui/checkbox/checkbox";
 import { rangeValidator } from "@/validators/range";
 import { createSignal } from "solid-js";
@@ -11,26 +11,30 @@ import { Card } from "../ui/card";
 import SensorToggle from "../ui/toggle/toggle";
 import { ErrorMessage } from "./error-message";
 
-export const CreateSchedule = (props) => {
+export const UpdateSchedule = (props) => {
+    console.log(props.job)
     // days
-    const [sun, setSun] = createSignal(false)
-    const [mon, setMon] = createSignal(false)
-    const [tues, setTues] = createSignal(false)
-    const [wed, setWed] = createSignal(false)
-    const [thurs, setThurs] = createSignal(false)
-    const [fri, setFri] = createSignal(false)
-    const [sat, setSat] = createSignal(false)
+    const [sun, setSun] = createSignal(props.job.day === "Sunday")
+    const [mon, setMon] = createSignal(props.job.day === "Monday")
+    const [tues, setTues] = createSignal(props.job.day === "Tuesday")
+    const [wed, setWed] = createSignal(props.job.day === "Wednesday")
+    const [thurs, setThurs] = createSignal(props.job.day === "Thursday")
+    const [fri, setFri] = createSignal(props.job.day === "Friday")
+    const [sat, setSat] = createSignal(props.job.day === "Saturday")
 
     // time
-    const [time, setTime] = createSignal()
+    const [time, setTime] = createSignal(props.job.time)
+    const timeString = String(time()).split(":")
+    const [hour, setHour] = createSignal(timeString[0])
+    const [min, setMin] = createSignal(timeString[1])
 
     // lights
-    const [lightsRun, setLightsRun] = createSignal(false)
+    const [lightsRun, setLightsRun] = createSignal(String(props.job.details).split(" ")[0] === "Brightness:")
     const [lightsDuration, setLightsDuration] = createSignal(0)
     const [lightsBrightness, setLightsBrightness] = createSignal(0)
 
     // pump
-    const [pumpRun, setPumpRun] = createSignal(false)
+    const [pumpRun, setPumpRun] = createSignal(String(props.job.details).split(" ")[0] === "Speed:")
     const [pumpDuration, setPumpDuration] = createSignal(0)
     const [pumpSpeed, setPumpSpeed] = createSignal(0)
 
@@ -58,11 +62,13 @@ export const CreateSchedule = (props) => {
         let mins = timeString[1]
         let hour = timeString[0]
 
+        // TODO: improve logic, because you cant assign two different jobs the same id
         try {
             for (let i = 0; i < days.length; i++) {
                 if (days[i]) {
                     if (lightsRun()) {
-                        await addSchedule('light', {
+                        await updateSchedule('light', {
+                            id: props.job.id,
                             minutes: Number(mins),
                             hour: Number(hour),
                             day: Number(i),
@@ -72,7 +78,8 @@ export const CreateSchedule = (props) => {
                     }
 
                     if (pumpRun()) {
-                        await addSchedule('pump', {
+                        await updateSchedule('pump', {
+                            id: props.job.id,
                             minutes: Number(mins),
                             hour: Number(hour),
                             day: Number(i),
@@ -82,25 +89,27 @@ export const CreateSchedule = (props) => {
                     }
 
                 }
-            }
-            await props.refetch().then(props.onClose())
-        } catch (e) {
-            console.log("Error creating schedule: ", e)
-        }
 
+            }
+            await props.refetch()
+            props.onClose(false)
+        } catch (e) {
+            console.log("Submission failed: ", e)
+        }
 
         // TODO: create log schedule
     }
 
-    const onCancel = () => {
-        props.onClose(false)
+    const onDelete = async () => {
+        deleteScheduleById({ id: props.job.id })
+        await props.refetch().then(props.onClose(false))
     }
 
     return (
         <Padding>
             <Card class="flex flex-col justify-start items-start">
                 <div class="flex flex-col items-start mb-8">
-                    <p class="font-bold">Create Schedule</p>
+                    <p class="font-bold">Update Schedule</p>
                     <p class="text-sm text-zinc-400">Change the details of this schedule.</p>
                 </div>
 
@@ -126,7 +135,7 @@ export const CreateSchedule = (props) => {
                 <Section title="Time">
                     {[<Row>
                         <TextFieldRoot onChange={setTime} required class="w-full mr-2" >
-                            <TextField type="time"
+                            <TextField type="time" value={time()}
                             />
                         </TextFieldRoot>
                     </Row>]}
@@ -219,7 +228,7 @@ export const CreateSchedule = (props) => {
 
                 {/* Buttons */}
                 <div class="flex flex-row justify-between w-full">
-                    <Button variant="destructive" onClick={onCancel}>Cancel</Button>
+                    <Button variant="destructive" onClick={onDelete}>Delete</Button>
                     <Button onClick={onSubmit}>Save</Button>
                 </div>
             </Card>
