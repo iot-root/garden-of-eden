@@ -1,0 +1,2 @@
+/dev/video0
+/dev/video2
