@@ -60,8 +60,12 @@ export const GetBrightness = async () => {
 export const SetBrightness = async (value: string) => {
   try {
     const response = await fetch(
-      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/brightness`
-    )
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/brightness`,
+       {
+        body: JSON.stringify({
+          value,
+        }),
+      })
 
     if (!response.ok) {
       return 'Sensor not detected'

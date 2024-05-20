@@ -15,11 +15,11 @@ class Camera:
                     capture_images_result = subprocess.run([capture_images], capture_output=True, text=True)
                     # if success
                     if capture_images_result.returncode == 0:
-                        return f'Script executed successfully: {capture_images_result.stdout}', 200
+                        return jsonify(message='Script executed successfully'), 200
                     else:
-                        return f'Error in capture images execution: {capture_images_result.stderr}', 500
+                        return jsonify(error='Error in capture images execution'), 500
             else:
-                return f'Error in find camera execution: {find_cameras_result.stderr}', 500
+                return jsonify('Error in find camera execution'), 500
         except Exception as e:
             return str(e), 500
 
@@ -30,4 +30,4 @@ class Camera:
         # List all files in the image directory that end with '.jpg' or '.jpeg'
         images = [filename for filename in os.listdir('/tmp')
                 if filename.lower().endswith(('.jpg', '.jpeg'))]
-        return jsonify(images)
+        return jsonify(value=images)

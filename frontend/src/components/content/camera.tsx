@@ -1,9 +1,14 @@
 import Padding from "@/components/containers/padding"
 import { Add } from "@/components/ui/add"
+import { ListImages } from "@/endpoints/camera"
 import { Detail, H1 } from "@/typography/heading"
+import { createResource } from "solid-js"
 import { Card } from "../ui/card"
 
 export const Camera = () => {
+    const [images_filenames, { refetch: refetchSchedules }] = createResource(ListImages)
+
+
     return (
         <Padding>
             <div class="flex flex-row justify-between items-center">

@@ -10,7 +10,7 @@ def capture_images():
     try:
         response = camera_control.capture_images()
         # return capture images
-        return jsonify(message=response), 200
+        return response
     except Exception as e:
         log(e)
         return jsonify(error=str(e)), 400
