@@ -47,10 +47,10 @@ export const GetPumpSpeed = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      return 'Sensor not detected'
+      return data
     }
 
-    return String(data.value)
+    return data
   } catch (e) {
     console.error('Error fetching pump speed: ', e)
     throw e
@@ -89,8 +89,7 @@ export const GetPumpStats = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      console.log('not ok')
-      return data.error
+      return data
     }
 
     console.log(data)

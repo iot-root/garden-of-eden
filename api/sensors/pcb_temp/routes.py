@@ -1,4 +1,4 @@
-from api.lib.lib import check_sensor_guard
+from api.lib.lib import check_sensor_guard, log
 from flask import Blueprint, jsonify
 from .pcb_temp import get_pcb_temperature
 
@@ -8,6 +8,7 @@ check_sensor = check_sensor_guard(sensor=get_pcb_temperature, sensor_name='PCB T
 @pcb_temp_blueprint.route('', methods=['GET'])
 def get_pcb_temp():
     try:
-         return jsonify({"pcb-temp": '{:.2f}'.format(get_pcb_temperature())})
-    except ValueError as e:
-        return jsonify(message=str(e)), 400
+         return jsonify({"value": '{:.2f}'.format(get_pcb_temperature())})
+    except Exception as e:
+        log(e)
+        return jsonify(error=str(e)), 400

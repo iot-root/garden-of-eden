@@ -6,48 +6,65 @@ from functools import wraps
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
-
+import os
 
 
 def validate_args(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
-            self._validateArgs(*args, **kwargs)
-        except ValueError as e:
-            return {"status": "error", "message": str(e)}
+            self._validateArgs(**kwargs)
+            self._validateSchedule(*args)
+            self._validateState(**kwargs)
+        except Exception as e:
+            return {"error": str(e)}
         return func(self, *args, **kwargs)
     return wrapper
 
-# TODO: change
-cron = CronTab(user='peter')
+
+cron = CronTab(user=os.getlogin())
 
 class Scheduler(ABC):
     def __init__(self):
         self.cron = cron
         log('Initializing scheduler')
     
+    # Helpers
     @abstractmethod
     def construct_command(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def _validateArgs(self, min, hour, day, *args, **kwargs):
+    def _validateArgs(self, **kwargs):
         pass
 
+    def _validateSchedule(self, min, hour, day):
+        if not (0 <= min <= 59):
+            raise ValueError("min must be between 0 and 59")
+        if not (0 <= hour <= 23):
+            raise ValueError("hour must be between 0 and 23")
+        if not (0 <= day <= 6):
+            raise ValueError("day must be between 0 and 6")
+        return
+
+    def _validateState(self, **kwargs):
+        if kwargs["state"] not in ['on', 'off']:
+            raise ValueError("state must be either 'on' or 'off'")
+
+    # Scheduling Methods
     @validate_args
     def add(self, min, hour, day, *args, **kwargs):
         """Add a new job."""
         log('Adding job')
         id = str(uuid.uuid4())
-        command = self.construct_command(*args, **kwargs)
+        command = self.construct_command(**kwargs)
         job = self.cron.new(command=command, comment=id)
         job.minute.on(min)
         job.hour.on(hour)
         job.dow.on(day)
         job.enable()
         self.cron.write()
-        return {"status": "success", "message": "Job added successfully"}
+        return {"message": "Job added successfully", "id": id}
 
     def update(self, id, min, hour, day, *args, **kwargs):
         """Update a job by ID."""
@@ -59,8 +76,8 @@ class Scheduler(ABC):
             job.hour.on(hour)
             job.dow.on(day)
             self.cron.write()
-            return {"status": "success", "message": "Job updated successfully"}
-        return {"status": "error", "message": "Job not found"}
+            return {"message": "Job updated successfully"}
+        return {"error": "Job not found"}
 
     def delete(self, id):
         """Delete a job by ID."""
@@ -150,39 +167,24 @@ class LightScheduler(Scheduler):
     def __init__(self):
         super().__init__()
 
-    def construct_command(self, state, brightness):
-        return f'python ~/garden-of-eden/api/sensors/light/light.py --{state} --brightness {brightness}'
+    def construct_command(self, **kwargs):
+        return f'python ~/garden-of-eden/api/sensors/light/light.py --{kwargs["state"]} --brightness {kwargs["brightness"]}'
 
-    def _validateArgs(self, min, hour, day, state, brightness):
-        if not (0 <= min <= 59):
-            raise ValueError("min must be between 0 and 59")
-        if not (0 <= hour <= 23):
-            raise ValueError("hour must be between 0 and 23")
-        if not (0 <= day <= 6):
-            raise ValueError("day must be between 0 and 6")
-        if state not in ['on', 'off']:
-            raise ValueError("state must be either 'on' or 'off'")
-        if not (0 <= brightness <= 100):
+    def _validateArgs(self, **kwargs):
+        if not (0 <= kwargs["brightness"] <= 100):
             raise ValueError("brightness must be between 0 and 100")
 
 class PumpScheduler(Scheduler):
     def __init__(self):
         super().__init__()
 
-    def construct_command(self, state, speed):
-        return f'python ~/garden-of-eden/api/sensors/pump/pump.py --{state} --speed {speed}'
+    def construct_command(self,**kwargs):
+        return f'python ~/garden-of-eden/api/sensors/pump/pump.py --{kwargs["state"]} --speed {kwargs["speed"]}'
 
-    def _validateArgs(self, min, hour, day, state, speed):
-        if not (0 <= min <= 59):
-            raise ValueError("min must be between 0 and 59")
-        if not (0 <= hour <= 23):
-            raise ValueError("hour must be between 0 and 23")
-        if not (0 <= day <= 6):
-            raise ValueError("day must be between 0 and 6")
-        if state not in ['on', 'off']:
-            raise ValueError("state must be either 'on' or 'off'")
-        if not (0 < speed <= 100):
+    def _validateArgs(self, **kwargs):
+        if not (0 < kwargs["speed"] <= 100):
             raise ValueError("duration must be between 1 and 60 minutes")      
 
+# Instances
 pumpScheduler = PumpScheduler()
 lightScheduler = LightScheduler()

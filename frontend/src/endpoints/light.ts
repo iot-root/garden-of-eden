@@ -49,8 +49,8 @@ export const GetBrightness = async () => {
     if (!response.ok) {
       return data
     }
-
-    return String(data.value)
+    
+    return data
   } catch (e) {
     console.error('Error fetching brightness: ', e)
     throw e

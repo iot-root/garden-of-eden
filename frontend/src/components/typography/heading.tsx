@@ -39,7 +39,7 @@ export const P = (props) => {
 
 export const Detail = (props) => {
   return (
-    <p class={`text-xs text-left  ${props.class} ${props.isFailed ? "text-red-600" : "text-zinc-400"}`}>
+    <p class={`text-xs text-left  ${props.class} ${props.error ? "text-red-600" : "text-zinc-400"}`}>
       {props.children}
     </p>
   );

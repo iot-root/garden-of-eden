@@ -124,12 +124,64 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Current</Detail>
-                        <AsyncDataPoint data={pumpStatsData.current} />
+                        <Suspense fallback={<Detail>Loading...</Detail>}>
+                            <Switch>
+                                <Match when={pumpStatsData()?.error}>
+                                    <Detail error>{`${String(pumpStatsData()?.error).slice(0, 30)}...`}</Detail>
+                                </Match>
+
+                                <Match when={pumpStatsData()}>
+                                    <Detail>{String(pumpStatsData()['Bus Current'])}</Detail>
+                                </Match>
+                            </Switch>
+                        </Suspense>
                     </div>
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Voltage</Detail>
-                        <AsyncDataPoint data={pumpStatsData.voltage} />
+                        <Suspense fallback={<Detail>Loading...</Detail>}>
+                            <Switch>
+                                <Match when={pumpStatsData()?.error}>
+                                    <Detail error>{`${String(pumpStatsData()?.error).slice(0, 30)}...`}</Detail>
+                                </Match>
+
+                                <Match when={pumpStatsData()}>
+                                    <Detail>{String(pumpStatsData()['Bus Voltage'])}</Detail>
+                                </Match>
+                            </Switch>
+                        </Suspense>
+                    </div>
+
+
+ <div class="w-full flex justify-between mb-1">
+                        <Detail class="capitalize">Power</Detail>
+                        <Suspense fallback={<Detail>Loading...</Detail>}>
+                            <Switch>
+                                <Match when={pumpStatsData()?.error}>
+                                    <Detail error>{`${String(pumpStatsData()?.error).slice(0, 30)}...`}</Detail>
+                                </Match>
+
+                                <Match when={pumpStatsData()}>
+                                    <Detail>{String(pumpStatsData()['Power'])}</Detail>
+                                </Match>
+                            </Switch>
+                        </Suspense>
+                    </div>
+
+
+ <div class="w-full flex justify-between mb-1">
+                        <Detail class="capitalize">Shunt Voltage</Detail>
+                        <Suspense fallback={<Detail>Loading...</Detail>}>
+                            <Switch>
+                                <Match when={pumpStatsData()?.error}>
+                                    <Detail error>{`${String(pumpStatsData()?.error).slice(0, 30)}...`}</Detail>
+                                </Match>
+
+                                <Match when={pumpStatsData()}>
+                                    <Detail>{String(pumpStatsData()['Shunt Voltage'])}</Detail>
+                                </Match>
+                            </Switch>
+                        </Suspense>
                     </div>
                 </div>
 
@@ -184,11 +236,11 @@ const AsyncDataPoint = (props) => {
         <Suspense fallback={<Detail>Loading...</Detail>}>
             <Switch>
                 <Match when={props.data()?.error}>
-                    <Detail>Sensor not detected</Detail>
+                    <Detail error>{`${String(props.data()?.error).slice(0, 30)}...`}</Detail>
                 </Match>
 
                 <Match when={props.data()}>
-                    <Detail>{props.data()}</Detail>
+                    <Detail>{String(props.data().value)}</Detail>
                 </Match>
             </Switch>
         </Suspense>

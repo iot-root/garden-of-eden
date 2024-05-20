@@ -8,4 +8,8 @@ check_sensor = check_sensor_guard(sensor=humidity_sensor, sensor_name='Humidity'
 @humidity_blueprint.route('', methods=['GET'])
 @check_sensor
 def get_humidity():
-    return jsonify(temperature='{:.2f}'.format(humidity_sensor.get_value()))
+    try:    
+        return jsonify(value='{:.2f}'.format(humidity_sensor.get_value()))
+    except Exception as e:
+        log(e)
+        return jsonify(error=str(e)), 400

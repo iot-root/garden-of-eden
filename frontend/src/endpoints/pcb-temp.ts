@@ -9,11 +9,10 @@ export const GetPCBTemp = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      console.log('Response not ok')
       return data
     }
 
-    return data['pcb-temp']
+    return data
   } catch (e) {
     console.error('Error fetching PCB Temp: ', e)
     return e

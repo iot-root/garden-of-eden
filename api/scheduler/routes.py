@@ -11,16 +11,25 @@ schedule_blueprint = Blueprint('schedule', __name__)
 # Schedule Routes
 @schedule_blueprint.route('/delete', methods=['POST'])
 def delete():
-    id = request.json['id']
-    scheduler.delete(id)
-    return jsonify(msg='deleted'), 200
+    try:
+        id = request.json['id']
+        scheduler.delete(id)
+        return jsonify(msg='deleted'), 200
+    except Exception as e:
+        return jsonify(error=str(e))
 
 @schedule_blueprint.route('/delete-all', methods=['POST'])
 def deleteAll():
-    scheduler.deleteAll()
-    return jsonify(msg='deleted all'), 200
+    try:
+        scheduler.deleteAll()
+        return jsonify(msg='deleted all'), 200
+    except Exception as e:
+        return jsonify(error=str(e))
 
 @schedule_blueprint.route('/get-all', methods=['GET'])
 def getAll():
-    jobs = scheduler.getAll()
-    return jsonify(jobs), 200
+    try:
+        jobs = scheduler.getAll()
+        return jsonify(jobs), 200
+    except Exception as e:
+        return jsonify(error=str(e))

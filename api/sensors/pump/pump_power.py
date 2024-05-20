@@ -4,6 +4,8 @@ from ina219 import INA219
 from ina219 import DeviceRangeError
 import time
 import logging
+from flask import jsonify
+
 
 SHUNT_OHMS = 0.08
 
@@ -23,17 +25,15 @@ def fetch_ina219_data():
             ina.configure()
             time.sleep(1)
             data = {
-                'BusVoltage': ina.voltage(),
-                'BusCurrent': None,
-                'Power': None,
-                'ShuntVoltage': ina.shunt_voltage(),
+                'Bus Voltage': ina.voltage(),
+                'Bus Current': ina.current(),
+                'Power': ina.power(),
+                'Shunt Voltage': ina.shunt_voltage(),
             }
-            data['Bus Current'] = ina.current()
-            data['Power'] = ina.power()
         except DeviceRangeError as e:
-            data['error'] = str(e)
+            return {"error":str(e)}
     else:
-        data['error'] = "INA219 not found at address 0x40"
+        return {"error":"INA219 not found at address 0x40"}
     
     return data
 

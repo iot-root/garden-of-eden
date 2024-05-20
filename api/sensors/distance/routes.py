@@ -7,6 +7,10 @@ distance_control = DistanceControl()
 
 @distance_blueprint.route('', methods=['GET'])
 def get_distance():
-    distance_value = distance_control.measure_once()
-    return jsonify(distance=distance_value), 200
+    try:
+        distance_value = distance_control.measure_once()
+        return jsonify(value=distance_value), 200
+    except Exception as e:
+        log(e)
+        return jsonify(error=str(e)), 400
 

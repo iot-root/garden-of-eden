@@ -10,7 +10,7 @@ export const GetDistance = async () => {
       return data
     }
 
-    return data.distance
+    return data
   } catch (e) {
     console.error('Error fetching distance: ', e)
     throw e

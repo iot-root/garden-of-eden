@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from api.lib.lib import check_sensor_guard
+from api.lib.lib import check_sensor_guard, log
 from .pump import Pump as PumpControl 
 from .pump_power import fetch_ina219_data
 from api.scheduler.scheduler import pumpScheduler
@@ -10,13 +10,21 @@ pump_control = PumpControl()
 
 @pump_blueprint.route('/on', methods=['POST'])
 def turn_on():
-    pump_control.on()
-    return jsonify(message="Pump turned on"), 200
+    try:
+        pump_control.on()
+        return jsonify(message="Pump turned on"), 200
+    except Exception as e:
+        log(e)
+        return jsonify(error=str(e))
 
 @pump_blueprint.route('/off', methods=['POST'])
 def turn_off():
-    pump_control.off()
-    return jsonify(message="Pump turned off"), 200
+    try:
+        pump_control.off()
+        return jsonify(message="Pump turned off"), 200
+    except Exception as e:
+        log(e)
+        return jsonify(error=str(e))
 
 @pump_blueprint.route('/speed', methods=['POST'])
 def adjust_speed():
@@ -25,18 +33,27 @@ def adjust_speed():
     try:
         pump_control.set_speed(speed_value)
         return jsonify(message=f"Pump adjusted to {speed_value}% speed"), 200
-    except ValueError as e:
-        return jsonify(message=str(e)), 400
+    except Exception as e:
+        return jsonify(error=str(e)), 400
 
 @pump_blueprint.route('/speed', methods=['GET'])
 def get_speed():
-    current_speed = pump_control.get_speed()
-    return jsonify(value=current_speed), 200
+    try:
+        current_speed = pump_control.get_speed()
+        return jsonify(value=current_speed), 200
+    except Exception as e:
+        return jsonify(error=str(e)), 400
 
 @pump_blueprint.route('/stats', methods=['GET'])
 def get_pump_data():
-    data = fetch_ina219_data()
-    return jsonify(data)
+    try:
+        data = fetch_ina219_data()
+        if (data['error']):
+            return jsonify(data), 400
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+
 
 # Schedule Routes
 @pump_blueprint.route('schedule/add', methods=['POST'])
@@ -47,11 +64,12 @@ def add():
     speed = request.json['speed']
     state = request.json['state']
    
-    response = pumpScheduler.add(min, hour, day, state, speed)
-    if response["status"] == "error":
-        return jsonify(msg=response["message"]), 400
+    try:
+        response = pumpScheduler.add(min, hour, day, state=state, speed=speed)
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify(error=str(e)), 400
 
-    return jsonify(msg=response), 200
 
 @pump_blueprint.route('schedule/update', methods=['POST'])
 def update():
@@ -62,8 +80,9 @@ def update():
     state = request.json['state']
     id = request.json['id']
     
-    response = pumpScheduler.update(id, min, hour, day, state, speed)
-    if response["status"] == "error":
-        return jsonify(msg=response["message"]), 400
+    try:
+        response = pumpScheduler.update(id, min, hour, day, state=state, speed=speed)
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify(error=str(e)), 400
     
-    return jsonify(msg='updated'), 200
