@@ -100,7 +100,7 @@ export const UpdateSchedule = (props) => {
     }
 
     const onDelete = async () => {
-        deleteScheduleById({ id: props.job.id })
+        await deleteScheduleById({ id: props.job.id })
         await props.refetch().then(props.onClose())
     }
 
