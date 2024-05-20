@@ -75,9 +75,7 @@ export const UpdateSchedule = (props) => {
                             state: "on",
                             brightness: Number(lightsBrightness()),
                         })
-                    }
-
-                    if (pumpRun()) {
+                    } else if (pumpRun()) {
                         await updateSchedule('pump', {
                             id: props.job.id,
                             minutes: Number(mins),
@@ -141,66 +139,72 @@ export const UpdateSchedule = (props) => {
                 </Section>
 
                 {/* Lights */}
-                <Section title="Lights">
-                    <>
-                        <p class="font-light">Run</p>
-                        <SensorToggle checked={lightsRun()} onChange={() => setLightsRun(!lightsRun())} />
-                    </>
+                {
+                    lightsRun() ? <Section title="Lights">
+                        <>
+                            <p class="font-light">Run</p>
+                            <SensorToggle checked={lightsRun()} onChange={() => setLightsRun(!lightsRun())} />
+                        </>
 
-                    <>
-                        <Col class="h-full">
-                            <p class="font-light">Duration</p>
-                            <ErrorMessage validator={() => rangeValidator(lightsDuration(), 0, 59)} message="Pick a value between 0 and 59." />
-                        </Col>
-                        <TextFieldRoot onChange={setLightsDuration} required class="w-16 mr-1" validationState={rangeValidator(lightsDuration(), 1, 59) ? "valid" : "invalid"}>
-                            <TextField type="number" placeholder="mins"
-                                value={lightsDuration()} />
-                        </TextFieldRoot>
-                    </>
+                        <>
+                            <Col class="h-full">
+                                <p class="font-light">Duration</p>
+                                <ErrorMessage validator={() => rangeValidator(lightsDuration(), 0, 59)} message="Pick a value between 0 and 59." />
+                            </Col>
+                            <TextFieldRoot onChange={setLightsDuration} required class="w-16 mr-1" validationState={rangeValidator(lightsDuration(), 1, 59) ? "valid" : "invalid"}>
+                                <TextField type="number" placeholder="mins"
+                                    value={lightsDuration()} />
+                            </TextFieldRoot>
+                        </>
 
-                    <>
-                        <Col class="h-full">
-                            <p class="font-light">Brightness</p>
-                            <ErrorMessage validator={() => rangeValidator(lightsBrightness(), 0, 100)} message="Pick a value between 0 and 100." />
-                        </Col>
-                        <TextFieldRoot onChange={setLightsBrightness} required class="w-16 mr-1" validationState={rangeValidator(lightsBrightness(), 0, 100) ? "valid" : "invalid"}>
-                            <TextField type="number" placeholder="%"
-                                value={lightsBrightness()} />
-                        </TextFieldRoot>
-                    </>
-                </Section>
+                        <>
+                            <Col class="h-full">
+                                <p class="font-light">Brightness</p>
+                                <ErrorMessage validator={() => rangeValidator(lightsBrightness(), 0, 100)} message="Pick a value between 0 and 100." />
+                            </Col>
+                            <TextFieldRoot onChange={setLightsBrightness} required class="w-16 mr-1" validationState={rangeValidator(lightsBrightness(), 0, 100) ? "valid" : "invalid"}>
+                                <TextField type="number" placeholder="%"
+                                    value={lightsBrightness()} />
+                            </TextFieldRoot>
+                        </>
+                    </Section> : ""
+                }
+
 
                 {/* Pump */}
-                <Section title="Pump">
-                    <>
-                        <Row class="w-full justify-between">
-                            <p class="font-light">Run</p>
-                            <SensorToggle checked={pumpRun()} onChange={() => setPumpRun(!pumpRun())} />
-                        </Row>
-                    </>
-                    <>
-                        <Col class="h-full">
-                            <p class="font-light">Duration</p>
-                            <ErrorMessage validator={() => rangeValidator(pumpDuration(), 0, 59)} message="Pick a value between 0 and 59." />
-                        </Col>
-                        <TextFieldRoot onChange={setPumpDuration} required class="w-16 mr-1" validationState={rangeValidator(lightsDuration(), 1, 59) ? "valid" : "invalid"}>
-                            <TextField type="number" placeholder="mins"
-                                value={pumpDuration()} />
-                        </TextFieldRoot>
-                    </>
+                {
+                    pumpRun() ? <Section title="Pump">
+                        <>
+                            <Row class="w-full justify-between">
+                                <p class="font-light">Run</p>
+                                <SensorToggle checked={pumpRun()} onChange={() => setPumpRun(!pumpRun())} />
+                            </Row>
+                        </>
+                        <>
+                            <Col class="h-full">
+                                <p class="font-light">Duration</p>
+                                <ErrorMessage validator={() => rangeValidator(pumpDuration(), 0, 59)} message="Pick a value between 0 and 59." />
+                            </Col>
+                            <TextFieldRoot onChange={setPumpDuration} required class="w-16 mr-1" validationState={rangeValidator(lightsDuration(), 1, 59) ? "valid" : "invalid"}>
+                                <TextField type="number" placeholder="mins"
+                                    value={pumpDuration()} />
+                            </TextFieldRoot>
+                        </>
 
-                    <>
-                        <Col class="h-full">
-                            <p class="font-light">Speed</p>
-                            <ErrorMessage validator={() => rangeValidator(pumpSpeed(), 0, 100)} message="Pick a value between 0 and 100." />
-                        </Col>
+                        <>
+                            <Col class="h-full">
+                                <p class="font-light">Speed</p>
+                                <ErrorMessage validator={() => rangeValidator(pumpSpeed(), 0, 100)} message="Pick a value between 0 and 100." />
+                            </Col>
 
-                        <TextFieldRoot onChange={setPumpSpeed} required class="w-16 mr-1" validationState={rangeValidator(pumpDuration(), 0, 100) ? "valid" : "invalid"}>
-                            <TextField type="number" placeholder="%"
-                                value={pumpSpeed()} />
-                        </TextFieldRoot>
-                    </>
-                </Section>
+                            <TextFieldRoot onChange={setPumpSpeed} required class="w-16 mr-1" validationState={rangeValidator(pumpDuration(), 0, 100) ? "valid" : "invalid"}>
+                                <TextField type="number" placeholder="%"
+                                    value={pumpSpeed()} />
+                            </TextFieldRoot>
+                        </>
+                    </Section> : ""
+                }
+
 
                 {/* Logs */}
                 <Section title="Logs">

@@ -50,37 +50,36 @@ export const Schedule = () => {
                                 Object.entries(schedules().jobs).length == 0 ? <Detail>No schedules.</Detail> : ""
                             }
 
-                            {Object.entries(schedules().jobs).map((e) => {
-                                return (
-                                    <div class="flex flex-col items-start mb-4">
-                                        {/* sensor */}
-                                        <p class="capitalize font-medium">{e[0]}</p>
+                            <Index each={Object.entries(schedules().jobs) }>
+                                {
+                                    (sensor, i) => {
+                                        return ( <div class="flex flex-col items-start mb-4">
+                                            {/* sensor */}
+                                            <p class="capitalize font-medium">{sensor()[0]}</p>
+                                            <div class="flex flex-col justify-between w-full">
+                                                <Index each={sensor()[1]}>
+                                                    {(job, j) => {
+                                                        return (<div class="w-full flex flex-row justify-between items-center">
+                                                            <P class="text-zinc-400 text-sm">{parseCronJob(job()).day}, {parseCronJob(job()).time}, {parseCronJob(job()).state}, {parseCronJob(job()).details}</P>
+                                                            <Dialog open={openUpdateMenu()} onOpenChange={setUpdateMenu} >
+                                                                <DialogTrigger>
+                                                                    <Settings height={30} width={30} />
+                                                                </DialogTrigger>
 
-                                        <div class="flex flex-col justify-between w-full">
-
-                                            {e[1].map((s) => {
-                                                const j = parseCronJob(s)
-                                                return (
-                                                    <div class="w-full flex flex-row justify-between items-center">
-                                                        <P class="text-zinc-400 text-sm">{j.day}, {j.time}, {j.state}, {j.details}</P>
-                                                        <Dialog open={openUpdateMenu()} onOpenChange={setUpdateMenu} >
-                                                            <DialogTrigger>
-                                                                <Settings height={30} width={30} />
-                                                            </DialogTrigger>
-
-                                                            <DialogContent>
-                                                                <UpdateSchedule job={j} onClose={setUpdateMenu} refetch={refetchSchedules}></UpdateSchedule>
-                                                            </DialogContent>
-                                                        </Dialog>
-
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )
-                            })}
+                                                              
+                                                            </Dialog>
+                                                        </div>)
+                                                    }}
+                                                </Index>
+                                            </div>
+                                        </div>)
+                                    }
+                                }
+                            </Index>
                         </Match>
+                          <DialogContent>
+                                                                    {/* <UpdateSchedule job={parseCronJob(job())} onClose={setUpdateMenu} refetch={refetchSchedules}></UpdateSchedule> */}
+                                                                </DialogContent>
                     </Switch>
                 </Suspense>
             </Card>
