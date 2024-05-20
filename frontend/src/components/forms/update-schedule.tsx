@@ -91,8 +91,7 @@ export const UpdateSchedule = (props) => {
                 }
 
             }
-            await props.refetch()
-            props.onClose(false)
+            await props.refetch().then(props.onClose())
         } catch (e) {
             console.log("Submission failed: ", e)
         }
@@ -102,7 +101,7 @@ export const UpdateSchedule = (props) => {
 
     const onDelete = async () => {
         deleteScheduleById({ id: props.job.id })
-        await props.refetch().then(props.onClose(false))
+        await props.refetch().then(props.onClose())
     }
 
     return (
