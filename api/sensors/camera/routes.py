@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory
 from api.lib.lib import check_sensor_guard, log
 from .camera import Camera
 
@@ -16,11 +16,11 @@ def capture_images():
         return jsonify(error=str(e)), 400
 
 @camera_blueprint.route('/get', methods=['GET'])
-def get_images():
-    try:
-        response = camera_control.get_images()
-        # return capture images in tmp
-        return jsonify(message=response), 200
-    except Exception as e:
-        log(e)
-        return jsonify(error=str(e)), 400
+def get_image():
+    data = request.get_json()
+    filename = data.get('value') 
+    return camera_control.get_image(filename)
+
+@camera_blueprint.route('/list-images', methods=['GET'])
+def list_images():
+    return camera_control.list_images()

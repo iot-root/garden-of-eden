@@ -20,7 +20,7 @@ in_usb && /\/dev\/video/ && device_found == 0 {
 ')
 
 # Define the output file name for the generated Bash script
-output_file="capture_cameras.sh"
+output_file="./bin/capture_cameras.sh"
 
 # Start writing the Bash script
 echo "#!/bin/bash" > "$output_file"
