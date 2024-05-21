@@ -2,3 +2,4 @@
 
 # Frontend
 - convert all maps to <Index>
+- add loading state to image capture

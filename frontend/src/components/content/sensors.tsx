@@ -22,11 +22,10 @@ export default () => {
     const [getPumpState, setPumpState] = createSignal()
 
     const handleLightToggle = async () => {
-        setLightState(!getLightState())
-
-        if (getLightState()) {
+        if (!getLightState()) {
             try {
                 await TurnOnLight()
+                setLightState(!getLightState())
                 refetchBrightness()
             } catch (e) {
                 console.log(e)
@@ -34,6 +33,7 @@ export default () => {
         } else {
             try {
                 await TurnOffLight()
+                setLightState(!getLightState())
                 refetchBrightness()
             } catch (e) {
                 console.log(e)
@@ -42,11 +42,10 @@ export default () => {
     }
 
     const handlePumpToggle = async () => {
-        setPumpState(!getPumpState())
-
-        if (getPumpState()) {
+        if (!getPumpState()) {
             try {
                 await TurnOnPump()
+                setPumpState(!getPumpState())
                 refetchPumpSpeed()
             } catch (e) {
                 console.log(e)
@@ -54,6 +53,7 @@ export default () => {
         } else {
             try {
                 await TurnOffPump()
+                setPumpState(!getPumpState())
                 refetchPumpSpeed()
             } catch (e) {
                 console.log(e)
@@ -61,26 +61,15 @@ export default () => {
         }
     }
 
-    const getValue = (sensor, prop) => {
-        if (isFailed(sensor)) {
-            return "failed"
-        }
-        return sensor[prop]
-    }
-
-    const isFailed = (sensor) => {
-        return sensor.status === "failed"
-    }
-
     createEffect(async () => {
         // initialize lights state
-        const brightness = await GetBrightness()
-        let isLightOn = brightness > 0 ? true : false
+        const brightness = await brightnessData()
+        let isLightOn = brightness?.value > 0 ? true : false
         setLightState(isLightOn)
 
         // initialize pump state
-        const speed = await GetPumpSpeed()
-        let isPumpOn = speed > 0 ? true : false
+        const speed = await pumpSpeedData()
+        let isPumpOn = speed?.value > 0 ? true : false
         setPumpState(isPumpOn)
     }, [])
 

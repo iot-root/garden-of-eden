@@ -74,6 +74,7 @@ export const DeleteImage = async (filename) => {
         body: JSON.stringify({
           value: filename,
         }),
+        headers: { 'Content-Type': 'application/json' },
       }
     )
 

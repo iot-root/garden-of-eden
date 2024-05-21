@@ -11,7 +11,6 @@ import { Card } from "../ui/card"
 const ImageView = (props) => {
 
     const handleDeleteImage = async (filename, refetch, toggleModal) => {
-        console.log(filename)
         await DeleteImage(filename)
         await refetch()
         toggleModal(false)
@@ -33,7 +32,6 @@ export const Camera = () => {
     const [images, setImages] = createSignal([]);
     const [images_filenames, { refetch }] = createResource(ListImages);
 
-    // Effect to fetch image data whenever filenames are updated
     createEffect(async () => {
         if (images_filenames.loading) {
             console.log("Loading image filenames...");
@@ -45,16 +43,20 @@ export const Camera = () => {
             return;
         }
 
-        // Clear previous images
         setImages([]);
 
-        // Load each image and update the state
         const loadedImages = await Promise.all(
             images_filenames().value?.map(async (filename) => {
                 const response = await GetImage(filename);
                 return { "url": response, "filename": filename };
             })
         );
+
+        // sort images
+        loadedImages.sort((a, b) => {
+            console.log(a.filename, b.filename)
+            return b.filename.localeCompare(a.filename);
+        })
 
         // Update images state with new data
         setImages(loadedImages);
