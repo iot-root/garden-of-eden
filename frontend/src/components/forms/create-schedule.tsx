@@ -219,7 +219,7 @@ export const CreateSchedule = (props) => {
 
                 {/* Buttons */}
                 <div class="flex flex-row justify-between w-full">
-                    <Button variant="destructive" onClick={onCancel}>Cancel</Button>
+                    <Button variant="destructive" onClick={on}>Cancel</Button>
                     <Button onClick={onSubmit}>Save</Button>
                 </div>
             </Card>

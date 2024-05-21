@@ -1,10 +1,34 @@
 import Padding from "@/components/containers/padding"
 import { Add } from "@/components/ui/add"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CaptureImages, GetImage, ListImages } from "@/endpoints/camera"
+import { CaptureImages, DeleteImage, GetImage, ListImages } from "@/endpoints/camera"
+import { setModalContent, toggleModal } from "@/root/stores/modal"
 import { Detail, H1 } from "@/typography/heading"
 import { Index, Match, Suspense, Switch, createEffect, createResource, createSignal } from "solid-js"
 import { Card } from "../ui/card"
+
+const ImageView = (props) => {
+
+    const handleDeleteImage = async (filename, refetch, toggleModal) => {
+        console.log(filename)
+        await DeleteImage(filename)
+        await refetch()
+        toggleModal(false)
+    }
+
+    return (
+        <div class="h-[50vh] w-[50vh] p-10 bg-white rounded-sm">
+            <div class="">
+                <img src={props.image.url} class="object-cover mb-4"></img>
+                <div class="w-full flex flex-row justify-start">
+                    <Button variant="destructive" onClick={() => handleDeleteImage(props.image.filename, props.refetch, props.toggleModal)} >Delete</Button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export const Camera = () => {
     const [images, setImages] = createSignal([]);
     const [images_filenames, { refetch }] = createResource(ListImages);
@@ -28,7 +52,7 @@ export const Camera = () => {
         const loadedImages = await Promise.all(
             images_filenames().value?.map(async (filename) => {
                 const response = await GetImage(filename);
-                return response;
+                return { "url": response, "filename": filename };
             })
         );
 
@@ -39,6 +63,13 @@ export const Camera = () => {
     const handleCapture = async () => {
         await CaptureImages()
         refetch()
+    }
+
+    const onImageClick = (image, refetch, toggleModal) => {
+        toggleModal(true)
+        setModalContent(() => (
+            <ImageView image={image} refetch={refetch} toggleModal={toggleModal} />
+        ))
     }
 
     return (
@@ -59,7 +90,7 @@ export const Camera = () => {
                                 <Detail error>{`${String(images_filenames()?.error).slice(0, 30)}...`}</Detail>
                             </Match>
 
-                            <Match when={images().length == 0}>
+                            <Match when={images().length == 0 && images_filenames()?.loading}>
                                 <Skeleton class="w-20 h-20" />
                                 <Skeleton class="w-20 h-20" />
                                 <Skeleton class="w-20 h-20" />
@@ -79,7 +110,9 @@ export const Camera = () => {
                                     {(image, i) => {
                                         return (
                                             <div class="w-20 h-20 bg-zinc-200 rounded-[8px]">
-                                                <img src={image()} class="object-cover h-full"></img>
+                                                <button class="h-full" onClick={() => onImageClick(image(), refetch, toggleModal)}>
+                                                    <img src={image().url} class="object-cover h-full"></img>
+                                                </button>
                                             </div>)
                                     }}
                                 </Index>

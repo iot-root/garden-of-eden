@@ -64,3 +64,28 @@ export const ListImages = async () => {
     throw e
   }
 }
+
+export const DeleteImage = async (filename) => {
+  try {
+    const response = await fetch(
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/camera/delete`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          value: filename,
+        }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return data
+    }
+
+    return data
+  } catch (e) {
+    console.error('Error deleting image: ', e)
+    throw e
+  }
+}
