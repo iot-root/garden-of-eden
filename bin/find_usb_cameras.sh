@@ -38,7 +38,7 @@ else
         let counter++
         # Create a unique filename using the timestamp and counter
         filename="/tmp/capture_${timestamp}_${counter}.jpg"
-        echo "sudo fswebcam -d $device_path -r 2500x1900 -S 2 -F 2 $filename" >> "$output_file"
+        echo "fswebcam -d $device_path -r 2500x1900 -S 2 -F 2 $filename" >> "$output_file"
     done
 fi
 

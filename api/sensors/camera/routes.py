@@ -26,7 +26,7 @@ def list_images():
     return camera_control.list_images()
 
 @camera_blueprint.route('/delete', methods=['POST'])
-def list_images():
+def delete_image():
     data = request.get_json()
     filename = data.get('value')
     return camera_control.delete_image(filename)
