@@ -29,4 +29,4 @@ def list_images():
 def delete_image():
     data = request.get_json()
     filename = data.get('value')
-    return camera_control.delete_image(filename)
+    return jsonify(message=camera_control.delete_image(filename)), 200
