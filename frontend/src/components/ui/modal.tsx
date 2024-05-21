@@ -4,7 +4,6 @@ import { createEffect, onCleanup } from "solid-js";
 
 export const Modal = () => {
     createEffect(() => {
-        console.log(modalStore.content)
     }, [modalStore])
 
     let modalRef

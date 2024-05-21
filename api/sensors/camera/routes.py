@@ -15,12 +15,18 @@ def capture_images():
         log(e)
         return jsonify(error=str(e)), 400
 
-@camera_blueprint.route('/get', methods=['GET'])
+@camera_blueprint.route('/get', methods=['POST'])
 def get_image():
     data = request.get_json()
-    filename = data.get('value') 
+    filename = data.get('value')
     return camera_control.get_image(filename)
 
 @camera_blueprint.route('/list-images', methods=['GET'])
 def list_images():
     return camera_control.list_images()
+
+@camera_blueprint.route('/delete', methods=['POST'])
+def list_images():
+    data = request.get_json()
+    filename = data.get('value')
+    return camera_control.delete_image(filename)

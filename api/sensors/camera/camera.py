@@ -31,3 +31,14 @@ class Camera:
         images = [filename for filename in os.listdir('/tmp')
                 if filename.lower().endswith(('.jpg', '.jpeg'))]
         return jsonify(value=images)
+
+    def delete_image(self, filename):
+        try:
+            os.remove(f"/tmp/{filename}")
+            return f"File '{filename}' was deleted successfully."
+        except FileNotFoundError:
+            return f"Error: The file '{filename}' does not exist."
+        except PermissionError:
+            return f"Error: Permission denied when trying to delete '{filename}'."
+        except Exception as e:
+            return f"Error: An error occurred while trying to delete '{filename}': {e}"
