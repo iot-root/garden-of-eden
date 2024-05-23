@@ -17,7 +17,7 @@ trigger:
     at: "20:00:00"
     id: "off"
 action:
-  - service: light.turn_{{ 'on' if trigger.id == 'on' else 'off' }}
+  - service: light.turn_{{trigger.id}}
     target:
       entity_id: light.gardyn_light
     data: >
