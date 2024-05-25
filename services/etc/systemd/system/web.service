@@ -1,0 +1,15 @@
+[Unit]
+Description=Garden Of Eden Web Service
+Requires=pigpiod.service
+Wants=network-online.target
+After=network-online.target pigpiod.service
+
+[Service]
+Environment=NODE_PORT=3000
+User=pi
+WorkingDirectory=/home/pi/garden-of-eden/frontend
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -11,12 +11,12 @@ from api.config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BA
 
 from gpiozero.pins.pigpio import PiGPIOFactory
 
-from api.sensors.light.light import Light
-from api.sensors.pump.pump import Pump
-from api.sensors.pcb_temp.pcb_temp import get_pcb_temperature
-from api.sensors.temperature.temperature import temperature_sensor
-from api.sensors.humidity.humidity import humidity_sensor
-from api.sensors.distance.distance import Distance
+from app.sensors.light.light import Light
+from app.sensors.pump.pump import Pump
+from app.sensors.pcb_temp.pcb_temp import get_pcb_temperature
+from app.sensors.temperature.temperature import temperature_sensor
+from app.sensors.humidity.humidity import humidity_sensor
+from app.sensors.distance.distance import Distance
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

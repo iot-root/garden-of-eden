@@ -6,6 +6,7 @@ services:
     privileged: true
     ports:
       - "8888:8888"
+    restart: always
 
   api:
     build:
@@ -21,6 +22,7 @@ services:
     volumes:
       - ./api:/app
     command: ["python", "run.py"]
+    restart: always
 
   frontend:
     build:
@@ -31,3 +33,4 @@ services:
     volumes:
       - ./frontend:/app
     command: ["npm", "run", "start"]
+    restart: always

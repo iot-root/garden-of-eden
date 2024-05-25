@@ -1,10 +1,10 @@
-from api.lib.lib import check_sensor_guard
+from app.lib.lib import check_sensor_guard
 from flask import Blueprint, request, jsonify
 
 # All schedulers share the same instance, and since we can't instantitate the base class, 
 # we'll just use any for these generic routes
 # DO NOT ADD add() and update() routes as these contain sensor specific commands
-from api.scheduler.scheduler import lightScheduler as scheduler
+from app.scheduler.scheduler import lightScheduler as scheduler
 
 schedule_blueprint = Blueprint('schedule', __name__)
 

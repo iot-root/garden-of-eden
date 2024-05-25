@@ -3,7 +3,7 @@ from unittest.mock import patch, Mock
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api.sensors.pump.pump import Pump
+from app.sensors.pump.pump import Pump
 
 class TestPump(unittest.TestCase):
 

@@ -1,8 +1,8 @@
-from api.lib.lib import check_sensor_guard
+from app.lib.lib import check_sensor_guard
 from flask import Blueprint, request, jsonify
 from .light import Light as LightControl  # Assuming you have a model for Light
-from api.scheduler.scheduler import lightScheduler
-from api.lib.lib import log
+from app.scheduler.scheduler import lightScheduler
+from app.lib.lib import log
 
 light_blueprint = Blueprint('light', __name__)
 light_control = LightControl()

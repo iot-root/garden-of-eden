@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from api.lib.lib import check_sensor_guard
+from app.lib.lib import check_sensor_guard
 from .temperature import temperature_sensor
 
 temperature_blueprint = Blueprint('temperature', __name__)

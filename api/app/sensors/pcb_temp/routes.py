@@ -1,4 +1,4 @@
-from api.lib.lib import check_sensor_guard, log
+from app.lib.lib import check_sensor_guard, log
 from flask import Blueprint, jsonify
 from .pcb_temp import get_pcb_temperature
 

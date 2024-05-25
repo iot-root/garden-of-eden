@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from api.lib.lib import check_sensor_guard
+from app.lib.lib import check_sensor_guard
 from .humidity import humidity_sensor
 
 humidity_blueprint = Blueprint('humidity', __name__)

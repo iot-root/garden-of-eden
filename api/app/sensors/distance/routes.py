@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from api.lib.lib import check_sensor_guard
+from app.lib.lib import check_sensor_guard
 from .distance import Distance as DistanceControl 
 
 distance_blueprint = Blueprint('distance', __name__)

@@ -54,7 +54,6 @@ export const Camera = () => {
 
         // sort images
         loadedImages.sort((a, b) => {
-            console.log(a.filename, b.filename)
             return b.filename.localeCompare(a.filename);
         })
 

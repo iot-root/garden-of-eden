@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_from_directory
-from api.lib.lib import check_sensor_guard, log
+from app.lib.lib import check_sensor_guard, log
 from .camera import Camera
 
 camera_blueprint = Blueprint('camera', __name__)

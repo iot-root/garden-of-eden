@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from api.lib.lib import check_sensor_guard, log
+from app.lib.lib import check_sensor_guard, log
 from .pump import Pump as PumpControl 
 from .pump_power import fetch_ina219_data
-from api.scheduler.scheduler import pumpScheduler
+from app.scheduler.scheduler import pumpScheduler
 
 
 pump_blueprint = Blueprint('pump', __name__)

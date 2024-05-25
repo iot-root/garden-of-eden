@@ -4,7 +4,7 @@ import sys
 import os
 # Add the root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api.sensors.distance.distance import Distance, MeasurementError
+from app.sensors.distance.distance import Distance, MeasurementError
 
 class TestDistance(unittest.TestCase):
 

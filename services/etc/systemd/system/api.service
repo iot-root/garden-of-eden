@@ -1,0 +1,14 @@
+[Unit]
+Description=Garden Of Eden API Service
+Requires=pigpiod.service
+Wants=network-online.target
+After=network-online.target pigpiod.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/garden-of-eden/api
+ExecStart=/home/pi/venv/bin/python/ app.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

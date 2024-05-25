@@ -1,12 +1,12 @@
 [Unit]
-Description=MQTT Service
+Description=Garden Of Eden MQTT Service
 Requires=pigpiod.service
 After=network.target pigpiod.service
 
 [Service]
-User=gardyn
-WorkingDirectory=/home/gardyn/projects/garden-of-eden
-ExecStart=/home/gardyn/projects/garden-of-eden/venv/bin/python /home/gardyn/projects/garden-of-eden/mqtt.py
+User=pi
+WorkingDirectory=/home/pi/garden-of-eden/api
+ExecStart=/home/pi/garden-of-eden/venv/bin/python mqtt.py
 Restart=always
 
 [Install]
