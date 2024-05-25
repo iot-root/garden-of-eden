@@ -15,3 +15,47 @@ allow_anonymous false
 password_file /etc/mosquitto/passwd
 
 include_dir /etc/mosquitto/conf.d
+
+///////////////////////////////////////////////////////////////
+ls /dev/i2c*            
+/dev/i2c-2
+
+./enable-i2c.sh
+I2C is not enabled. Enabling now...
+I2C enabled.
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --                         
+PASS: i2cdetect executed successfully.
+
+groups
+peter adm dialout cdrom sudo audio video plugdev games users input render netdev gpio i2c spi
+
+
+ls -l /dev/i2c*
+crw-rw---- 1 root i2c 89, 2 May 22 18:21 /dev/i2c-2
+
+
+sudo nano /boot/config.txt
+dtparam=i2c_arm=on
+
+ls /dev/i2c*  
+/dev/i2c-1  /dev/i2c-2
+
+
+sudo i2cdetect -y 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         08 09 0a 0b 0c 0d 0e 0f 
+10: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f 
+20: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f 
+30: 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f 
+40: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f 
+50: 50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f 
+60: 60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 
+70: 70 71 72 73 74 75 76 77    

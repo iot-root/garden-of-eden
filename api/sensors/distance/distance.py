@@ -4,6 +4,8 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 from time import sleep
 import logging
 
+logging.basicConfig(level=logging.INFO)
+
 class MeasurementError(Exception):
     """
     Raised when there's an error in distance measurement.
@@ -77,6 +79,10 @@ if __name__ == "__main__":
     """
     If the module is executed as a standalone script, it will return the distance in a telegraf friendly format. 
     """
+    parser = argparse.ArgumentParser(description='Control an IoT distance sensor.')
+    parser.add_argument('--log', action='store_true')
+    args = parser.parse_args()
+
     try:
         distance_instance = Distance()
         distance = distance_instance.measure()
@@ -85,3 +91,7 @@ if __name__ == "__main__":
         logging.info(f"Error: {e}")
     except KeyboardInterrupt:
         logging.info("Script interrupted.")
+
+
+    if args.log:
+        logging.info(f"Distance, value={distance:.2f}")

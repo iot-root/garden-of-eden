@@ -7,6 +7,10 @@ import time
 import board
 import adafruit_ahtx0
 import logging
+import argparse
+import sys
+
+logging.basicConfig(level=logging.INFO)
 
 class CachedSensor:
     """
@@ -56,14 +60,15 @@ class HumiditySensor(CachedSensor):
         return self._sensor.relative_humidity
 
 humidity_sensor = None
+
 try:
     i2c = board.I2C()
     base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
     humidity_sensor = HumiditySensor(base_sensor)
 except:
-    logging.info("Failed to initiate humidity sensor")
+    logging.info("Failed to initialize humidity sensor")
 
-#todo: add support for AM2320...
+# TODO: add support for AM2320...
 # i2c = board.I2C()
 # base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
 # humidity_sensor = HumiditySensor(base_sensor)
@@ -72,10 +77,11 @@ if __name__ == "__main__":
     """
     If the module is executed as a standalone script, it will return the humidity in a telegraf friendly format. 
     """
-    try:
-        humidity = humidity_sensor.get_value()
-        logging.info(f"humidity, value={humidity:.2f}")
-    except Exception as e:
-        logging.info(f"Error: {e}")
-    except KeyboardInterrupt:
-        logging.info("Script interrupted.")
+    parser = argparse.ArgumentParser(description='Control an IoT humidity sensor.')
+    parser.add_argument('--log', action='store_true')
+    args = parser.parse_args()
+
+    if args.log:
+        if humidity_sensor is not None:
+            humidity = humidity_sensor.get_value()
+            logging.info(f"humidity, value={humidity:.2f}")

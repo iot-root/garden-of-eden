@@ -5,6 +5,8 @@ import pigpio
 from time import sleep
 import logging
 
+logging.basicConfig(level=logging.INFO)
+
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
         self.pin = pin
@@ -102,7 +104,7 @@ class Pump:
         self.pump.close()
         self.gpio.stop()
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Control a pump.')
     parser.add_argument('--on', action='store_true', help='Turn the pump on.')
     parser.add_argument('--off', action='store_true', help='Turn the pump off.')
@@ -128,5 +130,7 @@ if __name__ == '__main__':
     elif args.speed is not None:
         pump.on()
         pump.set_speed(args.speed)
+    elif args.log:
+        logging.info(f"Speed, value={pump.get_speed:.2f}")
     else:
         logging.info("No action specified. Use --on, --off, or --speed.")

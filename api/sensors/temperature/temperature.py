@@ -8,7 +8,9 @@ import time
 import board
 import adafruit_ahtx0
 import logging
+import sys
 
+logging.basicConfig(level=logging.INFO)
 
 class CachedSensor:
     """
@@ -67,7 +69,7 @@ try:
     base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
     temperature_sensor = TemperatureSensor(base_sensor)
 except:
-    logging.info("Failed to initiate temperature sensor")
+    logging.info("Failed to initialize temperature sensor")
 
 if __name__ == "__main__":
     """

@@ -9,9 +9,14 @@ def get_pcb_temperature():
     return pct.temperature
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     """
     If the module is executed as a standalone script, it will return the pcb_temp in a telegraf friendly format. 
     """
+    parser = argparse.ArgumentParser(description='Control an IoT distance sensor.')
+    parser.add_argument('--log', action='store_true')
+    args = parser.parse_args()
+
     try:
         pcb_temp = get_pcb_temperature()
         logging.info(f"pbc_temp, value={pcb_temp:.2f}")
@@ -19,3 +24,6 @@ if __name__ == "__main__":
         logging.info(f"Error: {e}")
     except KeyboardInterrupt:
         logging.info("Script interrupted.")
+
+    if args.log:
+        logging.info(f"PCB Temp, value={pcb_temp:.2f}")

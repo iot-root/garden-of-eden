@@ -11,10 +11,13 @@ SHUNT_OHMS = 0.08
 
 def is_ina219_present(address):
     try:
+        print(smbus)
         bus = smbus.SMBus(1)  # Use SMBus(0) for older versions of Raspberry Pi
+        print('after')
         bus.read_byte_data(address, 0)  # Try to read a byte from the specified address
         return True  # If no exception is raised, the device is present
-    except Exception:
+    except Exception as e:
+        print('logging exception', str(e))
         return False
 
 def fetch_ina219_data():

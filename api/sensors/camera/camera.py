@@ -27,7 +27,6 @@ class Camera:
         return send_from_directory('/tmp', filename, mimetype='image/jpeg')
 
     def list_images(self):
-        # List all files in the image directory that end with '.jpg' or '.jpeg'
         images = [filename for filename in os.listdir('/tmp')
                 if filename.lower().endswith(('.jpg', '.jpeg'))]
         return jsonify(value=images)

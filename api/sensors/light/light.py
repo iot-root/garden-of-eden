@@ -4,6 +4,8 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
 import logging
 
+logging.basicConfig(level=logging.INFO)
+
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
         self.pin = pin
@@ -107,10 +109,17 @@ if __name__ == '__main__':
     parser.add_argument('--off', action='store_true', help='Turn the light off.')
     parser.add_argument('--brightness', type=int, default=None,
                         help='Set the brightness level (0-100).')
+    parser.add_argument('--log', action='store_true')
 
     args = parser.parse_args()
 
-    light = Light(18)  # Default frequency of 8kHz
+
+    light = None
+
+    try:
+        light = Light(18)  # Default frequency of 8kHz
+    except:
+        logging.info("Failed to initialize lights")
 
     if args.on:
         light.on()
@@ -121,5 +130,8 @@ if __name__ == '__main__':
     elif args.brightness is not None:
         light.on()
         light.set_brightness(args.brightness)
+    elif args.log:
+        brihgtness = light.get_brightness()
+        logging.info(f"brightness, value={brihgtness:.2f}")
     else:
         logging.info("No action specified. Use --on, --off, or --brightness.")
