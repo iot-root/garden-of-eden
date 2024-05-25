@@ -3,7 +3,7 @@ from app.lib.lib import check_sensor_guard, log
 from .pump import Pump as PumpControl 
 from .pump_power import fetch_ina219_data
 from app.scheduler.scheduler import pumpScheduler
-
+import logging
 
 pump_blueprint = Blueprint('pump', __name__)
 pump_control = PumpControl()
@@ -48,9 +48,9 @@ def get_speed():
 def get_pump_data():
     try:
         data = fetch_ina219_data()
-        if (data['error']):
-            return jsonify(data), 400
-        return jsonify(data), 200
+        if (data.get('error', False)):
+            return jsonify(data=data), 400
+        return jsonify(data=data), 200
     except Exception as e:
         return jsonify(error=str(e)), 400
 

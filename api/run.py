@@ -2,7 +2,7 @@
 import logging
 import sys
 from flask import jsonify, request
-from api import create_app
+from app import create_app
 from flask_cors import CORS
 
 # Configure logging

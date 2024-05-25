@@ -3,9 +3,7 @@ import smbus
 from ina219 import INA219
 from ina219 import DeviceRangeError
 import time
-import logging
 from flask import jsonify
-
 
 SHUNT_OHMS = 0.08
 
@@ -30,7 +28,7 @@ def fetch_ina219_data():
                 'Power': ina.power(),
                 'Shunt Voltage': ina.shunt_voltage(),
             }
-        except DeviceRangeError as e:
+        except Exception as e:
             return {"error":str(e)}
     else:
         return {"error":"INA219 not found at address 0x40"}
