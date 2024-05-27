@@ -37,7 +37,6 @@ export const Camera = () => {
 
     createEffect(async () => {
         if (images_filenames.loading) {
-            console.log("Loading image filenames...");
             return;
         }
 

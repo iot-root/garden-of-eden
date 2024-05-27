@@ -1,13 +1,13 @@
 .App {
   text-align: center;
-  max-width: 100%;
+  /* max-width: 100%; */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center;
   min-height:100vh;
 
-  @apply relative bg-zinc-100 w-[400px] pt-[40px] pb-[80px];
+  @apply relative bg-zinc-100 pt-[40px] pb-[80px];
 }
 
 .header {

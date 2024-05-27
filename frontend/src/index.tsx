@@ -16,6 +16,7 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 
 const Home = lazy(() => import("./pages/home"));
 const Logs = lazy(() => import("./pages/logs"));
+const Camera = lazy(() => import("./pages/camera"));
 const Notifications = lazy(() => import("./pages/notifications"));
 
 render(
@@ -23,6 +24,7 @@ render(
     <Router root={App}>
       <Route path="/" component={Home} />
       <Route path="/logs" component={Logs} />
+      <Route path="/camera" component={Camera} />
       <Route path="/notifications" component={Notifications} />
     </Router>
   ),

@@ -40,3 +40,38 @@ export const parseCronJob = (cronJob) => {
         details: commandDetails.brightness || commandDetails.speed
     };
 }
+
+export const parseLogs = (logs) => {
+    // transform text into json
+    let data = {}
+
+    const jsonLines = [];
+    const lines = logs.split('\n');
+
+    for (const line of lines) {
+        if (line.trim()) {
+            try {
+                const json = JSON.parse(line);
+                jsonLines.push(json);
+            } catch (e) {
+                console.error('Error parsing JSON:', e, line);
+            }
+        }
+    }
+
+    // group json data by  field
+    jsonLines.forEach((lines) => {
+        Object.entries(lines).forEach((entry, i) => {
+            const field = entry[0]
+            const value = entry[1]
+            if (data[`${field}`] !== undefined) {
+                data[`${field}`].push(value)
+            } else {
+                data[`${field}`] = []
+                data[field].push(value)
+            }
+        })
+    })
+
+    return data
+}

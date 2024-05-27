@@ -1,7 +1,7 @@
-import { Notifications as Noti } from "@/components/content/notifications"
+import { Notifications } from "@/components/content/notifications"
 
 export default () => {
     return (
-        <Noti></Noti>
+        <Notifications></Notifications>
     )
 }
