@@ -1,16 +1,14 @@
 # API
-- create logging process
+- standardize logging
 - why must crontab be install globally?
-- pump bus value to be 2?
 - breakout pump power into current endpoint?
 
 # Frontend
 - convert all maps to <Index>
-- add loading state to image capture
 - store images in a store to prevent refetching
 
 # Other
-- check service scripts
+- check services
 - check why swap resets
 - make images non tmp
 - how to refresh all data after capturing logs
