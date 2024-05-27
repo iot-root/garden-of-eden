@@ -13,3 +13,4 @@
 - check service scripts
 - check why swap resets
 - make images non tmp
+- how to refresh all data after capturing logs

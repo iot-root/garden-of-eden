@@ -7,6 +7,8 @@ from .sensors.humidity.routes import humidity_blueprint
 from .sensors.pcb_temp.routes import pcb_temp_blueprint
 from .scheduler.routes import schedule_blueprint
 from .sensors.camera.routes import camera_blueprint
+from .log.routes import log_blueprint
+
 
 def create_app(config_name):
     app = Flask(__name__)
@@ -23,6 +25,7 @@ def create_app(config_name):
     app.register_blueprint(pcb_temp_blueprint, url_prefix='/pcb-temp')
     app.register_blueprint(schedule_blueprint, url_prefix='/schedule')
     app.register_blueprint(camera_blueprint, url_prefix='/camera')
+    app.register_blueprint(log_blueprint, url_prefix='/log')
 
     # @app.teardown_appcontext
     # def shutdown_session(exception=None):
