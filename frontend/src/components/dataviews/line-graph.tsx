@@ -55,8 +55,8 @@ export const LineGraph = (props) => {
     }
 
     return (
-        <Card class="h-[200px] rounded-[8px] mb-4 overflow-hidden">
-            <Line data={chartData()} options={chartOptions} height={500} plugins={plugin} />
+        <Card class="h-[200px] rounded-[8px] mb-4 overflow-hidden max-w-[800px]">
+            <Line data={chartData()} options={chartOptions} height={500} plugins={plugin} style={{ "width": "100%" }} />
         </Card>
     )
 }

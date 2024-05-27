@@ -8,16 +8,21 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 import os
 import getpass
+import logging
 
 
 def validate_args(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
+            log("validating args")
             self._validateArgs(**kwargs)
+            log("validating scheduke")
             self._validateSchedule(*args)
+            log("validating state")
             self._validateState(**kwargs)
         except Exception as e:
+            log(str(e))
             return {"error": str(e)}
         return func(self, *args, **kwargs)
     return wrapper
@@ -40,6 +45,7 @@ class Scheduler(ABC):
         pass
 
     def _validateSchedule(self, min, hour, day):
+        log("validating schedule")
         if not (0 <= min <= 59):
             raise ValueError("min must be between 0 and 59")
         if not (0 <= hour <= 23):
@@ -49,8 +55,14 @@ class Scheduler(ABC):
         return
 
     def _validateState(self, **kwargs):
-        if kwargs["state"] not in ['on', 'off']:
-            raise ValueError("state must be either 'on' or 'off'")
+        log("validating state")
+        try: 
+            if kwargs["state"] is not None:
+                if kwargs["state"] not in ['on', 'off']:
+                    raise ValueError("state must be either 'on' or 'off'")
+        except Exception as e:
+            log(str(e))
+        return
 
     # Scheduling Methods
     @validate_args
@@ -98,7 +110,7 @@ class Scheduler(ABC):
         jobs = [{'id': job.comment, 'command': job.command, 'schedule': str(job.slices), 'enabled': job.is_enabled()}
                 for job in self.cron]
 
-        print(self.cron)
+        log(self.cron)
         jobs = self._sort({'jobs': jobs})
         return jobs
 
@@ -146,12 +158,15 @@ class Scheduler(ABC):
 
         def extract_file_name(command):
             """Extract the file name (without extension) from the command."""
-            match = re.search(r'/([^/]+)\.py', command)
-            if match:
-                return match.group(1)
+            match_sensor_script = re.search(r'/([^/]+)\.py', command)
+            match_log_script = re.search(r'/(log-sensor-data)', command)
+            
+            if match_sensor_script:
+                return match_sensor_script.group(1)
+            elif match_log_script:
+                return match_log_script.group(1)
             else:
                 return 'unknown'
-
 
         # Group jobs by file name
         grouped_jobs = defaultdict(list)
@@ -186,6 +201,18 @@ class PumpScheduler(Scheduler):
         if not (0 < kwargs["speed"] <= 100):
             raise ValueError("duration must be between 1 and 60 minutes")      
 
+class LogScheduler(Scheduler):
+    def __init__(self):
+        super().__init__()
+
+    def construct_command(self,**kwargs):
+        return f'~/garden-of-eden/bin/api/log-sensor-data.sh'
+
+    def _validateArgs(self, **kwargs):
+        return
+ 
+
 # Instances
 pumpScheduler = PumpScheduler()
 lightScheduler = LightScheduler()
+logScheduler = LogScheduler()

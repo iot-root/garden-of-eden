@@ -8,36 +8,55 @@ export default () => {
     return (
         <>
             {/* Mobile */}
-            <div class="lg:hidden">
+            <div class="md:hidden">
                 <Sensors />
                 <Schedule />
             </div>
 
-            {/* Lg */}
-            <div class="p-8 2xl:hidden">
-                <div class="hidden lg:block ">
-                    <div class="hidden lg:grid grid-cols-2 mb-10">
-                        <div>
-                            <Sensors />
-                        </div>
-                        <div>
-                            <Schedule />
-                            <Notifications />
-                        </div>
+            {/* Md*/}
+            <div class="hidden md:block p-8 lg:hidden">
+                <div class="md:grid grid-cols-2 mb-10">
+                    <div>
+                        <Sensors />
                     </div>
-
-                    <div class="hidden lg:grid lg:grid-cols-2 mb-10">
-                        <Camera />
+                    <div>
+                        <Schedule />
+                        <Notifications />
                     </div>
-
                 </div>
-                <div class="hidden lg:flex flex-col">
+
+                <div class="md:grid lg:grid-cols-2 mb-10">
+                    <Camera />
+                </div>
+
+                <div class="md:flex flex-col">
                     <Logs />
                 </div>
             </div>
 
-            {/* 2Xl */}
-            <div class="hidden 2xl:block p-8">
+            {/* Lg */}
+            <div class="hidden lg:block p-8 xl:hidden">
+                <div class="grid grid-cols-2 mb-10">
+                    <div>
+                        <Sensors />
+                    </div>
+                    <div>
+                        <Schedule />
+                        <Notifications />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 mb-10">
+                    <Camera />
+                </div>
+
+                <div class="flex flex-col">
+                    <Logs />
+                </div>
+            </div>
+
+            {/* Xl */}
+            <div class="hidden xl:block p-8">
                 <div class="hidden lg:block">
                     <div class="hidden lg:grid grid-cols-3 mb-10">
                         <div class="col-span-1">

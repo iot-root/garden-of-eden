@@ -2,14 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+    overflow-x: hidden;
+}
+
 body {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
     width: 100%;
-    /* overflow-y: scroll;
-    overflow-x: scroll; */
+    max-width: 100vw;
+    overflow-y: scroll;
+    overflow-x: hidden;
 
     @apply bg-zinc-100;
 }

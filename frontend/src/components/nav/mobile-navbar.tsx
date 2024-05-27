@@ -4,7 +4,7 @@ import { A, useLocation } from "@solidjs/router";
 export const MobileNavbar = () => {
 
     return (
-        <div class="md:hidden relative w-full h-fit flex flex-row justify-center">
+        <div class="md:hidden w-full h-fit flex flex-row justify-center relative">
             <div class="flex flex-row justify-evenly max-w-[300px] w-[80%] border-solid bg-white border-[1px] border-zinc-300 rounded-full bottom-[10px] fixed p-2">
                 <A href="/">
                     <Home height={30} width={30} selected={useLocation().pathname === "/" ? true : false} />

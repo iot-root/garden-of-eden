@@ -24,17 +24,20 @@ class Camera:
             return str(e), 500
 
     def get_image(self, filename):
-        return send_from_directory('/tmp', filename, mimetype='image/jpeg')
+        home_directory = os.path.expanduser('~/')
+        return send_from_directory(home_directory, filename, mimetype='image/jpeg')
 
     def list_images(self):
         # List all files in the image directory that end with '.jpg' or '.jpeg'
-        images = [filename for filename in os.listdir('/tmp')
+        home_directory = os.path.expanduser('~')
+        images = [filename for filename in os.listdir(home_directory)
                 if filename.lower().endswith(('.jpg', '.jpeg'))]
         return jsonify(value=images)
 
     def delete_image(self, filename):
+        home_directory = os.path.expanduser('~')
         try:
-            os.remove(f"/tmp/{filename}")
+            os.remove(f"{home_directory}/{filename}")
             return f"File '{filename}' was deleted successfully."
         except FileNotFoundError:
             return f"Error: The file '{filename}' does not exist."

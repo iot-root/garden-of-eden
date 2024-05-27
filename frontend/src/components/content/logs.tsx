@@ -22,7 +22,7 @@ export const Logs = () => {
     }
 
     return (
-        <Padding>
+        <Padding >
             <div class="flex flex-row justify-between items-center mb-4">
                 <H1 >Log</H1>
                 <button onClick={handleOnClick}>
@@ -30,7 +30,7 @@ export const Logs = () => {
                 </button>
             </div>
 
-            <div class="md:grid md:grid-cols-2 gap-4">
+            <div class="lg:grid lg:grid-cols-2 2xl:grid-cols-3 gap-4">
                 <LogView class="" sensor="distance" field="value" title="Water Level cm" />
                 <LogView class="" sensor="temperature" field="value" title={"Temperature \u00B0C"} />
                 <LogView class="" sensor="humidity" field="value" title={"Humidity %"} />

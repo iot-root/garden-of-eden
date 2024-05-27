@@ -4,7 +4,7 @@ export const addSchedule = async (
     minutes: number
     hour: number
     day: number
-    state: string
+    state?: string
     brightness?: number
     speed?: number
   }

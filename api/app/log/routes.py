@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from app.lib.lib import log
 import subprocess
 import os
+from app.scheduler.scheduler import logScheduler
 
 log_blueprint = Blueprint('log', __name__)
 
@@ -18,6 +19,17 @@ def capture_logs():
         if result.returncode != 0:
             return jsonify({"error": result.stderr}), 500
 
-        return jsonify({"msg": "logs recorded, please refresh"})
+        return jsonify({"message": "Logging successful"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@log_blueprint.route('/schedule/add', methods=['POST'])
+def add_schedule():
+    try:
+        min = request.json['minutes']
+        hour = request.json['hour']
+        day = request.json['day']
+        logScheduler.add(min, hour, day)
+        return jsonify({"message": "Added schedule"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

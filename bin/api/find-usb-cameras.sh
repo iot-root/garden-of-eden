@@ -37,7 +37,7 @@ else
     echo "$first_usb_video_devices" | while read -r device_path; do
         let counter++
         # Create a unique filename using the timestamp and counter
-        filename="/tmp/capture_${timestamp}_${counter}.jpg"
+        filename="~/capture_${timestamp}_${counter}.jpg"
         echo "fswebcam -d $device_path -r 2500x1900 -S 2 -F 2 $filename" >> "$output_file"
     done
 fi

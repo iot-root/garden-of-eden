@@ -35,10 +35,8 @@ export const CreateSchedule = (props) => {
     const [pumpSpeed, setPumpSpeed] = createSignal(0)
 
     // logs
-    const [logTemp, setLogTemp] = createSignal(false)
-    const [logHumidity, setLogHumidity] = createSignal(false)
-    const [logPCBTemp, setLogPCBTemp] = createSignal(false)
-    const [logCameras, setLogCameras] = createSignal(false)
+    const [logSensors, setLogSensors] = createSignal(false)
+
 
     // form actions
     const onSubmit = async () => {
@@ -69,9 +67,22 @@ export const CreateSchedule = (props) => {
                             state: "on",
                             brightness: Number(lightsBrightness()),
                         })
+
+                        // off
+                        let lightsDurationMins = Number(mins) + Number(lightsDuration())
+                        let remainder = (lightsDurationMins < 60) ? 0 : (lightsDurationMins % 60)
+
+                        await addSchedule('light', {
+                            minutes: remainder > 0 ? Number(remainder) : Number(mins) + Number(lightsDuration()),
+                            hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
+                            day: Number(i),
+                            state: "off",
+                            brightness: 0,
+                        })
                     }
 
                     if (pumpRun()) {
+                        // on
                         await addSchedule('pump', {
                             minutes: Number(mins),
                             hour: Number(hour),
@@ -79,17 +90,33 @@ export const CreateSchedule = (props) => {
                             state: "on",
                             speed: Number(pumpSpeed()),
                         })
+
+                        // off
+                        let pumpDurationMins = Number(mins) + Number(pumpDuration())
+                        let remainder = (pumpDurationMins < 60) ? 0 : (pumpDurationMins % 60)
+
+                        await addSchedule('pump', {
+                            minutes: Number(remainder),
+                            hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
+                            day: Number(i),
+                            state: "off",
+                            speed: 0,
+                        })
                     }
 
+                    if (logSensors()) {
+                        await addSchedule('log', {
+                            minutes: Number(mins),
+                            hour: Number(hour),
+                            day: Number(i),
+                        })
+                    }
                 }
             }
             await props.refetch().then(props.onClose())
         } catch (e) {
             console.log("Error creating schedule: ", e)
         }
-
-
-        // TODO: create log schedule
     }
 
     const onCancel = () => {
@@ -98,7 +125,7 @@ export const CreateSchedule = (props) => {
 
     return (
         <Padding>
-            <Card class="flex flex-col justify-start items-start">
+            <Card class="flex flex-col justify-start items-start w-[400px]">
                 <div class="flex flex-col items-start mb-8">
                     <p class="font-bold">Create Schedule</p>
                     <p class="text-sm text-zinc-400">Change the details of this schedule.</p>
@@ -135,13 +162,13 @@ export const CreateSchedule = (props) => {
                 {/* Lights */}
                 <Section title="Lights">
                     <>
-                        <p class="font-light">Run</p>
+                        <p class="text-sm leading-none text-zinc-400">Run</p>
                         <SensorToggle checked={lightsRun()} onChange={() => setLightsRun(!lightsRun())} />
                     </>
 
                     <>
                         <Col class="h-full">
-                            <p class="font-light">Duration</p>
+                            <p class="text-sm leading-none text-zinc-400">Duration</p>
                             <ErrorMessage validator={() => rangeValidator(lightsDuration(), 0, 59)} message="Pick a value between 0 and 59." />
                         </Col>
                         <TextFieldRoot onChange={setLightsDuration} required class="w-16 mr-1" validationState={rangeValidator(lightsDuration(), 1, 59) ? "valid" : "invalid"}>
@@ -152,7 +179,7 @@ export const CreateSchedule = (props) => {
 
                     <>
                         <Col class="h-full">
-                            <p class="font-light">Brightness</p>
+                            <p class="text-sm leading-none text-zinc-400">Brightness %</p>
                             <ErrorMessage validator={() => rangeValidator(lightsBrightness(), 0, 100)} message="Pick a value between 0 and 100." />
                         </Col>
                         <TextFieldRoot onChange={setLightsBrightness} required class="w-16 mr-1" validationState={rangeValidator(lightsBrightness(), 0, 100) ? "valid" : "invalid"}>
@@ -166,13 +193,13 @@ export const CreateSchedule = (props) => {
                 <Section title="Pump">
                     <>
                         <Row class="w-full justify-between">
-                            <p class="font-light">Run</p>
+                            <p class="text-sm leading-none text-zinc-400">Run</p>
                             <SensorToggle checked={pumpRun()} onChange={() => setPumpRun(!pumpRun())} />
                         </Row>
                     </>
                     <>
                         <Col class="h-full">
-                            <p class="font-light">Duration</p>
+                            <p class="text-sm leading-none text-zinc-400">Duration</p>
                             <ErrorMessage validator={() => rangeValidator(pumpDuration(), 0, 59)} message="Pick a value between 0 and 59." />
                         </Col>
                         <TextFieldRoot onChange={setPumpDuration} required class="w-16 mr-1" validationState={rangeValidator(lightsDuration(), 1, 59) ? "valid" : "invalid"}>
@@ -183,7 +210,7 @@ export const CreateSchedule = (props) => {
 
                     <>
                         <Col class="h-full">
-                            <p class="font-light">Speed</p>
+                            <p class="text-sm leading-none text-zinc-400">Speed %</p>
                             <ErrorMessage validator={() => rangeValidator(pumpSpeed(), 0, 100)} message="Pick a value between 0 and 100." />
                         </Col>
 
@@ -196,30 +223,16 @@ export const CreateSchedule = (props) => {
 
                 {/* Logs */}
                 <Section title="Logs">
-                    <Row class="w-full justify-between">
-                        <p class="font-light">Temp</p>
-                        <SensorToggle check={logTemp()} onChange={() => setLogTemp(!logTemp())} />
-                    </Row>
-
-                    <Row class="w-full justify-between">
-                        <p class="font-light">Humidity</p>
-                        <SensorToggle check={logHumidity()} onChange={() => setLogHumidity(!logHumidity())} />
-                    </Row>
-
-                    <Row class="w-full justify-between">
-                        <p class="font-light">PCB Temp</p>
-                        <SensorToggle check={logPCBTemp()} onChange={() => setLogPCBTemp(!logPCBTemp())} />
-                    </Row>
-
-                    <Row class="w-full justify-between">
-                        <p class="font-light">Cameras</p>
-                        <SensorToggle check={logCameras()} onChange={() => setLogCameras(!logCameras())} />
-                    </Row>
+                    {/* wrap in an array to ensure props.children.map works */}
+                    {[<Row class="w-full justify-between">
+                        <p class="text-sm leading-none text-zinc-400">Sensors</p>
+                        <SensorToggle check={logSensors()} onChange={() => setLogSensors(!logSensors())} />
+                    </Row>]}
                 </Section>
 
                 {/* Buttons */}
                 <div class="flex flex-row justify-between w-full">
-                    <Button variant="destructive" onClick={on}>Cancel</Button>
+                    <Button variant="destructive" onClick={onCancel}>Cancel</Button>
                     <Button onClick={onSubmit}>Save</Button>
                 </div>
             </Card>
