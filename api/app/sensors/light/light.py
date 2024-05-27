@@ -2,7 +2,10 @@ import argparse
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
+import argparse
 import logging
+import json
+from datetime import datetime
 
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
@@ -27,7 +30,8 @@ class Light:
         # pigpiod is running on port 8888
         # Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
         self.pin = pin
-        self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
+        # self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
+        self.pin_factory = pin_factory if pin_factory else PiGPIOFactory(host='localhost', port=8888)
         self.led = PWMLED(self.pin, pin_factory=self.pin_factory)
         self.gpio = GPIOController(pin, pin_factory)
         self.set_frequency(frequency)
@@ -102,15 +106,22 @@ class Light:
         self.led.close()
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     parser = argparse.ArgumentParser(description='Control an IoT light.')
     parser.add_argument('--on', action='store_true', help='Turn the light on.')
     parser.add_argument('--off', action='store_true', help='Turn the light off.')
-    parser.add_argument('--brightness', type=int, default=None,
-                        help='Set the brightness level (0-100).')
+    parser.add_argument('--brightness', type=int, default=None, help='Set the brightness level (0-100).')
+    parser.add_argument('--log', action='store_true')
 
     args = parser.parse_args()
 
-    light = Light(18)  # Default frequency of 8kHz
+
+    light = None
+
+    try:
+        light = Light(18)  # Default frequency of 8kHz
+    except:
+        logging.info("Failed to initialize lights")
 
     if args.on:
         light.on()
@@ -121,5 +132,15 @@ if __name__ == '__main__':
     elif args.brightness is not None:
         light.on()
         light.set_brightness(args.brightness)
+    elif args.log:
+        brightness = light.get_brightness()
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = {
+            "timestamp": timestamp,
+            "sensor": "Brightness",
+            "value": f"{brightness:.2f}"
+        }
+        logging.info(json.dumps(log_entry))
+        print(json.dumps(log_entry))
     else:
-        logging.info("No action specified. Use --on, --off, or --brightness.")
+        logging.info("No action specified. Use --on, --off, --brightness or --log.")

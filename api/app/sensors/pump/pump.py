@@ -4,6 +4,9 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 import pigpio
 from time import sleep
 import logging
+import argparse
+import json
+from datetime import datetime
 
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
@@ -103,12 +106,14 @@ class Pump:
         self.gpio.stop()
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     parser = argparse.ArgumentParser(description='Control a pump.')
     parser.add_argument('--on', action='store_true', help='Turn the pump on.')
     parser.add_argument('--off', action='store_true', help='Turn the pump off.')
     parser.add_argument('--speed', type=int, default=None, help='Set the pump speed (0-100).')
     parser.add_argument('--factory-host', type=str, default=None, help='GPIO factory host for remote access.')
     parser.add_argument('--factory-port', type=int, default=None, help='GPIO factory port for remote access.')
+    parser.add_argument('--log', action='store_true')
 
 
     args = parser.parse_args()
@@ -128,5 +133,16 @@ if __name__ == '__main__':
     elif args.speed is not None:
         pump.on()
         pump.set_speed(args.speed)
+    elif args.log:
+        
+        speed = pump.get_speed()
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = {
+            "timestamp": timestamp,
+            "sensor": "Pump",
+            "value": speed,
+        }
+        logging.info(json.dumps(log_entry))
+        print(json.dumps(log_entry))
     else:
-        logging.info("No action specified. Use --on, --off, or --speed.")
+        logging.info("No action specified. Use --on, --off, --speed or --log.")

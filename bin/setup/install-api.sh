@@ -42,7 +42,3 @@ python3 -m venv $INSTALL_DIR/api/venv
 source $INSTALL_DIR/api/venv/bin/activate
 pip3 install -r $INSTALL_DIR/api/requirements.txt
 deactivate
-
-# Ensure pigpio daemon runs after system reboots
-sudo systemctl enable pigpiod
-sudo systemctl start pigpiod

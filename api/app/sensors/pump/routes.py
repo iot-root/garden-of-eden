@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from app.lib.lib import check_sensor_guard, log
 from .pump import Pump as PumpControl 
 from .pump_power import fetch_ina219_data
 from app.scheduler.scheduler import pumpScheduler
 import logging
+import os
 
 pump_blueprint = Blueprint('pump', __name__)
 pump_control = PumpControl()
@@ -86,3 +87,28 @@ def update():
     except Exception as e:
         return jsonify(error=str(e)), 400
     
+@pump_blueprint.route('speed/logs', methods=['GET'])
+def get_speed_logs():
+    LOG_DIR = '/var/log'
+    LOG_FILE = os.path.join(LOG_DIR, 'pump_speed.log')
+
+    try:
+        if os.path.exists(LOG_FILE):
+            return send_file(LOG_FILE, as_attachment=True)
+        else:
+            return jsonify({"error": "Pump Speed file not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@pump_blueprint.route('stats/logs', methods=['GET'])
+def get_stats_logs():
+    LOG_DIR = '/var/log'
+    LOG_FILE = os.path.join(LOG_DIR, 'pump_stats.log')
+
+    try:
+        if os.path.exists(LOG_FILE):
+            return send_file(LOG_FILE, as_attachment=True)
+        else:
+            return jsonify({"error": "Pump Stats file not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

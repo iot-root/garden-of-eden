@@ -2,7 +2,10 @@
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
 from time import sleep
+import argparse
 import logging
+import json
+from datetime import datetime
 
 class MeasurementError(Exception):
     """
@@ -77,11 +80,27 @@ if __name__ == "__main__":
     """
     If the module is executed as a standalone script, it will return the distance in a telegraf friendly format. 
     """
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    parser = argparse.ArgumentParser(description='Control an IoT distance sensor.')
+    parser.add_argument('--log', action='store_true')
+    args = parser.parse_args()
+
     try:
         distance_instance = Distance()
-        distance = distance_instance.measure()
-        logging.info(f"distance, value={distance:.2f}")
     except Exception as e:
         logging.info(f"Error: {e}")
+        exit(1)
     except KeyboardInterrupt:
         logging.info("Script interrupted.")
+        exit(1)
+
+    if args.log:
+        distance = distance_instance.measure()
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = {
+            "timestamp": timestamp,
+            "sensor": "Distance",
+            "value": f"{distance:.2f}"
+        }
+        logging.info(json.dumps(log_entry))
+        print(json.dumps(log_entry))

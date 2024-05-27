@@ -1,15 +1,28 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, send_file
 from app.lib.lib import check_sensor_guard
-from .humidity import humidity_sensor
+from app.sensors.humidity.humidity import AM2320Sensor
+import os
+
+sensor = AM2320Sensor()
 
 humidity_blueprint = Blueprint('humidity', __name__)
-check_sensor = check_sensor_guard(sensor=humidity_sensor, sensor_name='Humidity')
 
 @humidity_blueprint.route('', methods=['GET'])
-@check_sensor
-def get_humidity():
-    try:    
-        return jsonify(value='{:.2f}'.format(humidity_sensor.get_value()))
+def get_humidity():    
+    try:
+        return jsonify(value='{:.2f}'.format(sensor.get_humidity()))
     except Exception as e:
-        log(e)
-        return jsonify(error=str(e)), 400
+        return jsonify(error=str(e))
+
+@humidity_blueprint.route('/logs', methods=['GET'])
+def get_logs():
+    LOG_DIR = '/var/log'
+    LOG_FILE = os.path.join(LOG_DIR, 'humidity.log')
+
+    try:
+        if os.path.exists(LOG_FILE):
+            return send_file(LOG_FILE, as_attachment=True)
+        else:
+            return jsonify({"error": "Humidity file not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

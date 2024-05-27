@@ -2,6 +2,7 @@
 - create logging process
 - why must crontab be install globally?
 - pump bus value to be 2?
+- breakout pump power into current endpoint?
 
 # Frontend
 - convert all maps to <Index>
@@ -10,6 +11,5 @@
 
 # Other
 - check service scripts
-- check api to app filename change
-- check updates to script locations
-- test services
+- check why swap resets
+- make images non tmp

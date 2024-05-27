@@ -24,10 +24,14 @@
   "dependencies": {
     "@kobalte/core": "^0.13.1",
     "@kobalte/tailwindcss": "^0.9.0",
+    "@solid-primitives/refs": "^1.0.8",
     "@solidjs/router": "^0.13.3",
+    "chart.js": "^4.4.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "solid-chartjs": "^1.3.9",
     "solid-js": "^1.8.11",
+    "solid-spinner": "^0.2.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7"
   }

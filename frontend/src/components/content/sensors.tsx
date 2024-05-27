@@ -13,7 +13,7 @@ export default () => {
     const [distanceData] = createResource(GetDistance);
     const [brightnessData, { refetch: refetchBrightness }] = createResource(GetBrightness);
     const [pumpSpeedData, { refetch: refetchPumpSpeed }] = createResource(GetPumpSpeed);
-    const [pumpStatsData] = createResource(GetPumpStats);
+    const [pumpStatsData, { refetch: refetchPumpSstats }] = createResource(GetPumpStats);
     const [airTempData] = createResource(GetTemp);
     const [pcbTempData] = createResource(GetPCBTemp);
     const [humidityData] = createResource(GetHumidity);
@@ -47,6 +47,7 @@ export default () => {
                 await TurnOnPump()
                 setPumpState(!getPumpState())
                 refetchPumpSpeed()
+                refetchPumpSstats()
             } catch (e) {
                 console.log(e)
             }
@@ -55,6 +56,7 @@ export default () => {
                 await TurnOffPump()
                 setPumpState(!getPumpState())
                 refetchPumpSpeed()
+                refetchPumpSstats()
             } catch (e) {
                 console.log(e)
             }
@@ -88,7 +90,7 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Brightness</Detail>
-                        <AsyncDataPoint data={brightnessData} />
+                        <AsyncDataPoint data={brightnessData}>%</AsyncDataPoint>
                     </div>
                 </div>
 
@@ -101,7 +103,7 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Speed</Detail>
-                        <AsyncDataPoint data={pumpSpeedData} />
+                        <AsyncDataPoint data={pumpSpeedData} >%</AsyncDataPoint>
                     </div>
 
                     <div class="w-full flex justify-between mb-1">
@@ -113,7 +115,7 @@ export default () => {
                                 </Match>
 
                                 <Match when={pumpStatsData()}>
-                                    <Detail>{String(pumpStatsData()['Bus Current'])}</Detail>
+                                    <Detail>{String(pumpStatsData()['Bus Current'].toPrecision(3))} A</Detail>
                                 </Match>
                             </Switch>
                         </Suspense>
@@ -128,7 +130,7 @@ export default () => {
                                 </Match>
 
                                 <Match when={pumpStatsData()}>
-                                    <Detail>{String(pumpStatsData()['Bus Voltage'])}</Detail>
+                                    <Detail>{String(pumpStatsData()['Bus Voltage'].toPrecision(3))} V</Detail>
                                 </Match>
                             </Switch>
                         </Suspense>
@@ -144,7 +146,7 @@ export default () => {
                                 </Match>
 
                                 <Match when={pumpStatsData()}>
-                                    <Detail>{String(pumpStatsData()['Power'])}</Detail>
+                                    <Detail>{String(pumpStatsData()['Power'].toPrecision(3))} W</Detail>
                                 </Match>
                             </Switch>
                         </Suspense>
@@ -160,7 +162,7 @@ export default () => {
                                 </Match>
 
                                 <Match when={pumpStatsData()}>
-                                    <Detail>{String(pumpStatsData()['Shunt Voltage'])}</Detail>
+                                    <Detail>{String(pumpStatsData()['Shunt Voltage'].toPrecision(3))} V</Detail>
                                 </Match>
                             </Switch>
                         </Suspense>
@@ -175,12 +177,12 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Air</Detail>
-                        <AsyncDataPoint data={airTempData} />
+                        <AsyncDataPoint data={airTempData}>&deg;C</AsyncDataPoint>
                     </div>
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">PCB</Detail>
-                        <AsyncDataPoint data={pcbTempData} />
+                        <AsyncDataPoint data={pcbTempData}>&deg;C</AsyncDataPoint>
                     </div>
                 </div>
 
@@ -192,7 +194,7 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Air</Detail>
-                        <AsyncDataPoint data={humidityData} />
+                        <AsyncDataPoint data={humidityData} >%</AsyncDataPoint>
                     </div>
                 </div>
 
@@ -204,7 +206,7 @@ export default () => {
 
                     <div class="w-full flex justify-between mb-1">
                         <Detail class="capitalize">Level</Detail>
-                        <AsyncDataPoint data={distanceData} />
+                        <AsyncDataPoint data={distanceData}>cm</AsyncDataPoint>
                     </div>
                 </div>
 
@@ -222,7 +224,7 @@ const AsyncDataPoint = (props) => {
                 </Match>
 
                 <Match when={props.data()}>
-                    <Detail>{String(props.data().value)}</Detail>
+                    <Detail>{String(props.data().value)} {props.children}</Detail>
                 </Match>
             </Switch>
         </Suspense>

@@ -3,7 +3,12 @@ import smbus
 from ina219 import INA219
 from ina219 import DeviceRangeError
 import time
-from flask import jsonify
+from flask import jsonify, send_file
+import argparse
+import json
+from datetime import datetime
+import logging
+import os
 
 SHUNT_OHMS = 0.08
 
@@ -36,15 +41,24 @@ def fetch_ina219_data():
     return data
 
 if __name__ == '__main__':
-    """
-    If the module is executed as a standalone script, it will return the temperature in a telegraf friendly format. 
-    """
-    try:
-        sensor_data = fetch_ina219_data()
-        logging.info("INA219 Sensor Data:")
-        for key, value in sensor_data.items():
-            logging.info(f"{key}, value={value}")
-    except Exception as e:
-        logging.info(f"Error: {e}")
-    except KeyboardInterrupt:
-        logging.info("Script interrupted.")
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    parser = argparse.ArgumentParser(description='Get pump stats.')
+    parser.add_argument('--log', action='store_true')
+
+    args = parser.parse_args()
+
+    if args.log:
+        pump_data = fetch_ina219_data()
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = {
+            "timestamp": timestamp,
+            "sensor": "Current",
+            "bus_voltage": pump_data['Bus Voltage'],
+            "bus_current": pump_data['Bus Current'],
+            "power": pump_data['Power'],
+            "shunt_voltage": pump_data['Shunt Voltage'],
+        }
+        logging.info(json.dumps(log_entry))
+        print(json.dumps(log_entry))
+    else:
+        logging.info("No action specified. Use --log.")

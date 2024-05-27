@@ -7,6 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import os
+import getpass
 
 
 def validate_args(func):
@@ -22,7 +23,7 @@ def validate_args(func):
     return wrapper
 
 
-cron = CronTab(user=os.getlogin())
+cron = CronTab(user=getpass.getuser())
 
 class Scheduler(ABC):
     def __init__(self):

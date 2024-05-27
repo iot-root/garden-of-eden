@@ -8,64 +8,23 @@ import time
 import board
 import adafruit_ahtx0
 import logging
+import argparse
+import json
+from datetime import datetime
+import busio
+import adafruit_am2320
 
+class AM2320Sensor():
+    def __init__(self):
+        i2c = busio.I2C(board.SCL, board.SDA)
 
-class CachedSensor:
-    """
-    Base class for sensors, introducing a caching mechanism for sensor readings.
-    """
-    
-    def __init__(self, sensor, cache_duration=2):
-        """
-        Initialize the CachedSensor.
+        self.sensor = adafruit_am2320.AM2320(i2c)
 
-        :param sensor: Sensor object for reading values.
-        :param cache_duration: Duration (in seconds) to cache the sensor reading. Default is 2 seconds.
-        """
-        self._sensor = sensor
-        self._cache_duration = cache_duration
-        self._last_read_time = 0
-        self._cached_value = None
-
-    def _read(self):
-        """
-        Abstract method to fetch the sensor reading. 
-        This should be implemented by the subclasses.
-        """
-        raise NotImplementedError
-
-    def get_value(self):
-        """
-        Get the sensor reading. If the cached value is older than the specified cache duration, 
-        fetch a new reading.
-
-        :return: Cached sensor reading (float).
-        """
-        current_time = time.time()
-        if current_time - self._last_read_time > self._cache_duration or self._cached_value is None:
-            self._cached_value = self._read()
-            self._last_read_time = current_time
-        return self._cached_value
-
-class TemperatureSensor(CachedSensor):
-    """
-    Sensor class specific to reading temperature values.
-    """
-    
-    def _read(self):
-        """
-        Fetch the temperature reading from the sensor.
-
-        :return: Temperature value (float).
-        """
-        return self._sensor.temperature
-
-temperature_sensor = None 
+    def get_temperature(self):
+        return self.sensor.temperature
 
 try:
-    i2c = board.I2C()
-    base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-    temperature_sensor = TemperatureSensor(base_sensor)
+   sensor = AM2320Sensor()
 except:
     logging.info("Failed to initiate temperature sensor")
 
@@ -73,10 +32,26 @@ if __name__ == "__main__":
     """
     If the module is executed as a standalone script, it will return the temperature in a telegraf friendly format. 
     """
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    parser = argparse.ArgumentParser(description='Control a temperature sensor.')
+    parser.add_argument('--log', action='store_true')
+    args = parser.parse_args()
+
+
     try:
-        temperature = temperature_sensor.get_value()
-        logging.info(f"temperature, value={temperature:.2f}")
+        temperature = sensor.get_temperature()
     except Exception as e:
         logging.info(f"Error: {e}")
     except KeyboardInterrupt:
         logging.info("Script interrupted.")
+
+    if args.log:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = {
+            "timestamp": timestamp,
+            "sensor": "Temperature",
+            "value": temperature,
+        }
+        logging.info(json.dumps(log_entry))
+        print(json.dumps(log_entry))

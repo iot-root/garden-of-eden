@@ -1,81 +1,64 @@
+import logging
+import argparse
+import json
+from datetime import datetime
+
 """
-This module provides functionality to read humidity values from the AM2320 sensor using the adafruit_ahtx0 library.
-The CachedSensor class caches the readings for 2 seconds to avoid redundant reads.
+This module provides functionality to read temperature values from the AM2320 sensor 
+using the adafruit_ahtx0 library. The CachedSensor class caches the readings for a 
+specified duration to prevent redundant reads.
 """
 
 import time
 import board
 import adafruit_ahtx0
 import logging
+import argparse
+import json
+from datetime import datetime
+import busio
+import adafruit_am2320
 
-class CachedSensor:
-    """
-    Base class for sensors that caches the readings for a specified duration.
-    """
-    def __init__(self, sensor, cache_duration=200):
-        """
-        Initialize the CachedSensor object.
+class AM2320Sensor():
+    def __init__(self):
+        i2c = busio.I2C(board.SCL, board.SDA)
 
-        :param sensor: Sensor object
-        :param cache_duration: Duration to cache the sensor reading, default is 2 seconds
-        """
-        self._sensor = sensor
-        self._cache_duration = cache_duration
-        self._last_read_time = 0
-        self._cached_value = None
+        self.sensor = adafruit_am2320.AM2320(i2c)
 
-    def _read(self):
-        """
-        Fetch the sensor reading. Needs to be implemented by subclasses.
-        """
-        raise NotImplementedError
+    def get_humidity(self):
+        return self.sensor.relative_humidity
 
-    def get_value(self):
-        """
-        Get the cached sensor reading. If the cached value is older than the cache duration,
-        fetch a new reading.
 
-        :return: Sensor reading (float)
-        """
-        current_time = time.time()
-        if current_time - self._last_read_time > self._cache_duration or self._cached_value is None:
-            self._cached_value = self._read()
-            self._last_read_time = current_time
-        return self._cached_value
+sensor = None
 
-class HumiditySensor(CachedSensor):
-    """
-    Sensor class for reading humidity values.
-    """
-    def _read(self):
-        """
-        Fetch the humidity reading from the sensor.
-
-        :return: Humidity value (float)
-        """
-        return self._sensor.relative_humidity
-
-humidity_sensor = None
 try:
-    i2c = board.I2C()
-    base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-    humidity_sensor = HumiditySensor(base_sensor)
+   sensor = AM2320Sensor()
 except:
     logging.info("Failed to initiate humidity sensor")
 
-#todo: add support for AM2320...
-# i2c = board.I2C()
-# base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-# humidity_sensor = HumiditySensor(base_sensor)
-
 if __name__ == "__main__":
     """
-    If the module is executed as a standalone script, it will return the humidity in a telegraf friendly format. 
+    If the module is executed as a standalone script, it will return the temperature in a telegraf friendly format. 
     """
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    parser = argparse.ArgumentParser(description='Control a humidity sensor.')
+    parser.add_argument('--log', action='store_true')
+    args = parser.parse_args()
+
+
     try:
-        humidity = humidity_sensor.get_value()
-        logging.info(f"humidity, value={humidity:.2f}")
+        humidity = sensor.get_humidity()
     except Exception as e:
         logging.info(f"Error: {e}")
     except KeyboardInterrupt:
         logging.info("Script interrupted.")
+
+    if args.log:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_entry = {
+            "timestamp": timestamp,
+            "sensor": "Humidity",
+            "value": humidity,
+        }
+        logging.info(json.dumps(log_entry))
+        print(json.dumps(log_entry))

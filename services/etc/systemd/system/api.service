@@ -5,9 +5,9 @@ Wants=network-online.target
 After=network-online.target pigpiod.service
 
 [Service]
-User=pi
-WorkingDirectory=/home/pi/garden-of-eden/api
-ExecStart=/home/pi/venv/bin/python/ app.py
+User=peter
+WorkingDirectory=/home/peter/garden-of-eden
+ExecStart=/home/peter/garden-of-eden/bin/run-api.sh
 Restart=on-failure
 
 [Install]

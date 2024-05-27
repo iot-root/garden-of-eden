@@ -6,7 +6,9 @@ import { CaptureImages, DeleteImage, GetImage, ListImages } from "@/endpoints/ca
 import { setModalContent, toggleModal } from "@/root/stores/modal"
 import { Detail, H1 } from "@/typography/heading"
 import { Index, Match, Suspense, Switch, createEffect, createResource, createSignal } from "solid-js"
+import { Oval } from 'solid-spinner'
 import { Card } from "../ui/card"
+
 
 const ImageView = (props) => {
 
@@ -30,6 +32,7 @@ const ImageView = (props) => {
 
 export const Camera = () => {
     const [images, setImages] = createSignal([]);
+    const [isCaptureLoading, setIsCaptureLoading] = createSignal(false);
     const [images_filenames, { refetch }] = createResource(ListImages);
 
     createEffect(async () => {
@@ -62,7 +65,9 @@ export const Camera = () => {
     });
 
     const handleCapture = async () => {
+        setIsCaptureLoading(true)
         await CaptureImages()
+        setIsCaptureLoading(false)
         refetch()
     }
 
@@ -77,9 +82,17 @@ export const Camera = () => {
         <Padding>
             <div class="flex flex-row justify-between items-center">
                 <H1>Camera</H1>
-                <button onClick={handleCapture}>
-                    <Add label="Capture" />
-                </button>
+                <Switch>
+                    <Match when={!isCaptureLoading()}>
+                        <button onClick={handleCapture}>
+                            <Add label="Capture" />
+                        </button>
+
+                    </Match>
+                    <Match when={isCaptureLoading()}>
+                        <Oval color="gray" />
+                    </Match>
+                </Switch>
             </div>
 
             <Detail class="mb-4">Most recent photos appear first.</Detail>
@@ -104,7 +117,7 @@ export const Camera = () => {
 
                             <Match when={images_filenames()}>
                                 {
-                                    Object.entries(images_filenames()).length == 0 ? <Detail>No images.</Detail> : ""
+                                    Object.entries(images_filenames().value).length == 0 ? <Detail>No images.</Detail> : ""
                                 }
 
                                 <Index each={images()}>
