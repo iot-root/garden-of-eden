@@ -14,7 +14,7 @@ def capture_logs():
         print(script_path)
         # Execute the script
         result = subprocess.run([script_path], capture_output=True, text=True, shell=True)
-        
+
         # Check for errors
         if result.returncode != 0:
             return jsonify({"error": result.stderr}), 500
@@ -31,5 +31,16 @@ def add_schedule():
         day = request.json['day']
         logScheduler.add(min, hour, day)
         return jsonify({"message": "Added schedule"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@log_blueprint.route('/schedule/update', methods=['POST'])
+def update_schedule():
+    try:
+        min = request.json['minutes']
+        hour = request.json['hour']
+        day = request.json['day']
+        logScheduler.add(min, hour, day)
+        return jsonify({"message": "Updated schedule"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

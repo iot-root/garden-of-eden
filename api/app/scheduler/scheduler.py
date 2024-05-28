@@ -1,5 +1,5 @@
 from flask import jsonify
-from app.lib.lib import log 
+from app.lib.lib import log
 from crontab import CronTab
 import uuid
 from functools import wraps
@@ -34,7 +34,7 @@ class Scheduler(ABC):
     def __init__(self):
         self.cron = cron
         log('Initializing scheduler')
-    
+
     # Helpers
     @abstractmethod
     def construct_command(self, *args, **kwargs):
@@ -56,7 +56,7 @@ class Scheduler(ABC):
 
     def _validateState(self, **kwargs):
         log("validating state")
-        try: 
+        try:
             if kwargs["state"] is not None:
                 if kwargs["state"] not in ['on', 'off']:
                     raise ValueError("state must be either 'on' or 'off'")
@@ -160,11 +160,11 @@ class Scheduler(ABC):
             """Extract the file name (without extension) from the command."""
             match_sensor_script = re.search(r'/([^/]+)\.py', command)
             match_log_script = re.search(r'/(log-sensor-data)', command)
-            
+
             if match_sensor_script:
                 return match_sensor_script.group(1)
             elif match_log_script:
-                return match_log_script.group(1)
+                return 'sensors'
             else:
                 return 'unknown'
 
@@ -199,7 +199,7 @@ class PumpScheduler(Scheduler):
 
     def _validateArgs(self, **kwargs):
         if not (0 < kwargs["speed"] <= 100):
-            raise ValueError("duration must be between 1 and 60 minutes")      
+            raise ValueError("duration must be between 1 and 60 minutes")
 
 class LogScheduler(Scheduler):
     def __init__(self):
@@ -210,7 +210,7 @@ class LogScheduler(Scheduler):
 
     def _validateArgs(self, **kwargs):
         return
- 
+
 
 # Instances
 pumpScheduler = PumpScheduler()
