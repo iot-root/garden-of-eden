@@ -1,7 +1,7 @@
 export const rangeValidator = (value, start, end) => {
-    if (value < start || value > end) {
-        return false;
+    if (value >= start && value <= end) {
+        return true;
     }
 
-    return true;
+    return false;
 };

@@ -1,4 +1,4 @@
-export const parseCronJob = (cronJob) => {
+export const parseCronJob = (cronJob, sensor) => {
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
     function getCronTime(schedule) {
@@ -22,7 +22,7 @@ export const parseCronJob = (cronJob) => {
         };
 
         return {
-            state: cmdDetails.on ? 'On' : 'Off',
+            state: cmdDetails.on ? 'On' : cmdDetails.off ? 'Off' : '',
             brightness: cmdDetails.brightness ? `Brightness: ${cmdDetails.brightness}` : '',
             speed: cmdDetails.speed ? `Speed: ${cmdDetails.speed}` : ''
         };
@@ -33,6 +33,7 @@ export const parseCronJob = (cronJob) => {
 
     return {
         id: cronJob.id,
+        sensor: sensor,
         day: readableTime.split(',')[0],
         time: readableTime.split(', ')[1],
         state: commandDetails.state,
@@ -74,3 +75,15 @@ export const parseLogs = (logs) => {
 
     return data;
 };
+
+export const formatTime = (time) => {
+    let splitString = time.split(":")
+    const hour = splitString[0]
+    const min = splitString[1]
+
+    if (hour.length == 1) {
+        return `0${hour}:${min}`
+    }
+
+    return time
+}

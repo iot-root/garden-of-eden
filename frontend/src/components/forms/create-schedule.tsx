@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { TextField, TextFieldRoot } from '@/components/ui/textfield';
-import { addSchedule } from '@/endpoints/schedule';
+import { addSchedule, deleteScheduleById, updateSchedule } from '@/endpoints/schedule';
+import { formatTime } from '@/root/libs/parsers';
 import { rangeValidator } from '@/root/libs/validators';
 import { Checkbox } from '@/ui/checkbox/checkbox';
-import { For, createSignal } from 'solid-js';
+import { For, Match, Switch, createEffect, createSignal } from 'solid-js';
 import { Col } from '../containers/col';
 import Padding from '../containers/padding';
 import { Row } from '../containers/row';
@@ -12,6 +13,9 @@ import SensorToggle from '../ui/toggle/toggle';
 import { ErrorMessage } from './error-message';
 
 export const CreateSchedule = (props) => {
+  const [job, setJob] = createSignal({})
+  const [update, setUpdate] = createSignal(false)
+
   // days
   const [sun, setSun] = createSignal(false);
   const [mon, setMon] = createSignal(false);
@@ -22,7 +26,7 @@ export const CreateSchedule = (props) => {
   const [sat, setSat] = createSignal(false);
 
   // time
-  const [time, setTime] = createSignal();
+  const [time, setTime] = createSignal("");
 
   // lights
   const [lightsRun, setLightsRun] = createSignal(false);
@@ -35,7 +39,26 @@ export const CreateSchedule = (props) => {
   const [pumpSpeed, setPumpSpeed] = createSignal(0);
 
   // logs
-  const [logSensors, setLogSensors] = createSignal(false);
+  const [logSensors, setLogSensors] = createSignal(props.sensor === 'log-sensor-data');
+
+  createEffect(() => {
+    if (props.update) {
+      setJob(props.job)
+      setUpdate(props.update)
+      setMon(job().day === 'Monday')
+      setTues(job().day === 'Tuesday')
+      setWed(job().day === 'Wednesday')
+      setThurs(job().day === 'Thursday')
+      setFri(job().day === 'Friday')
+      setSat(job().day === 'Saturday')
+      setSun(job().day === 'Sunday')
+      setTime(formatTime(job().time))
+      setLightsRun(String(job().details).split(' ')[0] === 'Brightness:')
+      setPumpRun(String(job().details).split(' ')[0] === 'Speed:')
+      setLogSensors(props.sensor === 'log-sensor-data')
+    }
+  })
+
 
   // form actions
   const onSubmit = async () => {
@@ -59,60 +82,117 @@ export const CreateSchedule = (props) => {
       for (let i = 0; i < days.length; i++) {
         if (days[i]) {
           if (lightsRun()) {
-            await addSchedule('light', {
-              minutes: Number(mins),
-              hour: Number(hour),
-              day: Number(i),
-              state: 'on',
-              brightness: Number(lightsBrightness()),
-            });
+            if (update()) {
+              await updateSchedule('light', {
+                id: job().id,
+                minutes: Number(mins),
+                hour: Number(hour),
+                day: Number(i),
+                state: 'on',
+                brightness: Number(lightsBrightness()),
+              });
+            } else {
+              await addSchedule('light', {
+                minutes: Number(mins),
+                hour: Number(hour),
+                day: Number(i),
+                state: 'on',
+                brightness: Number(lightsBrightness()),
+              });
+            }
 
             // off
             const lightsDurationMins = Number(mins) + Number(lightsDuration());
             const remainder =
               lightsDurationMins < 60 ? 0 : lightsDurationMins % 60;
 
-            await addSchedule('light', {
-              minutes:
-                remainder > 0
-                  ? Number(remainder)
-                  : Number(mins) + Number(lightsDuration()),
-              hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
-              day: Number(i),
-              state: 'off',
-              brightness: 0,
-            });
+            if (update()) {
+              await updateSchedule('light', {
+                id: job().id,
+                minutes:
+                  remainder > 0
+                    ? Number(remainder)
+                    : Number(mins) + Number(lightsDuration()),
+                hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
+                day: Number(i),
+                state: 'off',
+                brightness: 0,
+              });
+            } else {
+              await addSchedule('light', {
+                minutes:
+                  remainder > 0
+                    ? Number(remainder)
+                    : Number(mins) + Number(lightsDuration()),
+                hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
+                day: Number(i),
+                state: 'off',
+                brightness: 0,
+              });
+            }
           }
 
           if (pumpRun()) {
-            // on
-            await addSchedule('pump', {
-              minutes: Number(mins),
-              hour: Number(hour),
-              day: Number(i),
-              state: 'on',
-              speed: Number(pumpSpeed()),
-            });
+            if (update()) {
+              // on
+              await updateSchedule('pump', {
+                id: props.job().id,
+                minutes: Number(mins),
+                hour: Number(hour),
+                day: Number(i),
+                state: 'on',
+                speed: Number(pumpSpeed()),
+              });
+            } else {
+              // on
+              await addSchedule('pump', {
+                minutes: Number(mins),
+                hour: Number(hour),
+                day: Number(i),
+                state: 'on',
+                speed: Number(pumpSpeed()),
+              });
+            }
 
             // off
             const pumpDurationMins = Number(mins) + Number(pumpDuration());
             const remainder = pumpDurationMins < 60 ? 0 : pumpDurationMins % 60;
 
-            await addSchedule('pump', {
-              minutes: Number(remainder),
-              hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
-              day: Number(i),
-              state: 'off',
-              speed: 0,
-            });
+            if (update()) {
+              await updateSchedule('pump', {
+                id: job().id,
+                minutes: Number(remainder),
+                hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
+                day: Number(i),
+                state: 'off',
+                speed: 0,
+              });
+            } else {
+              await addSchedule('pump', {
+                minutes: Number(remainder),
+                hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
+                day: Number(i),
+                state: 'off',
+                speed: 0,
+              });
+            }
           }
 
           if (logSensors()) {
-            await addSchedule('log', {
-              minutes: Number(mins),
-              hour: Number(hour),
-              day: Number(i),
-            });
+            if (update()) {
+              await updateSchedule('log', {
+                id: job().id,
+                minutes: Number(mins),
+                hour: Number(hour),
+                day: Number(i),
+              });
+            } else {
+              await addSchedule('log', {
+                minutes: Number(mins),
+                hour: Number(hour),
+                day: Number(i),
+              });
+            }
           }
         }
       }
@@ -126,9 +206,14 @@ export const CreateSchedule = (props) => {
     props.onClose();
   };
 
+  const onDelete = async () => {
+    await deleteScheduleById({ id: job().id });
+    await props.refetch().then(props.onClose());
+  };
+
   return (
     <Padding>
-      <Card class="flex flex-col justify-start items-start w-[400px]">
+      <Card class="flex flex-col justify-start items-start w-[400px] max-h-[80vh] overflow-y-scroll">
         <div class="flex flex-col items-start mb-8">
           <p class="font-bold">Create Schedule</p>
           <p class="text-sm text-zinc-400">
@@ -165,9 +250,9 @@ export const CreateSchedule = (props) => {
           {[
             <Row>
               <TextFieldRoot onChange={setTime} required class="w-full mr-2">
-                <TextField type="time" />
+                <TextField type="time" value={time()} />
               </TextFieldRoot>
-            </Row>,
+            </Row>
           ]}
         </Section>
 
@@ -194,7 +279,7 @@ export const CreateSchedule = (props) => {
               required
               class="w-16 mr-1"
               validationState={
-                rangeValidator(lightsDuration(), 1, 59) ? 'valid' : 'invalid'
+                rangeValidator(lightsDuration(), 0, 59) ? 'valid' : 'invalid'
               }
             >
               <TextField
@@ -294,7 +379,7 @@ export const CreateSchedule = (props) => {
             <Row class="w-full justify-between">
               <p class="text-sm leading-none text-zinc-400">Sensors</p>
               <SensorToggle
-                check={logSensors()}
+                checked={logSensors()}
                 onChange={() => setLogSensors(!logSensors())}
               />
             </Row>,
@@ -303,9 +388,19 @@ export const CreateSchedule = (props) => {
 
         {/* Buttons */}
         <div class="flex flex-row justify-between w-full">
-          <Button variant="destructive" onClick={onCancel}>
-            Cancel
-          </Button>
+          <Switch>
+            <Match when={update()}>
+              <Button variant="destructive" onClick={onDelete}>
+                Delete
+              </Button>
+            </Match>
+            <Match when={!update()}>
+              <Button variant="destructive" onClick={onCancel}>
+                Cancel
+              </Button>
+            </Match>
+          </Switch>
+
           <Button onClick={onSubmit}>Save</Button>
         </div>
       </Card>

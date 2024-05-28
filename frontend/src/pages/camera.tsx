@@ -8,18 +8,14 @@ export default () => {
   createEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
-        // Replace 600 with the desired viewport width
         navigate('/');
       }
     };
 
-    // Add event listener
     window.addEventListener('resize', handleResize);
 
-    // Check the viewport size initially
     handleResize();
 
-    // Cleanup event listener on component unmount
     return () => {
       window.removeEventListener('resize', handleResize);
     };

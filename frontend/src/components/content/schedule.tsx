@@ -7,20 +7,21 @@ import { Detail, H1, P } from '@/typography/heading';
 import { Card } from '@/ui/card';
 import { Index, Match, Suspense, Switch, createResource } from 'solid-js';
 import { CreateSchedule } from '../forms/create-schedule';
-import { UpdateSchedule } from '../forms/update-schedule';
 import { Settings } from '../ui/icons/icons';
 
 export const Schedule = () => {
   const [schedules, { refetch: refetchSchedules }] =
     createResource(getAllSchedules);
 
-  const onScheduleSettingsClick = (job) => {
+  const onScheduleSettingsClick = (job, sensor) => {
     toggleModal(true);
     setModalContent(() => (
-      <UpdateSchedule
+      <CreateSchedule
         job={parseCronJob(job)}
         refetch={refetchSchedules}
         onClose={() => toggleModal(false)}
+        update
+        sensor={sensor}
       />
     ));
   };
@@ -70,16 +71,17 @@ export const Schedule = () => {
                       <div class="flex flex-col justify-between w-full">
                         <Index each={sensor()[1]}>
                           {(job) => {
+                            let sensorName = sensor()[0]
                             return (
                               <div class="w-full flex flex-row justify-between items-center">
                                 <P class="text-zinc-400 text-sm">
-                                  {parseCronJob(job()).day},{' '}
-                                  {parseCronJob(job()).time},{' '}
-                                  {parseCronJob(job()).state},{' '}
-                                  {parseCronJob(job()).details}
+                                  {parseCronJob(job()).day !== '' ? `${parseCronJob(job()).day}` : ''}
+                                  {parseCronJob(job()).time !== '' ? `, ${parseCronJob(job()).time}` : ''}
+                                  {parseCronJob(job()).state !== '' ? `, ${parseCronJob(job()).state}` : ''}
+                                  {parseCronJob(job()).details !== '' ? `, ${parseCronJob(job()).details}` : ''}
                                 </P>
                                 <button
-                                  onClick={() => onScheduleSettingsClick(job())}
+                                  onClick={() => onScheduleSettingsClick(job(), sensorName)}
                                 >
                                   <Settings height={30} width={30} />
                                 </button>

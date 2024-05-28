@@ -44,10 +44,7 @@ export const LogView = (props) => {
         </Match>
 
         <Match when={logs.loading}>
-          <Skeleton class="w-full h-20 mb-4" />
-          <Skeleton class="w-full h-20 mb-4" />
-          <Skeleton class="w-full h-20 mb-4" />
-          <Skeleton class="w-full h-40 mb-4" />
+          <Skeleton class="w-full h-[100px] mb-4" />
         </Match>
       </Switch>
     </div>

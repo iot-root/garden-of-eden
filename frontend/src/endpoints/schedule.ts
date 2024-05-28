@@ -17,18 +17,18 @@ export const addSchedule = async (
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
       }
-    );
+    )
 
     if (!response.ok) {
-      return 'Sensor not detected';
+      return 'Sensor not detected'
     }
 
-    return response.json();
+    return response.json()
   } catch (e) {
-    console.error('Error adding schedule: ', e);
-    throw e;
+    console.error('Error adding schedule: ', e)
+    throw e
   }
-};
+}
 
 export const updateSchedule = async (
   sensor: string,
@@ -37,7 +37,7 @@ export const updateSchedule = async (
     minutes: number
     hour: number
     day: number
-    state: string
+    state?: string
     brightness?: number
     speed?: number
   }
@@ -50,18 +50,18 @@ export const updateSchedule = async (
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
       }
-    );
+    )
 
     if (!response.ok) {
-      return 'Sensor not detected';
+      return 'Sensor not detected'
     }
 
-    return response.json();
+    return response.json()
   } catch (e) {
-    console.error('Error updating schedule: ', e);
-    throw e;
+    console.error('Error updating schedule: ', e)
+    throw e
   }
-};
+}
 
 export const getAllSchedules = async () => {
   try {
@@ -70,18 +70,18 @@ export const getAllSchedules = async () => {
       {
         method: 'GET',
       }
-    );
+    )
 
     if (!response.ok) {
-      return 'Sensor not detected';
+      return 'Sensor not detected'
     }
 
-    return response.json();
+    return response.json()
   } catch (e) {
-    console.error('Error getting all schedules: ', e);
-    throw e;
+    console.error('Error getting all schedules: ', e)
+    throw e
   }
-};
+}
 
 export const deleteScheduleById = async (body: { id: string }) => {
   try {
@@ -92,18 +92,18 @@ export const deleteScheduleById = async (body: { id: string }) => {
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
       }
-    );
+    )
 
     if (!response.ok) {
-      return 'Sensor not detected';
+      return 'Sensor not detected'
     }
 
-    return response.json();
+    return response.json()
   } catch (e) {
-    console.error('Error deleting schedule: ', e);
-    throw e;
+    console.error('Error deleting schedule: ', e)
+    throw e
   }
-};
+}
 
 export const deleteAllSchedules = async () => {
   try {
@@ -112,15 +112,15 @@ export const deleteAllSchedules = async () => {
       {
         method: 'POST',
       }
-    );
+    )
 
     if (!response.ok) {
-      return 'Sensor not detected';
+      return 'Sensor not detected'
     }
 
-    return response.json();
+    return response.json()
   } catch (e) {
-    console.error('Error deleting all schedules: ', e);
-    throw e;
+    console.error('Error deleting all schedules: ', e)
+    throw e
   }
-};
+}

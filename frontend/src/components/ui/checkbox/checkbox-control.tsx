@@ -25,26 +25,13 @@ export const CheckboxControl = <T extends ValidComponent = 'div'>(
       <CheckboxPrimitive.Input class="[&:focus-visible+div]:outline-none [&:focus-visible+div]:ring-[1.5px] [&:focus-visible+div]:ring-slate-950 [&:focus-visible+div]:ring-offset-2 [&:focus-visible+div]:ring-offset-white dark:[&:focus-visible+div]:ring-slate-300 dark:[&:focus-visible+div]:ring-offset-slate-950" />
       <CheckboxPrimitive.Control
         class={cn(
-          'h-4 w-4 shrink-0 rounded-sm border border-slate-200 border-slate-900 shadow transition-shadow focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-slate-950 data-[disabled]:cursor-not-allowed data-[checked]:bg-slate-900 data-[checked]:text-slate-50 data-[disabled]:opacity-50 dark:border-slate-800 dark:border-slate-50 dark:focus-visible:ring-slate-300 dark:data-[checked]:bg-slate-50 dark:data-[checked]:text-slate-900',
+          'h-4 w-4 shrink-0 rounded-sm border border-slate-200 shadow transition-shadow focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-slate-950 data-[disabled]:cursor-not-allowed data-[checked]:bg-slate-900 data-[checked]:text-slate-50 data-[disabled]:opacity-50 dark:border-slate-800 dark:border-slate-50 dark:focus-visible:ring-slate-300 dark:data-[checked]:bg-slate-50 dark:data-[checked]:text-slate-900',
           local.class
         )}
         {...rest}
       >
         <CheckboxPrimitive.Indicator class="flex items-center justify-center text-current">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 24"
-            class="h-4 w-4"
-          >
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m5 12l5 5L20 7"
-            />
-          </svg>
+
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Control>
     </>
