@@ -7,7 +7,6 @@ export const parseCronJob = (cronJob) => {
         const hour = parseInt(parts[1], 10);
         const dayOfWeek = parseInt(parts[4], 10);
 
-        const period = hour >= 12 ? 'PM' : 'AM';
         const formattedHour = hour;
         // const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
         const formattedMinute = minute < 10 ? '0' + minute : minute;
@@ -39,11 +38,11 @@ export const parseCronJob = (cronJob) => {
         state: commandDetails.state,
         details: commandDetails.brightness || commandDetails.speed
     };
-}
+};
 
 export const parseLogs = (logs) => {
     // transform text into json
-    let data = {}
+    const data = {};
 
     const jsonLines = [];
     const lines = logs.split('\n');
@@ -61,17 +60,17 @@ export const parseLogs = (logs) => {
 
     // group json data by  field
     jsonLines.forEach((lines) => {
-        Object.entries(lines).forEach((entry, i) => {
-            const field = entry[0]
-            const value = entry[1]
+        Object.entries(lines).forEach((entry) => {
+            const field = entry[0];
+            const value = entry[1];
             if (data[`${field}`] !== undefined) {
-                data[`${field}`].push(value)
+                data[`${field}`].push(value);
             } else {
-                data[`${field}`] = []
-                data[field].push(value)
+                data[`${field}`] = [];
+                data[field].push(value);
             }
-        })
-    })
+        });
+    });
 
-    return data
-}
+    return data;
+};

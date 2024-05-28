@@ -1,8 +1,8 @@
-import { cn } from "@/libs/cn";
-import type { PolymorphicProps } from "@kobalte/core/polymorphic";
-import * as SelectPrimitive from "@kobalte/core/select";
-import type { ParentProps, ValidComponent } from "solid-js";
-import { splitProps } from "solid-js";
+import { cn } from '@/root/libs/cn';
+import type { PolymorphicProps } from '@kobalte/core/polymorphic';
+import * as SelectPrimitive from '@kobalte/core/select';
+import type { ParentProps, ValidComponent } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 export const Select = SelectPrimitive.Root;
 export const SelectValue = SelectPrimitive.Value;
@@ -12,17 +12,22 @@ export const SelectItemDescription = SelectPrimitive.ItemDescription;
 export const SelectHiddenSelect = SelectPrimitive.HiddenSelect;
 export const SelectSection = SelectPrimitive.Section;
 
-type SelectTriggerProps = ParentProps<SelectPrimitive.SelectTriggerProps & { class?: string }>;
+type SelectTriggerProps = ParentProps<
+  SelectPrimitive.SelectTriggerProps & { class?: string }
+>
 
-export const SelectTrigger = <T extends ValidComponent = "button">(
+export const SelectTrigger = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, SelectTriggerProps>
 ) => {
-  const [local, rest] = splitProps(props as SelectTriggerProps, ["class", "children"]);
+  const [local, rest] = splitProps(props as SelectTriggerProps, [
+    'class',
+    'children',
+  ]);
 
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        "flex h-9 w-full items-center justify-between rounded-md border border-slate-200 border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-white transition-shadow placeholder:text-slate-500 focus:outline-none focus-visible:ring-[1.5px] focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:border-slate-800 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300",
+        'flex h-9 w-full items-center justify-between rounded-md border border-slate-200 border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-white transition-shadow placeholder:text-slate-500 focus:outline-none focus-visible:ring-[1.5px] focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:border-slate-800 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300',
         local.class
       )}
       {...rest}
@@ -49,18 +54,20 @@ export const SelectTrigger = <T extends ValidComponent = "button">(
   );
 };
 
-type SelectContentProps = SelectPrimitive.SelectContentProps & { class?: string };
+type SelectContentProps = SelectPrimitive.SelectContentProps & {
+  class?: string
+}
 
-export const SelectContent = <T extends ValidComponent = "div">(
+export const SelectContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SelectContentProps>
 ) => {
-  const [local, rest] = splitProps(props as SelectContentProps, ["class"]);
+  const [local, rest] = splitProps(props as SelectContentProps, ['class']);
 
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         class={cn(
-          "relative z-50 min-w-[8rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
+          'relative z-50 min-w-[8rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50',
           local.class
         )}
         {...rest}
@@ -71,17 +78,22 @@ export const SelectContent = <T extends ValidComponent = "div">(
   );
 };
 
-type SelectItemProps = ParentProps<SelectPrimitive.SelectItemProps & { class?: string }>;
+type SelectItemProps = ParentProps<
+  SelectPrimitive.SelectItemProps & { class?: string }
+>
 
-export const SelectItem = <T extends ValidComponent = "li">(
+export const SelectItem = <T extends ValidComponent = 'li'>(
   props: PolymorphicProps<T, SelectItemProps>
 ) => {
-  const [local, rest] = splitProps(props as SelectItemProps, ["class", "children"]);
+  const [local, rest] = splitProps(props as SelectItemProps, [
+    'class',
+    'children',
+  ]);
 
   return (
     <SelectPrimitive.Item
       class={cn(
-        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-slate-100 focus:text-slate-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-slate-800 dark:focus:text-slate-50",
+        'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-slate-100 focus:text-slate-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-slate-800 dark:focus:text-slate-50',
         local.class
       )}
       {...rest}

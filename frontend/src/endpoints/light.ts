@@ -5,18 +5,18 @@ export const TurnOnLight = async () => {
       {
         method: 'POST',
       }
-    )
+    );
 
     if (!response.ok) {
-      return 'Sensor not detected'
+      return 'Sensor not detected';
     }
 
-    return response.json()
+    return response.json();
   } catch (e) {
-    console.error('Error turning on lights: ', e)
-    throw e
+    console.error('Error turning on lights: ', e);
+    throw e;
   }
-}
+};
 
 export const TurnOffLight = async () => {
   try {
@@ -25,74 +25,75 @@ export const TurnOffLight = async () => {
       {
         method: 'POST',
       }
-    )
+    );
 
     if (!response.ok) {
-      return 'Sensor not detected'
+      return 'Sensor not detected';
     }
 
-    return response.json()
+    return response.json();
   } catch (e) {
-    console.error('Error turning off lights: ', e)
-    throw e
+    console.error('Error turning off lights: ', e);
+    throw e;
   }
-}
+};
 
 export const GetBrightness = async () => {
   try {
     const response = await fetch(
       `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/brightness`
-    )
+    );
 
-    const data = await response.json()
+    const data = await response.json();
 
     if (!response.ok) {
-      return data
+      return data;
     }
-    
-    return data
+
+    return data;
   } catch (e) {
-    console.error('Error fetching brightness: ', e)
-    throw e
+    console.error('Error fetching brightness: ', e);
+    throw e;
   }
-}
+};
 
 export const SetBrightness = async (value: string) => {
   try {
     const response = await fetch(
       `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/brightness`,
-       {
+      {
         body: JSON.stringify({
           value,
         }),
-      })
+      }
+    );
 
     if (!response.ok) {
-      return 'Sensor not detected'
+      return 'Sensor not detected';
     }
 
-    return response.json()
+    return response.json();
   } catch (e) {
-    console.error('Error setting brightness distance: ', e)
-    throw e
+    console.error('Error setting brightness distance: ', e);
+    throw e;
   }
-}
+};
 
-export const GetLogs = async (value: string) => {
+export const GetLogs = async () => {
   try {
     const response = await fetch(
-      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/logs`,
-      )
+      `http://${import.meta.env.VITE_PI_IP}:${import.meta.env.VITE_API_PORT}/light/logs`
+    );
 
-   const data = await response.json()
+    const data = await response.json();
 
     if (!response.ok) {
-      return data
+      return data;
     }
-    
-    return data
+
+    return data;
   } catch (e) {
-    console.error('Error setting brightness distance: ', e)
-    throw e
+    console.error('Error setting brightness distance: ', e);
+    throw e;
   }
-}
+};

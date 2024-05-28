@@ -1,11 +1,12 @@
 export const H1 = (props) => {
   return (
-    <h1 class={`text-left scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-1 ${props.class}`}>
+    <h1
+      class={`text-left scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-1 ${props.class}`}
+    >
       {props.children}
     </h1>
   );
 };
-
 
 export const H2 = (props) => {
   return (
@@ -15,18 +16,23 @@ export const H2 = (props) => {
   );
 };
 
-
 export const H3 = (props) => {
-  return <h3 class={`text-left scroll-m-20 text-2xl font-semibold tracking-tight ${props.class}`}>{props.children}</h3>;
-};
-
-
-export const H4 = (props) => {
   return (
-    <h4 class="text-left scroll-m-20 text-xl font-semibold tracking-tight">{props.children}</h4>
+    <h3
+      class={`text-left scroll-m-20 text-2xl font-semibold tracking-tight ${props.class}`}
+    >
+      {props.children}
+    </h3>
   );
 };
 
+export const H4 = (props) => {
+  return (
+    <h4 class="text-left scroll-m-20 text-xl font-semibold tracking-tight">
+      {props.children}
+    </h4>
+  );
+};
 
 export const P = (props) => {
   return (
@@ -36,12 +42,12 @@ export const P = (props) => {
   );
 };
 
-
 export const Detail = (props) => {
   return (
-    <p class={`text-xs text-left  ${props.class} ${props.error ? "text-red-600" : "text-zinc-400"}`}>
+    <p
+      class={`text-xs text-left  ${props.class} ${props.error ? 'text-red-600' : 'text-zinc-400'}`}
+    >
       {props.children}
     </p>
   );
 };
-

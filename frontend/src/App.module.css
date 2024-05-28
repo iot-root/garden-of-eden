@@ -4,7 +4,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  min-height:100vh;
+  min-height: 100vh;
 
   @apply relative bg-zinc-100 pb-[80px];
 }

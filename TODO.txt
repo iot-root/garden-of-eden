@@ -5,13 +5,9 @@
 
 # Frontend
 - update updateschedule component
+- check createschedule size on mobile
 - convert all maps to <Index>
 - store images in a store to prevent refetching
-- route back to home on responsive changes
 
 # Other
-- check services
 - check why swap resets
-- make images non tmp
-- how to refresh all data after capturing logs
-- check for all instances of peter 

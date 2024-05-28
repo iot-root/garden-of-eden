@@ -6,9 +6,9 @@ After=network-online.target pigpiod.service
 
 [Service]
 Environment=NODE_PORT=3000
-User=peter
-WorkingDirectory=/home/peter/garden-of-eden
-ExecStart=/home/peter/garden-of-eden/bin/run-web.sh
+User=pi
+WorkingDirectory=/home/pi/garden-of-eden
+ExecStart=/home/pi/garden-of-eden/bin/run-web.sh
 Restart=on-failure
 
 [Install]

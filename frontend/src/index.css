@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 body {
-    width: 100%;
-    max-width: 100vw;
-    overflow-y: scroll;
-    overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  overflow-y: scroll;
+  overflow-x: hidden;
 
-    @apply bg-zinc-100;
+  @apply bg-zinc-100;
 }
 
 .border {
-    @apply border-[1px] border-solid border-gray-300 rounded-md
+  @apply border-[1px] border-solid border-gray-300 rounded-md;
 }
