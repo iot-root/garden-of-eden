@@ -8,7 +8,7 @@ export default () => {
     return (
         <>
             {/* Mobile */}
-            <div class="md:hidden">
+            <div class="md:hidden w-full">
                 <Sensors />
                 <Schedule />
             </div>

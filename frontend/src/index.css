@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-    overflow-x: hidden;
-}
-
 body {
     width: 100%;
     max-width: 100vw;

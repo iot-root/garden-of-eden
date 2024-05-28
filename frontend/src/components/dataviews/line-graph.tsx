@@ -2,12 +2,10 @@ import { Card } from '@/ui/card'
 import { Colors, Legend, Title, Tooltip } from 'chart.js'
 import Chart from 'chart.js/auto'
 import { Line } from 'solid-chartjs'
-import { createSignal, onMount } from "solid-js"
+import { createEffect, createSignal, onMount } from "solid-js"
 
 export const LineGraph = (props) => {
-    const [chartData, setChartData] = createSignal()
-
-    setChartData({
+    const [chartData, setChartData] = createSignal({
         labels: props.labels,
         datasets: [
             {
@@ -17,6 +15,23 @@ export const LineGraph = (props) => {
                 backgroundColor: '#FF3333', // dot
             },
         ],
+
+    })
+
+    createEffect(() => {
+        if (!props.isParentFetching) {
+            setChartData({
+                labels: props.labels,
+                datasets: [
+                    {
+                        label: props.title,
+                        data: props.data,
+                        borderColor: '#FF3333', // line
+                        backgroundColor: '#FF3333', // dot
+                    },
+                ],
+            })
+        }
     })
 
 
@@ -37,6 +52,13 @@ export const LineGraph = (props) => {
                     pointStyle: 'circle', // Set point style to 'circle'
                     boxWidth: 5,
                     boxHeight: 5,
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    display: false // This will disable the x-axis labels
                 }
             }
         }

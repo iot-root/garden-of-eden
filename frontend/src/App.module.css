@@ -2,13 +2,11 @@
   text-align: center;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   min-height:100vh;
-  overflow-y: scroll;
-  overflow-x: hidden;
 
-  @apply relative bg-zinc-100 pt-[40px] pb-[80px];
+  @apply relative bg-zinc-100 pb-[80px];
 }
 
 .header {

@@ -1,47 +1,51 @@
-import { CaptureSensors, GetLogs } from "@/endpoints/logs"
-import { parseLogs } from "@/libs/parsers"
+import { CaptureSensors } from "@/endpoints/logs"
 import { H1 } from "@/typography/heading"
-import { createEffect, createResource, createSignal } from "solid-js"
+import { Match, Switch, createSignal } from "solid-js"
+import { Oval } from "solid-spinner"
 import Padding from "../containers/padding"
 import { LogView } from "../dataviews/log-view"
 import { Add } from "../ui/add"
 
 export const Logs = () => {
-    const [pumpStatsLogs] = createResource(async () => await GetLogs("pump/stats"))
-
-    let [pumpStats, setPumpStats] = createSignal()
-
-    createEffect(() => {
-        if (pumpStatsLogs()) {
-            setPumpStats(parseLogs(pumpStatsLogs()))
-        }
-    }, [pumpStatsLogs])
+    const [isFetching, setIsFetching] = createSignal(false);
 
     const handleOnClick = async () => {
+        setIsFetching(true)
         await CaptureSensors()
+        setIsFetching(false)
     }
 
     return (
         <Padding >
             <div class="flex flex-row justify-between items-center mb-4">
                 <H1 >Log</H1>
-                <button onClick={handleOnClick}>
-                    <Add label="Add" />
-                </button>
+                <Switch>
+                    <Match when={!isFetching()}>
+                        <button onClick={handleOnClick}>
+                            <Add label="Add" />
+                        </button>
+
+                    </Match>
+                    <Match when={isFetching()}>
+                        <Oval color="gray" />
+                    </Match>
+                </Switch>
             </div>
 
+
             <div class="lg:grid lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                <LogView class="" sensor="distance" field="value" title="Water Level cm" />
-                <LogView class="" sensor="temperature" field="value" title={"Temperature \u00B0C"} />
-                <LogView class="" sensor="humidity" field="value" title={"Humidity %"} />
-                <LogView class="" sensor="light" field="value" title={"Brightness %"} />
-                <LogView class="" sensor="pcb-temp" field="value" title={"PCB Temp. \u00B0C"} />
-                <LogView class="" sensor="pump/speed" field="value" title={"Pump Speed %"} />
-                <LogView class="" sensor="pump/stats" field="power" title={"Power W"} />
-                <LogView class="" sensor="pump/stats" field="bus_current" title={"Bus Current A"} />
-                <LogView class="" sensor="pump/stats" field="bus_voltage" title={"Bus Voltage V"} />
-                <LogView class="" sensor="pump/stats" field="shunt_voltage" title={"Shunt Voltage A"} />
+                <LogView isParentFetching={isFetching()} sensor="distance" field="value" title="Water Level cm" />
+                <LogView isParentFetching={isFetching()} sensor="temperature" field="value" title={"Temperature \u00B0C"} />
+                <LogView isParentFetching={isFetching()} sensor="humidity" field="value" title={"Humidity %"} />
+                <LogView isParentFetching={isFetching()} sensor="light" field="value" title={"Brightness %"} />
+                <LogView isParentFetching={isFetching()} sensor="pcb-temp" field="value" title={"PCB Temp. \u00B0C"} />
+                <LogView isParentFetching={isFetching()} sensor="pump/speed" field="value" title={"Pump Speed %"} />
+                <LogView isParentFetching={isFetching()} sensor="pump/stats" field="power" title={"Power W"} />
+                <LogView isParentFetching={isFetching()} sensor="pump/stats" field="bus_current" title={"Bus Current A"} />
+                <LogView isParentFetching={isFetching()} sensor="pump/stats" field="bus_voltage" title={"Bus Voltage V"} />
+                <LogView isParentFetching={isFetching()} sensor="pump/stats" field="shunt_voltage" title={"Shunt Voltage A"} />
             </div>
+
         </Padding >
     )
 }
