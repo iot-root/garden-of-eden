@@ -1,8 +1,10 @@
 import { Card } from '@/ui/card';
 import { Colors, Legend, Title, Tooltip } from 'chart.js';
 import Chart from 'chart.js/auto';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import { Line } from 'solid-chartjs';
 import { createEffect, createSignal, onMount } from 'solid-js';
+
 
 export const LineGraph = (props) => {
   const [chartData, setChartData] = createSignal({
@@ -34,7 +36,7 @@ export const LineGraph = (props) => {
   });
 
   onMount(() => {
-    Chart.register(Title, Tooltip, Legend, Colors);
+    Chart.register(Title, Tooltip, Legend, Colors, zoomPlugin);
   });
 
   const chartOptions = {
@@ -52,11 +54,27 @@ export const LineGraph = (props) => {
           boxHeight: 5,
         },
       },
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: 'x',
+        },
+        zoom: {
+          mode: 'x',
+          wheel: {
+            enabled: true,
+            speed: 0.001
+          },
+          pinch: {
+            enabled: true,
+          },
+        }
+      }
     },
     scales: {
       x: {
         ticks: {
-          display: false, // This will disable the x-axis labels
+          display: false,
         },
       },
     },
