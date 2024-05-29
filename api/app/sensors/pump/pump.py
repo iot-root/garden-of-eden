@@ -16,7 +16,7 @@ class GPIOController:
             self.pi = pigpio.pi()
         else:
             self.pi = pigpio.pi()
-        
+
         if not self.pi.connected:
             raise RuntimeError("Failed to connect to pigpiod daemon. Ensure it's running and accessible.")
 
@@ -25,7 +25,7 @@ class GPIOController:
             self.pi.set_PWM_frequency(self.pin, frequency)
         else:
             raise RuntimeError("pigpio.pi client is not initialized.")
-        
+
 class Pump:
     def __init__(self, pin=24, frequency=50, pin_factory=None):
         # pigpiod is running on port 8888
@@ -89,7 +89,7 @@ class Pump:
             self.pump.value = duty
         else:
             raise ValueError("Speed must be between 0 and 1")
-    
+
     def get_duty_cycle(self):
         """
         Get the current duty cycle percentage.
@@ -107,6 +107,7 @@ class Pump:
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
     parser = argparse.ArgumentParser(description='Control a pump.')
     parser.add_argument('--on', action='store_true', help='Turn the pump on.')
     parser.add_argument('--off', action='store_true', help='Turn the pump off.')
@@ -114,15 +115,17 @@ if __name__ == '__main__':
     parser.add_argument('--factory-host', type=str, default=None, help='GPIO factory host for remote access.')
     parser.add_argument('--factory-port', type=int, default=None, help='GPIO factory port for remote access.')
     parser.add_argument('--log', action='store_true')
-
-
     args = parser.parse_args()
 
     pin_factory = None
-    if args.factory_host and args.factory_port:
-        pin_factory = {'host': args.factory_host, 'port': args.factory_port}
+    pump = None
 
-    pump = Pump(24, pin_factory=pin_factory)  # Default frequency of 50Hz
+    try:
+        if args.factory_host and args.factory_port:
+            pin_factory = {'host': args.factory_host, 'port': args.factory_port}
+        pump = Pump(24, pin_factory=pin_factory)  # Default frequency of 50Hz
+    except:
+        logging.info(f"Failed to initialize pump")
 
     if args.on:
         pump.on()
@@ -134,15 +137,19 @@ if __name__ == '__main__':
         pump.on()
         pump.set_speed(args.speed)
     elif args.log:
-        
-        speed = pump.get_speed()
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_entry = {
-            "timestamp": timestamp,
-            "sensor": "Pump",
-            "value": speed,
-        }
-        logging.info(json.dumps(log_entry))
-        print(json.dumps(log_entry))
+        try:
+            speed = pump.get_speed()
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_entry = {
+                "timestamp": timestamp,
+                "sensor": "Pump",
+                "value": speed,
+            }
+            logging.info(json.dumps(log_entry))
+            print(json.dumps(log_entry))
+        except Exception as e:
+            logging.info(f"Error: {e}")
+        except KeyboardInterrupt:
+            logging.info("Script interrupted.")
     else:
         logging.info("No action specified. Use --on, --off, --speed or --log.")

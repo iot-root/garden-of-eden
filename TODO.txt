@@ -8,6 +8,7 @@
 - check createschedule size on mobile
 - convert all maps to <Index>
 - store images in a store to prevent refetching
+- stop fetching images on mobile home
 
 # Other
 - check why swap resets

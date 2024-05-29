@@ -8,11 +8,9 @@ camera_control = Camera()
 @camera_blueprint.route('/capture', methods=['GET'])
 def capture_images():
     try:
-        response = camera_control.capture_images()
-        # return capture images
-        return response
+        images = camera_control.capture_images()
+        return images
     except Exception as e:
-        log(e)
         return jsonify(error=str(e)), 400
 
 @camera_blueprint.route('/get', methods=['POST'])

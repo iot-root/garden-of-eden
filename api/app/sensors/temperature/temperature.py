@@ -1,6 +1,6 @@
 """
-This module provides functionality to read temperature values from the AM2320 sensor 
-using the adafruit_ahtx0 library. The CachedSensor class caches the readings for a 
+This module provides functionality to read temperature values from the AM2320 sensor
+using the adafruit_ahtx0 library. The CachedSensor class caches the readings for a
 specified duration to prevent redundant reads.
 """
 
@@ -23,14 +23,9 @@ class AM2320Sensor():
     def get_temperature(self):
         return self.sensor.temperature
 
-try:
-   sensor = AM2320Sensor()
-except:
-    logging.info("Failed to initiate temperature sensor")
-
 if __name__ == "__main__":
     """
-    If the module is executed as a standalone script, it will return the temperature in a telegraf friendly format. 
+    If the module is executed as a standalone script, it will return the temperature in json.
     """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -38,20 +33,26 @@ if __name__ == "__main__":
     parser.add_argument('--log', action='store_true')
     args = parser.parse_args()
 
-
+    sensor = None
     try:
-        temperature = sensor.get_temperature()
-    except Exception as e:
-        logging.info(f"Error: {e}")
-    except KeyboardInterrupt:
-        logging.info("Script interrupted.")
+        sensor = AM2320Sensor()
+    except:
+        logging.info("Failed to initiate temperature sensor")
 
     if args.log:
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_entry = {
-            "timestamp": timestamp,
-            "sensor": "Temperature",
-            "value": temperature,
-        }
-        logging.info(json.dumps(log_entry))
-        print(json.dumps(log_entry))
+        try:
+            temperature = sensor.get_temperature()
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_entry = {
+                "timestamp": timestamp,
+                "sensor": "Temperature",
+                "value": temperature,
+            }
+            logging.info(json.dumps(log_entry))
+            print(json.dumps(log_entry))
+        except Exception as e:
+            logging.info(f"Error: {e}")
+        except KeyboardInterrupt:
+            logging.info("Script interrupted.")
+    else:
+        logging.info("No action specified. Use --log.")

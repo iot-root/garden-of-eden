@@ -15,25 +15,19 @@ def validate_args(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
-            log("validating args")
             self._validateArgs(**kwargs)
-            log("validating scheduke")
             self._validateSchedule(*args)
-            log("validating state")
             self._validateState(**kwargs)
         except Exception as e:
-            log(str(e))
-            return {"error": str(e)}
+            return {"error": "Could not validate args"}
         return func(self, *args, **kwargs)
     return wrapper
-
 
 cron = CronTab(user=getpass.getuser())
 
 class Scheduler(ABC):
     def __init__(self):
         self.cron = cron
-        log('Initializing scheduler')
 
     # Helpers
     @abstractmethod
@@ -45,7 +39,6 @@ class Scheduler(ABC):
         pass
 
     def _validateSchedule(self, min, hour, day):
-        log("validating schedule")
         if not (0 <= min <= 59):
             raise ValueError("min must be between 0 and 59")
         if not (0 <= hour <= 23):
@@ -55,20 +48,18 @@ class Scheduler(ABC):
         return
 
     def _validateState(self, **kwargs):
-        log("validating state")
         try:
             if kwargs["state"] is not None:
                 if kwargs["state"] not in ['on', 'off']:
                     raise ValueError("state must be either 'on' or 'off'")
         except Exception as e:
-            log(str(e))
+            log(f"could not validate schedule state: {str(e)}")
         return
 
     # Scheduling Methods
     @validate_args
     def add(self, min, hour, day, *args, **kwargs):
         """Add a new job."""
-        log('Adding job')
         id = str(uuid.uuid4())
         command = self.construct_command(**kwargs)
         job = self.cron.new(command=command, comment=id)
@@ -81,7 +72,6 @@ class Scheduler(ABC):
 
     def update(self, id, min, hour, day, *args, **kwargs):
         """Update a job by ID."""
-        log('Updating job')
         job = self._find(id)
         if job:
             job.set_command(self.construct_command(*args, **kwargs))
@@ -94,29 +84,24 @@ class Scheduler(ABC):
 
     def delete(self, id):
         """Delete a job by ID."""
-        log('Deleting job')
         self.cron.remove_all(comment=id)
         self.cron.write()
 
     def deleteAll(self):
         """Delete all jobs."""
-        log('Deleting all jobs')
         self.cron.remove_all()
         self.cron.write()
 
     def getAll(self):
         """Get a sorted list of cron jobs."""
-        log('Getting all jobs')
         jobs = [{'id': job.comment, 'command': job.command, 'schedule': str(job.slices), 'enabled': job.is_enabled()}
                 for job in self.cron]
 
-        log(self.cron)
         jobs = self._sort({'jobs': jobs})
         return jobs
 
     def _find(self, id):
         """Find a cron jobs by ID."""
-        log('Finding job')
         for job in self.cron:
             if job.comment == id:
                 return job
@@ -184,6 +169,7 @@ class LightScheduler(Scheduler):
         super().__init__()
 
     def construct_command(self, **kwargs):
+        logging.info(kwargs)
         return f'python ~/garden-of-eden/api/sensors/light/light.py --{kwargs["state"]} --brightness {kwargs["brightness"]}'
 
     def _validateArgs(self, **kwargs):
@@ -210,7 +196,6 @@ class LogScheduler(Scheduler):
 
     def _validateArgs(self, **kwargs):
         return
-
 
 # Instances
 pumpScheduler = PumpScheduler()

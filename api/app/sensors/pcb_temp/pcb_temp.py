@@ -8,27 +8,24 @@ from datetime import datetime
 def get_pcb_temperature():
     i2c = board.I2C()  # uses board.SCL and board.SDA
     pct = adafruit_pct2075.PCT2075(i2c, address=0x48)
-    
+
     return pct.temperature
 
 if __name__ == "__main__":
     """
-    If the module is executed as a standalone script, it will return the pcb_temp in a telegraf friendly format. 
+    If the module is executed as a standalone script, it will return the pcb_temp in a telegraf friendly format.
     """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    parser = argparse.ArgumentParser(description='Get PCB Temperature.')
+    parser = argparse.ArgumentParser(description='Control a PCB temperature sensor.')
     parser.add_argument('--log', action='store_true')
-
     args = parser.parse_args()
 
+    pcb_temp = None
     try:
         pcb_temp = get_pcb_temperature()
-        logging.info(f"pbc_temp, value={pcb_temp:.2f}")
-    except Exception as e:
-        logging.info(f"Error: {e}")
-    except KeyboardInterrupt:
-        logging.info("Script interrupted.")
+    except:
+        logging.info("Failed to initialize PCB temp sensor")
 
     if args.log:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')

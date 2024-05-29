@@ -4,11 +4,10 @@ from app.sensors.humidity.humidity import AM2320Sensor
 import os
 
 sensor = AM2320Sensor()
-
 humidity_blueprint = Blueprint('humidity', __name__)
 
 @humidity_blueprint.route('', methods=['GET'])
-def get_humidity():    
+def get_humidity():
     try:
         return jsonify(value='{:.2f}'.format(sensor.get_humidity()))
     except Exception as e:

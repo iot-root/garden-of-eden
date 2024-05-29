@@ -4,7 +4,7 @@ import { addSchedule, deleteScheduleById, updateSchedule } from '@/endpoints/sch
 import { formatTime } from '@/root/libs/parsers';
 import { rangeValidator } from '@/root/libs/validators';
 import { Checkbox } from '@/ui/checkbox/checkbox';
-import { For, Match, Switch, createEffect, createSignal } from 'solid-js';
+import { Match, Show, Switch, createEffect, createSignal } from 'solid-js';
 import { Col } from '../containers/col';
 import Padding from '../containers/padding';
 import { Row } from '../containers/row';
@@ -15,6 +15,7 @@ import { ErrorMessage } from './error-message';
 export const CreateSchedule = (props) => {
   const [job, setJob] = createSignal({})
   const [update, setUpdate] = createSignal(false)
+  const [create, setCreate] = createSignal(false)
 
   // days
   const [sun, setSun] = createSignal(false);
@@ -39,9 +40,12 @@ export const CreateSchedule = (props) => {
   const [pumpSpeed, setPumpSpeed] = createSignal(0);
 
   // logs
-  const [logSensors, setLogSensors] = createSignal(props.sensor === 'log-sensor-data');
+  const [logSensors, setLogSensors] = createSignal("");
 
   createEffect(() => {
+    if (props.create) {
+      setCreate(props.create)
+    }
     if (props.update) {
       setJob(props.job)
       setUpdate(props.update)
@@ -54,8 +58,10 @@ export const CreateSchedule = (props) => {
       setSun(job().day === 'Sunday')
       setTime(formatTime(job().time))
       setLightsRun(String(job().details).split(' ')[0] === 'Brightness:')
+      setLightsBrightness(String(job().details).split(' ')[1])
       setPumpRun(String(job().details).split(' ')[0] === 'Speed:')
-      setLogSensors(props.sensor === 'log-sensor-data')
+      setPumpSpeed(String(job().details).split(' ')[1])
+      setLogSensors(job().sensor === 'sensors')
     }
   })
 
@@ -107,17 +113,6 @@ export const CreateSchedule = (props) => {
               lightsDurationMins < 60 ? 0 : lightsDurationMins % 60;
 
             if (update()) {
-              await updateSchedule('light', {
-                id: job().id,
-                minutes:
-                  remainder > 0
-                    ? Number(remainder)
-                    : Number(mins) + Number(lightsDuration()),
-                hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
-                day: Number(i),
-                state: 'off',
-                brightness: 0,
-              });
             } else {
               await addSchedule('light', {
                 minutes:
@@ -136,7 +131,7 @@ export const CreateSchedule = (props) => {
             if (update()) {
               // on
               await updateSchedule('pump', {
-                id: props.job().id,
+                id: job().id,
                 minutes: Number(mins),
                 hour: Number(hour),
                 day: Number(i),
@@ -159,14 +154,6 @@ export const CreateSchedule = (props) => {
             const remainder = pumpDurationMins < 60 ? 0 : pumpDurationMins % 60;
 
             if (update()) {
-              await updateSchedule('pump', {
-                id: job().id,
-                minutes: Number(remainder),
-                hour: remainder > 0 ? Number(hour) + 1 : Number(hour),
-                day: Number(i),
-                state: 'off',
-                speed: 0,
-              });
             } else {
               await addSchedule('pump', {
                 minutes: Number(remainder),
@@ -185,6 +172,7 @@ export const CreateSchedule = (props) => {
                 minutes: Number(mins),
                 hour: Number(hour),
                 day: Number(i),
+                state: logSensors() ? 'on' : 'off',
               });
             } else {
               await addSchedule('log', {
@@ -221,9 +209,10 @@ export const CreateSchedule = (props) => {
           </p>
         </div>
 
-        {/* days */}
-        <Section title="Days">
-          {[
+        {/* Days */}
+        <div class="flex flex-col items-start mb-8 w-full">
+          <p class="font-medium mb-2">Days</p>
+          <Section>
             <div class="flex flex-row justify-between w-[80%]">
               <div>
                 <Checkbox label="Monday" checked={mon()} onChange={setMon} />
@@ -241,150 +230,168 @@ export const CreateSchedule = (props) => {
                 <Checkbox label="Saturday" checked={sat()} onChange={setSat} />
                 <Checkbox label="Sunday" checked={sun()} onChange={setSun} />
               </div>
-            </div>,
-          ]}
-        </Section>
+            </div>
+          </Section>
+        </div>
 
-        {/* time */}
-        <Section title="Time">
-          {[
+        {/* Time */}
+        <div class="flex flex-col items-start mb-8 w-full">
+          <p class="font-medium mb-2">Time</p>
+          <Section>
             <Row>
               <TextFieldRoot onChange={setTime} required class="w-full mr-2">
                 <TextField type="time" value={time()} />
               </TextFieldRoot>
             </Row>
-          ]}
-        </Section>
+          </Section>
+        </div>
 
         {/* Lights */}
-        <Section title="Lights">
-          <>
-            <p class="text-sm leading-none text-zinc-400">Run</p>
-            <SensorToggle
-              checked={lightsRun()}
-              onChange={() => setLightsRun(!lightsRun())}
-            />
-          </>
+        <div class="flex flex-col items-start mb-8 w-full">
+          <Show when={!update() || (update() && lightsRun())}>
+            <p class="font-medium mb-2">Lights</p>
 
-          <>
-            <Col class="h-full">
-              <p class="text-sm leading-none text-zinc-400">Duration</p>
-              <ErrorMessage
-                validator={() => rangeValidator(lightsDuration(), 0, 59)}
-                message="Pick a value between 0 and 59."
-              />
-            </Col>
-            <TextFieldRoot
-              onChange={setLightsDuration}
-              required
-              class="w-16 mr-1"
-              validationState={
-                rangeValidator(lightsDuration(), 0, 59) ? 'valid' : 'invalid'
-              }
-            >
-              <TextField
-                type="number"
-                placeholder="mins"
-                value={lightsDuration()}
-              />
-            </TextFieldRoot>
-          </>
-
-          <>
-            <Col class="h-full">
-              <p class="text-sm leading-none text-zinc-400">Brightness %</p>
-              <ErrorMessage
-                validator={() => rangeValidator(lightsBrightness(), 0, 100)}
-                message="Pick a value between 0 and 100."
-              />
-            </Col>
-            <TextFieldRoot
-              onChange={setLightsBrightness}
-              required
-              class="w-16 mr-1"
-              validationState={
-                rangeValidator(lightsBrightness(), 0, 100) ? 'valid' : 'invalid'
-              }
-            >
-              <TextField
-                type="number"
-                placeholder="%"
-                value={lightsBrightness()}
-              />
-            </TextFieldRoot>
-          </>
-        </Section>
-
-        {/* Pump */}
-        <Section title="Pump">
-          <>
-            <Row class="w-full justify-between">
+            {/* run */}
+            <Section class={`${create() ? "" : "hidden"}`}>
               <p class="text-sm leading-none text-zinc-400">Run</p>
               <SensorToggle
-                checked={pumpRun()}
-                onChange={() => setPumpRun(!pumpRun())}
+                checked={lightsRun()}
+                onChange={() => setLightsRun(!lightsRun())}
               />
-            </Row>
-          </>
-          <>
-            <Col class="h-full">
-              <p class="text-sm leading-none text-zinc-400">Duration</p>
-              <ErrorMessage
-                validator={() => rangeValidator(pumpDuration(), 0, 59)}
-                message="Pick a value between 0 and 59."
-              />
-            </Col>
-            <TextFieldRoot
-              onChange={setPumpDuration}
-              required
-              class="w-16 mr-1"
-              validationState={
-                rangeValidator(lightsDuration(), 1, 59) ? 'valid' : 'invalid'
-              }
-            >
-              <TextField
-                type="number"
-                placeholder="mins"
-                value={pumpDuration()}
-              />
-            </TextFieldRoot>
-          </>
+            </Section>
 
-          <>
-            <Col class="h-full">
-              <p class="text-sm leading-none text-zinc-400">Speed %</p>
-              <ErrorMessage
-                validator={() => rangeValidator(pumpSpeed(), 0, 100)}
-                message="Pick a value between 0 and 100."
-              />
-            </Col>
+            {/* duration */}
+            <Section class={`${create() ? "" : "hidden"}`}>
+              <Col class="h-full">
+                <p class="text-sm leading-none text-zinc-400">Duration</p>
+                <ErrorMessage
+                  validator={() => rangeValidator(lightsDuration(), 0, 59)}
+                  message="Pick a value between 0 and 59."
+                />
+              </Col>
+              <TextFieldRoot
+                onChange={setLightsDuration}
+                required
+                class="w-16 mr-1"
+                validationState={
+                  rangeValidator(lightsDuration(), 0, 59) ? 'valid' : 'invalid'
+                }
+              >
+                <TextField
+                  type="number"
+                  placeholder="mins"
+                  value={lightsDuration()}
+                />
+              </TextFieldRoot>
+            </Section>
 
-            <TextFieldRoot
-              onChange={setPumpSpeed}
-              required
-              class="w-16 mr-1"
-              validationState={
-                rangeValidator(pumpDuration(), 0, 100) ? 'valid' : 'invalid'
-              }
-            >
-              <TextField type="number" placeholder="%" value={pumpSpeed()} />
-            </TextFieldRoot>
-          </>
-        </Section>
+            {/* brightness */}
+            <Section>
+              <Col class="h-full">
+                <p class="text-sm leading-none text-zinc-400">Brightness %</p>
+                <ErrorMessage
+                  validator={() => rangeValidator(lightsBrightness(), 0, 100)}
+                  message="Pick a value between 0 and 100."
+                />
+              </Col>
+              <TextFieldRoot
+                onChange={setLightsBrightness}
+                required
+                class="w-16 mr-1"
+                validationState={
+                  rangeValidator(lightsBrightness(), 0, 100) ? 'valid' : 'invalid'
+                }
+              >
+                <TextField
+                  type="number"
+                  placeholder="%"
+                  value={lightsBrightness()}
+                />
+              </TextFieldRoot>
+            </Section>
+          </Show>
+        </div>
+
+        {/* Pump */}
+        <div class="flex flex-col items-start mb-8 w-full">
+          <Show when={!update() || (update() && pumpRun())}>
+            <p class="font-medium mb-2">Pump</p>
+
+            <Section class={`${create() ? "" : "hidden"}`}>
+              <Row class="w-full justify-between">
+                <p class="text-sm leading-none text-zinc-400">Run</p>
+                <SensorToggle
+                  checked={pumpRun()}
+                  onChange={() => setPumpRun(!pumpRun())}
+                />
+              </Row>
+            </Section>
+
+            <Section class={`${create() ? "" : "hidden"}`}>
+              <Col class="h-full">
+                <p class="text-sm leading-none text-zinc-400">Duration</p>
+                <ErrorMessage
+                  validator={() => rangeValidator(pumpDuration(), 0, 59)}
+                  message="Pick a value between 0 and 59."
+                />
+              </Col>
+              <TextFieldRoot
+                onChange={setPumpDuration}
+                required
+                class="w-16 mr-1"
+                validationState={
+                  rangeValidator(lightsDuration(), 1, 59) ? 'valid' : 'invalid'
+                }
+              >
+                <TextField
+                  type="number"
+                  placeholder="mins"
+                  value={pumpDuration()}
+                />
+              </TextFieldRoot>
+            </Section>
+
+            <Section class={`${create() ? "" : "hidden"}`}>
+              <Col class="h-full">
+                <p class="text-sm leading-none text-zinc-400">Speed %</p>
+                <ErrorMessage
+                  validator={() => rangeValidator(pumpSpeed(), 0, 100)}
+                  message="Pick a value between 0 and 100."
+                />
+              </Col>
+
+              <TextFieldRoot
+                onChange={setPumpSpeed}
+                required
+                class="w-16 mr-1"
+                validationState={
+                  rangeValidator(pumpDuration(), 0, 100) ? 'valid' : 'invalid'
+                }
+              >
+                <TextField type="number" placeholder="%" value={pumpSpeed()} />
+              </TextFieldRoot>
+            </Section>
+          </Show>
+        </div>
 
         {/* Logs */}
-        <Section title="Logs">
-          {/* wrap in an array to ensure props.children.map works */}
-          {[
-            <Row class="w-full justify-between">
-              <p class="text-sm leading-none text-zinc-400">Sensors</p>
-              <SensorToggle
-                checked={logSensors()}
-                onChange={() => setLogSensors(!logSensors())}
-              />
-            </Row>,
-          ]}
-        </Section>
+        <div class="flex flex-col items-start mb-8 w-full">
+          <Show when={!update() || (update() && logSensors())}>
+            <p class="font-medium mb-2">Logs</p>
+            <Section>
+              {/* wrap in an array to ensure props.children.map works */}
+              {[
+                <Row class="w-full justify-between">
+                  <p class="text-sm leading-none text-zinc-400">Sensors</p>
+                  <SensorToggle
+                    checked={logSensors()}
+                    onChange={() => setLogSensors(!logSensors())}
+                  />
+                </Row>,
+              ]}
+            </Section>
+          </Show>
+        </div>
 
         {/* Buttons */}
         <div class="flex flex-row justify-between w-full">
@@ -410,17 +417,8 @@ export const CreateSchedule = (props) => {
 
 export const Section = (props) => {
   return (
-    <Col class="mb-8 items-start w-full">
-      <p class="font-medium mb-2">{props.title}</p>
-      <Col class="w-full">
-        <For each={props.children}>
-          {(child) => {
-            return (
-              <Row class="justify-between w-full min-h-[40px]">{child}</Row>
-            );
-          }}
-        </For>
-      </Col>
+    <Col class={`items-start w-full ${props.class}`}>
+      <Row class={`justify-between w-full min-h-[40px]`}>{props.children}</Row>
     </Col>
   );
 };

@@ -15,7 +15,7 @@ class GPIOController:
             self.pi = pigpio.pi()
         else:
             self.pi = pigpio.pi()
-        
+
         if not self.pi.connected:
             raise RuntimeError("Failed to connect to pigpiod daemon. Ensure it's running and accessible.")
 
@@ -53,7 +53,7 @@ class Light:
         """
         logging.info("Turning light off")
         self.led.value = 0
-    
+
     def set_brightness(self, brightness_percentage):
         """
         Wrapper function around set_duty_cycle. Provides more intuitive function name.
@@ -75,7 +75,7 @@ class Light:
     def set_frequency(self, frequency):
         logging.info(f"Setting light frequency to {frequency}")
         self.gpio.set_frequency(frequency)
-    
+
     def set_duty_cycle(self, duty_cycle_percentage):
         """
         Set the duty cycle percentage, i.e. brightness level.
@@ -90,7 +90,7 @@ class Light:
             self.led.value = duty
         else:
             raise ValueError("Speed must be between 0 and 100")
-        
+
     def get_duty_cycle(self):
         """
         Get the current duty cycle percentage.
@@ -107,40 +107,43 @@ class Light:
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    parser = argparse.ArgumentParser(description='Control an IoT light.')
+
+    parser = argparse.ArgumentParser(description='Control a light.')
     parser.add_argument('--on', action='store_true', help='Turn the light on.')
     parser.add_argument('--off', action='store_true', help='Turn the light off.')
     parser.add_argument('--brightness', type=int, default=None, help='Set the brightness level (0-100).')
     parser.add_argument('--log', action='store_true')
-
     args = parser.parse_args()
 
-
-    light = None
-
+    sensor = None
     try:
-        light = Light(18)  # Default frequency of 8kHz
+        sensor = Light(18)  # Default frequency of 8kHz
     except:
         logging.info("Failed to initialize lights")
 
     if args.on:
-        light.on()
+        sensor.on()
         if args.brightness is not None:
-            light.set_brightness(args.brightness)
+            sensor.set_brightness(args.brightness)
     elif args.off:
-        light.off()
+        sensor.off()
     elif args.brightness is not None:
-        light.on()
-        light.set_brightness(args.brightness)
+        sensor.on()
+        sensor.set_brightness(args.brightness)
     elif args.log:
-        brightness = light.get_brightness()
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_entry = {
-            "timestamp": timestamp,
-            "sensor": "Brightness",
-            "value": f"{brightness:.2f}"
-        }
-        logging.info(json.dumps(log_entry))
-        print(json.dumps(log_entry))
+        try:
+            brightness = sensor.get_brightness()
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_entry = {
+                "timestamp": timestamp,
+                "sensor": "Brightness",
+                "value": f"{brightness:.2f}"
+            }
+            logging.info(json.dumps(log_entry))
+            print(json.dumps(log_entry))
+        except Exception as e:
+            logging.info(f"Error: {e}")
+        except KeyboardInterrupt:
+            logging.info("Script interrupted.")
     else:
         logging.info("No action specified. Use --on, --off, --brightness or --log.")

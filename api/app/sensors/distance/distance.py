@@ -24,10 +24,10 @@ class Distance:
         """
         Initializes the DistanceSensor object.
         """
-        
+
         # Ensure the pin factory is either provided or defaults to PiGPIOFactory
         self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
-        
+
         # Initialize the DistanceSensor with the specified or default pin factory
         self.sensor = DistanceSensor(echo=19, trigger=26, pin_factory=self.pin_factory)
 
@@ -38,7 +38,7 @@ class Distance:
             float: The measured distance in centimeters.
         """
         distance = self.sensor.distance * 100  # Convert to cm
-        # logging.info(f"Measured Distance: {distance:.2f} cm")
+        # log(f"Measured Distance: {distance:.2f} cm")
         return round(distance, 2)
 
     def measure(self):
@@ -78,29 +78,35 @@ class Distance:
 
 if __name__ == "__main__":
     """
-    If the module is executed as a standalone script, it will return the distance in a telegraf friendly format. 
+    If the module is executed as a standalone script, it will return the distance in json.
     """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    parser = argparse.ArgumentParser(description='Control an IoT distance sensor.')
+
+    parser = argparse.ArgumentParser(description='Control a distance sensor.')
     parser.add_argument('--log', action='store_true')
     args = parser.parse_args()
 
+    sensor = None
     try:
-        distance_instance = Distance()
-    except Exception as e:
-        logging.info(f"Error: {e}")
-        exit(1)
-    except KeyboardInterrupt:
-        logging.info("Script interrupted.")
+        sensor = Distance()
+    except:
+        logging.info(f"Failed to initialize distance sensor")
         exit(1)
 
     if args.log:
-        distance = distance_instance.measure()
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_entry = {
-            "timestamp": timestamp,
-            "sensor": "Distance",
-            "value": f"{distance:.2f}"
-        }
-        logging.info(json.dumps(log_entry))
-        print(json.dumps(log_entry))
+        try:
+            distance = sensor.measure()
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_entry = {
+                "timestamp": timestamp,
+                "sensor": "Distance",
+                "value": f"{distance:.2f}"
+            }
+            logging.info(json.dumps(log_entry))
+            print(json.dumps(log_entry))
+        except Exception as e:
+            logging.info(f"Error: {e}")
+        except KeyboardInterrupt:
+            logging.info("Script interrupted.")
+    else:
+        logging.info("No action specified. Use --log.")
