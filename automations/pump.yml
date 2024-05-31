@@ -3,32 +3,24 @@ description: Schedule for Gardyn pump control
 trigger:
   - platform: time
     at: "09:30:00"
+    id: "on"
   - platform: time
     at: "09:35:00"
+    id: "off"
   - platform: time
     at: "16:00:00"
+    id: "on"
   - platform: time
     at: "16:05:00"
+    id: "off"
   - platform: time
     at: "21:00:00"
+    id: "on"
   - platform: time
     at: "21:05:00"
+    id: "off"
 action:
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: >-
-              {{ trigger.now.strftime('%H:%M:%S') in ['09:30:00', '16:00:00',
-              '21:00:00'] }}
-        sequence:
-          - service: light.turn_on
-            entity_id: light.gardyn_pump
-      - conditions:
-          - condition: template
-            value_template: >-
-              {{ trigger.now.strftime('%H:%M:%S') in ['09:35:00', '16:05:00',
-              '21:05:00'] }}
-        sequence:
-          - service: light.turn_off
-            entity_id: light.gardyn_pump
-mode: single
+  - service: fan.turn_{{trigger.id}}
+    target:
+      entity_id: fan.gardyn_pump
+mode: queued
