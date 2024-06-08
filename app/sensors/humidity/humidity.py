@@ -1,78 +1,53 @@
 """
-This module provides functionality to read humidity values from the AM2320 sensor using the adafruit_ahtx0 library.
-The CachedSensor class caches the readings for 2 seconds to avoid redundant reads.
+This module provides functionality to read humidity values from the AM2320 sensor 
+using the adafruit_ahtx0 library.
 """
 
 import time
 import board
 import adafruit_ahtx0
+import adafruit_am2320
 
-class CachedSensor:
-    """
-    Base class for sensors that caches the readings for a specified duration.
-    """
-    def __init__(self, sensor, cache_duration=200):
-        """
-        Initialize the CachedSensor object.
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+import config  
 
-        :param sensor: Sensor object
-        :param cache_duration: Duration to cache the sensor reading, default is 2 seconds
-        """
+class HumiditySensor:
+    """
+    Sensor class specific to reading humidity values.
+    """
+    def __init__(self, sensor):
         self._sensor = sensor
-        self._cache_duration = cache_duration
-        self._last_read_time = 0
-        self._cached_value = None
 
-    def _read(self):
-        """
-        Fetch the sensor reading. Needs to be implemented by subclasses.
-        """
-        raise NotImplementedError
-
-    def get_value(self):
-        """
-        Get the cached sensor reading. If the cached value is older than the cache duration,
-        fetch a new reading.
-
-        :return: Sensor reading (float)
-        """
-        current_time = time.time()
-        if current_time - self._last_read_time > self._cache_duration or self._cached_value is None:
-            self._cached_value = self._read()
-            self._last_read_time = current_time
-        return self._cached_value
-
-class HumiditySensor(CachedSensor):
-    """
-    Sensor class for reading humidity values.
-    """
-    def _read(self):
+    def read(self):
         """
         Fetch the humidity reading from the sensor.
 
-        :return: Humidity value (float)
+        :return: Humidity value (float).
         """
         return self._sensor.relative_humidity
 
-humidity_sensor = None
+humidity_sensor = None 
+
 try:
     i2c = board.I2C()
-    base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
+    if config.SENSOR_TYPE == 'AM2320':
+        base_sensor = adafruit_am2320.AM2320(i2c, address=0x5C)
+    elif config.SENSOR_TYPE == 'DHT20':
+        base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
+    else:
+        raise ValueError("Unsupported sensor type")
     humidity_sensor = HumiditySensor(base_sensor)
 except:
     print("Failed to initiate humidity sensor")
-
-#todo: add support for AM2320...
-# i2c = board.I2C()
-# base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
-# humidity_sensor = HumiditySensor(base_sensor)
 
 if __name__ == "__main__":
     """
     If the module is executed as a standalone script, it will return the humidity in a telegraf friendly format. 
     """
     try:
-        humidity = humidity_sensor.get_value()
+        humidity = humidity_sensor.read()
         print(f"humidity, value={humidity:.2f}")
     except Exception as e:
         print(f"Error: {e}")

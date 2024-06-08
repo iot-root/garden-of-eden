@@ -47,7 +47,7 @@ post_data "/light/on" ""
 sleep "$SLEEP_DURATION"
 post_data "/light/off" ""
 
-# Pump Control
+#Pump Control
 control_pump 30
 control_pump 0
 
@@ -55,7 +55,7 @@ post_data "/pump/on" ""
 sleep "$SLEEP_DURATION"
 post_data "/pump/off" ""
 
-# pump current usage
+#pump current usage
 control_pump 30
 get_data "/pump/stats"
 control_pump 10
