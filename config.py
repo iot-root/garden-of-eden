@@ -17,3 +17,5 @@ BASE_TOPIC = os.getenv("MQTT_BASETOPIC", "gardyn")
 
 USERNAME = os.getenv("MQTT_USERNAME")
 PASSWORD = os.getenv("MQTT_PASSWORD")
+
+SENSOR_TYPE = os.getenv('SENSOR_TYPE')

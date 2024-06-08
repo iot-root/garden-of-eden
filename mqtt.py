@@ -229,7 +229,7 @@ def on_message(client, userdata, msg):
                 
         if msg.topic == BASE_TOPIC + "/temperature/get":
             try:
-                temperature = temperature_sensor.get_value()
+                temperature = temperature_sensor.read()
                 logger.info(f"Publishing PCB Temperature: {temperature:.2f}°C")
                 client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
             except Exception as e:
@@ -237,7 +237,7 @@ def on_message(client, userdata, msg):
         
         if msg.topic == BASE_TOPIC + "/humidity/get":
             try:
-                humidity = humidity_sensor.get_value()
+                humidity = humidity_sensor.read()
                 logger.info(f"Publishing Humidity: {humidity:.2f}%")
                 client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
             except Exception as e:
@@ -261,7 +261,7 @@ def publish_pcb_temperature(client):
 def publish_temperature(client):
     while True:
         try:
-            temperature = temperature_sensor.get_value()
+            temperature = temperature_sensor.read()
             logger.info(f"Publishing Temperature: {temperature:.2f}°C")
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
         except Exception as e:
@@ -271,7 +271,7 @@ def publish_temperature(client):
 def publish_humidity(client):
     while True:
         try:
-            humidity = humidity_sensor.get_value()
+            humidity = humidity_sensor.read()
             logger.info(f"Publishing Humidity: {humidity:.2f}%")
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
         except Exception as e:

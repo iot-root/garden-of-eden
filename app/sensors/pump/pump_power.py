@@ -27,7 +27,7 @@ def fetch_ina219_data():
                 'Power': None,
                 'ShuntVoltage': ina.shunt_voltage(),
             }
-            data['Bus Current'] = ina.current()
+            data['BusCurrent'] = ina.current()
             data['Power'] = ina.power()
         except DeviceRangeError as e:
             data['error'] = str(e)
