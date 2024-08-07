@@ -22,7 +22,7 @@ from app.sensors.distance.distance import Distance
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize devices 
+# Initialize devices
 pin_factory = PiGPIOFactory()
 
 pump = Pump(pin_factory=pin_factory)
@@ -38,12 +38,9 @@ min_per_hr  = 60
 # publish twice an hour
 publish_frequency = sec_per_min * min_per_hr / 2
 
+# camera = picamera.PiCamera()
+# camera.vflip=True
 
-# camera = picamera.PiCamera() 
-# camera.vflip=True 
-
-
-                   
 def send_discovery_messages(client):
     device_info = {
         "identifiers": [IDENTIFIER],
@@ -54,7 +51,7 @@ def send_discovery_messages(client):
     }
 
     #Note: homeassistant/<component>/[<node_id>/]<object_id>/config.
-    
+
     # Config for Light
     TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/"+IDENTIFIER+"_light/config"
     temp_config_payload = {
@@ -84,7 +81,7 @@ def send_discovery_messages(client):
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-  
+
     #Config for Temperature from PCB
     TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/"+IDENTIFIER+"_pcb_temp/config"
     temp_config_payload = {
@@ -96,7 +93,7 @@ def send_discovery_messages(client):
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-    
+
     #Config for Temperature Sensor
     TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/"+IDENTIFIER+"_temperature/config"
     temp_config_payload = {
@@ -109,7 +106,7 @@ def send_discovery_messages(client):
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-    
+
     #Config for Humidity Sensor
     TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/"+IDENTIFIER+"_humidity/config"
     temp_config_payload = {
@@ -122,10 +119,11 @@ def send_discovery_messages(client):
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-    
-    
+
+
     #Config for Water Level Sensor
     TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/"+IDENTIFIER+"_water_level/config"
+
     temp_config_payload = {
         "name": "Water Level",
         "unique_id": IDENTIFIER + "_water_level",
@@ -136,7 +134,7 @@ def send_discovery_messages(client):
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-    
+
     TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraleft/config"
     temp_config_payload = {
         "name": "Left Camera",
@@ -145,7 +143,7 @@ def send_discovery_messages(client):
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-    
+
     TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraright/config"
     temp_config_payload = {
         "name": "Right Camera",
@@ -209,7 +207,7 @@ def on_message(client, userdata, msg):
                 client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
             else:
                 logger.error("Invalid brightness value received.")
-                
+
         # on demand sensor readings
         if msg.topic == BASE_TOPIC + "/water/level/get":
             try:
@@ -218,7 +216,7 @@ def on_message(client, userdata, msg):
                 client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
             except Exception as e:
                 logger.error(f"Failed to fetch and publish on-demand water level: {e}")
-        
+
         if msg.topic == BASE_TOPIC + "/pcb/temperature/get":
             try:
                 pcb_temp = get_pcb_temperature()
@@ -226,7 +224,7 @@ def on_message(client, userdata, msg):
                 client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
             except Exception as e:
                 logger.error(f"Failed to read or publish pcb temperature: {e}")
-                
+
         if msg.topic == BASE_TOPIC + "/temperature/get":
             try:
                 temperature = temperature_sensor.read()
@@ -234,7 +232,7 @@ def on_message(client, userdata, msg):
                 client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
             except Exception as e:
                 logger.error(f"Failed to read or publish ambient temperature: {e}")
-        
+
         if msg.topic == BASE_TOPIC + "/humidity/get":
             try:
                 humidity = humidity_sensor.read()
@@ -242,7 +240,7 @@ def on_message(client, userdata, msg):
                 client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
             except Exception as e:
                 logger.error(f"Failed to read or publish ambient humidity: {e}")
-      
+
     except UnicodeDecodeError as e:
         logger.error(f"Error decoding message: {e}. Data may not be text.")
     except ValueError as e:
@@ -256,8 +254,8 @@ def publish_pcb_temperature(client):
             client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish PCB temperature: {e}")
-        sleep(30*60)  # Publish temperature every 60 seconds
-        
+        sleep(30*60)  # Publish temperature every x seconds
+
 def publish_temperature(client):
     while True:
         try:
@@ -266,8 +264,8 @@ def publish_temperature(client):
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient temperature: {e}")
-        sleep(30*60)  # Publish temperature every 60 seconds
-        
+        sleep(30*60)  # Publish temperature every x seconds
+
 def publish_humidity(client):
     while True:
         try:
@@ -276,7 +274,7 @@ def publish_humidity(client):
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient humidity: {e}")
-        sleep(30*60)  # Publish temperature every 60 seconds
+        sleep(30*60)  # Publish temperature every x seconds
 
 def publish_water_level(client):
     while True:
@@ -286,9 +284,8 @@ def publish_water_level(client):
             client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish water level: {e}")
-        sleep(30*60)  # Publish temperature every 60 seconds
+        sleep(30*60)  # Publish temperature every x seconds
 
-   
 # def publish_images(client):
     # while True:
         # try:
@@ -299,7 +296,7 @@ def publish_water_level(client):
                 # raise ValueError("Could not read from device")
             # image = cv2.imencode('.jpg', frame)[1].tobytes()
             # client.publish(BASE_TOPIC+"/camera/right",payload=image)
-            
+
             # cap = cv2.VideoCapture('/dev/video1')
             # ret, frame = cap.read()
             # cap.release()
@@ -309,7 +306,6 @@ def publish_water_level(client):
             # client.publish(BASE_TOPIC+"/camera/left",payload=image)
         # except Exception as e:
             # logger.error(f"Failed to read or publish water level: {e}")
-    
     # sleep(60*60*24)  # Publish temperature every 60 seconds
 
 # def publish_images(client):
@@ -339,7 +335,7 @@ def publish_water_level(client):
             # logger.error(f"Failed to read or publish images: {e}")
 
         # sleep(60*60*24)  # Adjust the sleep duration as needed
-        
+
 def capture_and_publish_image(client, camera_position):
     # Initialize the camera
     camera = PiCamera()
@@ -363,7 +359,7 @@ def capture_and_publish_image(client, camera_position):
     encoded_image = base64.b64encode(image_data).decode('utf-8')
     client.publish(BASE_TOPIC + f"/camera/{camera_position}", payload=encoded_image)
     print(f'{file_name} image published')
-        
+
 def publish_images(client):
     while True:
         try:
@@ -377,7 +373,7 @@ def publish_images(client):
 
         # Adjust the sleep duration as needed, e.g., for a 1-hour interval, use sleep(3600)
         sleep(30)  # Sleep for 1 hour before the next capture cycle
-        
+
 # def publish_images(client):
     # while True:
         # try:
@@ -412,8 +408,6 @@ def publish_images(client):
         # # Adjust the sleep duration as needed, e.g., for a 1-hour interval, use sleep(3600)
         # sleep(3600)  # Sleep for 1 hour before the next capture cycle
 
-                   
-
 if __name__ == "__main__":
     logger.info(f"Connecting to {BROKER} on port {PORT} with keep alive {KEEP_ALIVE_INTERVAL}")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -421,28 +415,28 @@ if __name__ == "__main__":
     client.on_message = on_message
     client.username_pw_set(USERNAME, PASSWORD)
     client.connect(BROKER, PORT, KEEP_ALIVE_INTERVAL)
-    
+
     # Start the PCB temperature publishing routine in a separate thread
     pcb_temp_thread = threading.Thread(target=publish_pcb_temperature, args=(client,))
     pcb_temp_thread.daemon = True
     pcb_temp_thread.start()
-    
+
     temperature_thread = threading.Thread(target=publish_temperature, args=(client,))
     temperature_thread.daemon = True
     temperature_thread.start()
-    
+
     humidity_thread = threading.Thread(target=publish_humidity, args=(client,))
     humidity_thread.daemon = True
     humidity_thread.start()
-    
+
     water_level_thread = threading.Thread(target=publish_water_level, args=(client,))
     water_level_thread.daemon = True
-    water_level_thread.start()    
-    
-    
+    water_level_thread.start()
+
+
     # publish_images_thread = threading.Thread(target=publish_images, args=(client,))
     # publish_images_thread.daemon = True
-    # publish_images_thread.start()    
-    
+    # publish_images_thread.start()
+
     client.loop_forever()
-    
+
