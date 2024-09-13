@@ -3,10 +3,12 @@
 # water <minutes|on|off>
 # on = 5 minutes
 
+minutes_default=5
+
 minutes_min=1
 minutes_max=15
 
-minutes=5
+speed=100
 
 NC=$(echo -e '\033[0m') ;
 IT=$(echo -e '\033[3m') ;
@@ -16,7 +18,7 @@ water_off() {
 }
 
 water_on() {
-	"${HOME}/garden-of-eden/venv/bin/python" "${HOME}/garden-of-eden/app/sensors/pump/pump.py" --on --speed 100 ;
+	"${HOME}/garden-of-eden/venv/bin/python" "${HOME}/garden-of-eden/app/sensors/pump/pump.py" --on --speed ${speed} ;
 	sleep $((${1} * 60)) ;
 	water_off ;
 }
@@ -34,7 +36,7 @@ EOF
 if [[ ${1} == ?(-)+([[:digit:]]) ]] ; then
 	minutes="${1}" ;
 elif [[ "${1}" == "on" ]] ; then
-	minutes=5 ;
+	minutes=${minutes_default} ;
 elif [[ "${1}" == "off" ]] ; then
 	water_off ;
 	exit 0 ;

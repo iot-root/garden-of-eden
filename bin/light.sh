@@ -3,10 +3,11 @@
 # light <brightness|on|off>
 # on = brightness 70
 
-brightness_min=1
-brightness_max=15
+# 70 is Gardyn's "100%"
+brightness_default=70
 
-brightness=70
+brightness_min=1
+brightness_max=100
 
 NC=$(echo -e '\033[0m') ;
 IT=$(echo -e '\033[3m') ;
@@ -32,7 +33,7 @@ EOF
 if [[ ${1} == ?(-)+([[:digit:]]) ]] ; then
 	brightness=${1} ;
 elif [[ "${1}" == "on" ]] ; then
-	brightness=70 ;
+	brightness=${brightness_default} ;
 elif [[ "${1}" == "off" ]] ; then
 	light_off ;
 	exit 0 ;
