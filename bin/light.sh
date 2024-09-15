@@ -3,30 +3,39 @@
 # light <brightness|on|off>
 # on = brightness 70
 
+set -euo pipefail
+
+# If invalid brightness is specified, should we set
+# gardyn lights to brightness_default (70%)?
+light_by_default=true
+
 # 70 is Gardyn's "100%"
 brightness_default=70
 
-brightness_min=1
+# minimum 4%, maximum 100%; lower than 4% just flashes
+brightness_min=4
 brightness_max=100
 
-NC=$(echo -e '\033[0m') ;
-IT=$(echo -e '\033[3m') ;
+RST=$(echo -e '\e[0m') ;
+ITL=$(echo -e '\e[3m') ;
+
+# get Garden of Eden path from script location
+GOE_PATH=$(realpath "$(dirname "$(readlink -e "${0}")")/..") ;
+
 
 light_off() {
-	"${HOME}/garden-of-eden/venv/bin/python" "${HOME}/garden-of-eden/app/sensors/light/light.py" --off ;
+	"${GOE_PATH}/venv/bin/python" "${GOE_PATH}/app/sensors/light/light.py" --off ;
 }
 
 light_on() {
-	"${HOME}/garden-of-eden/venv/bin/python" "${HOME}/garden-of-eden/app/sensors/light/light.py" --on --brightness "${1}" ;
+	"${GOE_PATH}/venv/bin/python" "${GOE_PATH}/app/sensors/light/light.py" --on --brightness "${1}" ;
 }
 
 usage() {
 	cat << EOF
-  light <off|on|${IT}brightness${NC}>
-  brightness value must be 1–100; "on" defaults to 70.
-
-  e.g.:
-    light 65
+  light <off|on|${ITL}brightness${RST}>
+  brightness value must be ${brightness_min}–${brightness_max}; "on" defaults to ${brightness_default}.
+  Example: light 65
 EOF
 }
 
@@ -44,6 +53,8 @@ fi
 
 if [[ (( ${brightness} -ge ${brightness_min} )) && (( ${brightness} -le ${brightness_max} )) ]] ; then
 	light_on "${brightness}" ;
+elif [[ ${light_by_default} ]] ; then
+	light_on "${brightness_default}" ;
 else
 	usage ;
 	exit 2 ;
