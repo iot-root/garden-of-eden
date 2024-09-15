@@ -26,21 +26,8 @@ water_state=0
 NC=$(echo -e '\033[0m') ;
 IT=$(echo -e '\033[3m') ;
 
-# get Garden of Eden path from env
-if [[ ! -d ${GOE_PATH:-} ]] ; then
-	wild_guess=$(realpath "$(find /home/ -type d -name garden-of-eden)") ;
-	if [[ -z "${wild_guess}" ]] ; then
-		wild_guess='/path/to/garden-of-eden' ;
-	fi
-	cat << EOF
-ERROR: The garden-of-eden environment path is incorrect or not set
-       Try addding something to your .profile like:
-
-GOE_PATH="${wild_guess}" ;
-export GOE_PATH ;
-EOF
-	exit 1 ;
-fi
+# get Garden of Eden path from script location
+GOE_PATH=$(realpath "$(dirname "$(readlink -e "${0}")")/..") ;
 
 # e.g. 3m => 180; 1m45s => 105
 time_to_seconds() {
