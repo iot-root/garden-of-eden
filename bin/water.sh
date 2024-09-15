@@ -52,6 +52,7 @@ water_on() {
 	"${GOE_PATH}/venv/bin/python" "${GOE_PATH}/app/sensors/pump/pump.py" --on --speed ${speed} ;
 }
 
+# Function turns on water, sleeps for input time, turns water off
 water_for_time() {
 	water_on ;
 	sleep "${1}" ;
@@ -82,7 +83,7 @@ trap water_exit EXIT
 
 # Max-accepted valid input is "13m120s"
 if [[ ${#1} -gt 7 ]] ; then
-	echo 'ERROR: Input too long!' ;
+	echo 'ERROR: Input too many characters' ;
   usage ;
 	exit 1 ;
 # No suffix specified; assume minutes <= 15, seconds otherwise
@@ -101,7 +102,7 @@ elif [[ "${1}" == "off" ]] ; then
 	water_off ;
 	exit 0 ;
 else
-	echo 'ERROR: Unrecognized input format!' ;
+	echo 'ERROR: Unrecognized input format' ;
 	usage ;
 	exit 1 ;
 fi
@@ -115,7 +116,7 @@ if [[ (( ${seconds} -ge ${seconds_min} )) && (( ${seconds} -le ${seconds_max} ))
 elif [[ ${water_by_default} ]] ; then
 	water_for_time "${time_default}" ;
 else
-	echo 'ERROR: Unrecognized input format!' ;
+	echo "ERROR: Input must be between ${time_min}–${time_max}" ;
 	usage ;
 	exit 1 ;
 fi

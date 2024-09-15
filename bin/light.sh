@@ -39,7 +39,12 @@ usage() {
 EOF
 }
 
-if [[ ${1} == ?(-)+([[:digit:]]) ]] ; then
+# Max-accepted valid input is "100"
+if [[ ${#1} -gt 3 ]] ; then
+	echo 'ERROR: Input too many characters' ;
+  usage ;
+	exit 1 ;
+elif [[ ${1} == ?(-)+([[:digit:]]) ]] ; then
 	brightness=${1} ;
 elif [[ "${1}" == "on" ]] ; then
 	brightness=${brightness_default} ;
@@ -47,6 +52,7 @@ elif [[ "${1}" == "off" ]] ; then
 	light_off ;
 	exit 0 ;
 else
+	echo 'ERROR: Unrecognized input format' ;
 	usage ;
 	exit 1 ;
 fi
@@ -56,8 +62,9 @@ if [[ (( ${brightness} -ge ${brightness_min} )) && (( ${brightness} -le ${bright
 elif [[ ${light_by_default} ]] ; then
 	light_on "${brightness_default}" ;
 else
+	echo "ERROR: Input must be between ${brightness_min}–${brightness_max}" ;
 	usage ;
-	exit 2 ;
+	exit 1 ;
 fi
 
 exit 0 ;
