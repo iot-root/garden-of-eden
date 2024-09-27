@@ -219,6 +219,11 @@ function check_i2c_sensors {
     check_device "AM2320" "5c" "10" "0.002"
 }
 
+function create_bash_script_symlinks() {
+    ln -fs "${INSTALL_DIR}/bin/light.sh" "/usr/local/bin/light"
+    ln -fs "${INSTALL_DIR}/bin/water.sh" "/usr/local/bin/water"
+}
+
 # Ensure pigpio daemon runs after system reboots
 function enable_pigpiod_service {
     sudo systemctl enable pigpiod
@@ -266,6 +271,8 @@ ensure_env_file
 add_user_to_groups
 check_i2c_sensors
 add_sensor_type_to_env
+
+create_bash_script_symlinks
 
 #Note: pigpiod will be started by mqtt.service
 #enable_pigpiod_service
