@@ -220,8 +220,8 @@ function check_i2c_sensors {
 }
 
 function create_bash_script_symlinks() {
-    ln -fs "${INSTALL_DIR}/bin/light.sh" "/usr/local/bin/light"
-    ln -fs "${INSTALL_DIR}/bin/water.sh" "/usr/local/bin/water"
+    sudo ln -fs "${INSTALL_DIR}/bin/light.sh" "/usr/local/bin/light"
+    sudo ln -fs "${INSTALL_DIR}/bin/water.sh" "/usr/local/bin/water"
 }
 
 # Ensure pigpio daemon runs after system reboots
