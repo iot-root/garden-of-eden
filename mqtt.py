@@ -212,8 +212,11 @@ def on_message(client, userdata, msg):
         if msg.topic == BASE_TOPIC + "/water/level/get":
             try:
                 distance = distance_sensor.measure_once()
-                logger.info(f"Received on-demand water level request: {distance:.2f}cm")
-                client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
+                if distance is None:
+                    logger.warning("No echo received; sensor might be out of range.")
+                else:
+                    logger.info(f"Received on-demand water level request: {distance:.2f}cm")
+                    client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
             except Exception as e:
                 logger.error(f"Failed to fetch and publish on-demand water level: {e}")
 
