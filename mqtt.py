@@ -1,5 +1,6 @@
 import subprocess
 import threading
+from threading import Timer
 import logging
 import paho.mqtt.client as mqtt
 import base64
@@ -9,6 +10,7 @@ import json
 from time import sleep
 from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION
 
+from gpiozero import Button  # Import gpiozero Button
 from gpiozero.pins.pigpio import PiGPIOFactory
 
 from app.sensors.light.light import Light
@@ -19,7 +21,18 @@ from app.sensors.humidity.humidity import humidity_sensor
 from app.sensors.distance.distance import Distance
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("gardyn.log"),  # Log to a file
+        logging.StreamHandler()  # Log to the console (stdout)
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
 # Initialize devices
@@ -40,6 +53,69 @@ publish_frequency = sec_per_min * min_per_hr / 2
 
 # camera = picamera.PiCamera()
 # camera.vflip=True
+
+# Button GPIO setup using gpiozero
+button_pin = 13
+button = Button(button_pin, pin_factory=pin_factory, bounce_time=0.2, hold_time=2)  # hold_time = 2 seconds for long press detection
+
+# Variables to track the state of the light and pump
+light_state = False
+pump_state = False
+double_press_time = 1  # Time to detect a double press (in seconds)
+press_count = 0
+double_press_timer = None
+
+# Button press callbacks
+def toggle_light():
+    global light_state
+    light_state = not light_state
+    if light_state:
+        logger.info("Toggling Light ON")
+        light.set_duty_cycle(brightness)
+        client.publish(BASE_TOPIC + "/light/state", "ON")
+    else:
+        logger.info("Toggling Light OFF")
+        light.off()
+        client.publish(BASE_TOPIC + "/light/state", "OFF")
+
+def toggle_pump():
+    global pump_state
+    pump_state = not pump_state
+    if pump_state:
+        logger.info("Toggling Pump ON")
+        pump.set_speed(speed)
+        client.publish(BASE_TOPIC + "/pump/state", "ON")
+    else:
+        logger.info("Toggling Pump OFF")
+        pump.off()
+        client.publish(BASE_TOPIC + "/pump/state", "OFF")
+
+def handle_button_press():
+    global press_count, double_press_timer
+
+    press_count += 1
+
+    if press_count == 1:
+        # Start a timer to detect if a second press occurs within the double press time window
+        double_press_timer = Timer(double_press_time, handle_single_press)
+        double_press_timer.start()
+    elif press_count == 2:
+        # If a second press occurs, cancel the single press action and trigger the double press action
+        if double_press_timer:
+            double_press_timer.cancel()
+        handle_double_press()
+        press_count = 0
+
+def handle_single_press():
+    global press_count
+    toggle_light()  # Single press toggles the light
+    press_count = 0
+
+def handle_double_press():
+    toggle_pump()  # Double press toggles the pump
+
+# Set button event for press detection
+button.when_pressed = handle_button_press
 
 def send_discovery_messages(client):
     device_info = {
