@@ -90,6 +90,19 @@ sudo systemctl status mqtt.service
 
 ## Usage
 
+## Quick Toggle Guide
+
+> Ensure your press is quick and within the time frame for the action to register correctly. The press time window can be modified directly in the `mqtt.py` file.
+
+- **One Press** (within 1 second): 
+  - **Action**: Toggles the **Lights** on or off. 
+  - **Description**: A single, swift press will illuminate or darken your space with ease.
+
+- **Two Presses** (within 1 second): 
+  - **Action**: Toggles the **Pump** on or off.
+  - **Description**: Need to water the garden or fill up the pool? Double tap for action!
+
+
 ### MQTT with HomeAssistant
 
 For homeassistant:
