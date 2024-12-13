@@ -129,13 +129,39 @@ password_file /etc/mosquitto/passwd
 listener 1883
 ```
 
+
+Here are some additional options that you could set in `/etc/mosquitto/mosquitto.conf`:
+
+```
+pid_file /run/mosquitto/mosquitto.pid
+
+persistence true
+persistence_location /var/lib/mosquitto/
+
+log_dest file /var/log/mosquitto/mosquitto.log
+
+listener 1883 0.0.0.0
+
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+
+include_dir /etc/mosquitto/conf.d
+```
+
+
 Restart the service
 
 ```
 sudo systemctl restart mosquitto
 ```
 
-you just need to edit the `.env`
+you just need to edit the `.env` with the mosquitto username and password created above in /etc/mosquitto/passwd.
+
+
+Check the configuration works:
+
+`sudo journalctl -xeu mosquitto.service`
+
 
 If you havent already, run `./bin/setup.sh`, this will install all OS dependencies, install the python libs, and run services pigpiod, mqtt.service
 
@@ -150,6 +176,34 @@ sudo systemctl status mosquitto
 Go to your homeassistant instance:
 If your broker is on the gardyn pi, make sure to install the service mqtt, go to settings->devices&services->mqtt and add your gardyn pi host, port, username and password.
 The device should then appear in your homeassistant discovery settings.
+
+To test locally on gardyn pi:
+
+Pump:
+
+```
+mosquitto_pub -t "gardyn/light/command" -m "ON" -u gardyn -P "somepassword"
+mosquitto_pub -t "gardyn/light/command" -m "OFF" -u gardyn -P "somepassword"
+```
+
+Light:
+
+```
+mosquitto_pub -t "gardyn/pump/command" -m "ON" -u gardyn -P "somepassword"
+mosquitto_pub -t "gardyn/pump/command" -m "OFF" -u gardyn -P "somepassword"
+```
+
+Sensors:
+
+Open two terminals on the gardyn pi, in one run:
+
+`mosquitto_sub -t "gardyn/water/level" -u gardyn -P "wowcow2019"`
+
+In the second gardyn pi terminal, run:
+
+`mosquitto_pub -t "gardyn/water/level/get" -m ""-r  -u gardyn -P "wowcow2019"`
+
+```
 
 ### Testing
 
