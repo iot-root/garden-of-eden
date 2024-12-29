@@ -144,7 +144,7 @@ def send_discovery_messages(client):
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
     #Config for Pump (as a switch with speed control, for example)
-    TEMP_CONFIG_TOPIC = "homeassistant/pump/gardyn/"+IDENTIFIER+"_pump/config"
+    TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/"+IDENTIFIER+"_pump/config"
     temp_config_payload = {
         "name": "Pump",
         "unique_id": IDENTIFIER + "_pump",
