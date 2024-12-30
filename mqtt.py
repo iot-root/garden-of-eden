@@ -117,6 +117,9 @@ def handle_double_press():
 # Set button event for press detection
 button.when_pressed = handle_button_press
 
+# https://www.home-assistant.io/integrations/mqtt/#discovery-messages
+#  Note: homeassistant/<component>/[<node_id>/]<object_id>/config.
+#  User device_class for auto suggestion on HA card picks
 def send_discovery_messages(client):
     device_info = {
         "identifiers": [IDENTIFIER],
@@ -125,8 +128,6 @@ def send_discovery_messages(client):
         "model": MODEL,
         "sw_version": VERSION,
     }
-
-    #Note: homeassistant/<component>/[<node_id>/]<object_id>/config.
 
     # Config for Light
     TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/"+IDENTIFIER+"_light/config"
@@ -143,17 +144,27 @@ def send_discovery_messages(client):
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
-    #Config for Pump (as a switch with speed control, for example)
+    #Config for Pump (as a light with speed control, for example)
+    # todo: maybe use fan instead....
     TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/"+IDENTIFIER+"_pump/config"
     temp_config_payload = {
         "name": "Pump",
         "unique_id": IDENTIFIER + "_pump",
         "platform": "mqtt",
+	"device_class": "fan",
         "state_topic": BASE_TOPIC + "/pump/state",
         "command_topic": BASE_TOPIC + "/pump/command",
-        "percentage_state_topic": BASE_TOPIC + "/pump/speed/state",
-        "percentage_command_topic": BASE_TOPIC + "/pump/speed/set",
-        "speed_range_max": 100,
+
+        "brightness_state_topic": BASE_TOPIC + "/pump/brightness/state",
+        "brightness_command_topic": BASE_TOPIC + "/pump/brightness/set",
+        "brightness_scale": 100,
+
+        # if using fan....
+	# "percentage_state_topic": BASE_TOPIC + "/pump/speed/state",
+	# "percentage_command_topic": BASE_TOPIC + "/pump/speed/set",
+	# "speed_range_min": 1,
+	# "speed_range_max": 100,
+        "icon": "mdi:water-pump",
         "device": device_info
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
@@ -211,23 +222,23 @@ def send_discovery_messages(client):
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
-    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraleft/config"
-    temp_config_payload = {
-        "name": "Left Camera",
-        "unique_id": IDENTIFIER + "cameraleft",
-        "state_topic": BASE_TOPIC + "/camera/left",
-        "device": device_info
-    }
-    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-
-    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraright/config"
-    temp_config_payload = {
-        "name": "Right Camera",
-        "unique_id": IDENTIFIER + "cameraright",
-        "state_topic": BASE_TOPIC + "/camera/right",
-        "device": device_info
-    }
-    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+#    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraleft/config"
+#    temp_config_payload = {
+#        "name": "Left Camera",
+#        "unique_id": IDENTIFIER + "cameraleft",
+#        "state_topic": BASE_TOPIC + "/camera/left",
+#        "device": device_info
+#    }
+#    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+#
+#    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraright/config"
+#    temp_config_payload = {
+#        "name": "Right Camera",
+#        "unique_id": IDENTIFIER + "cameraright",
+#        "state_topic": BASE_TOPIC + "/camera/right",
+#        "device": device_info
+#    }
+#    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
 
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -333,7 +344,7 @@ def publish_pcb_temperature(client):
             client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish PCB temperature: {e}")
-        sleep(30*60)  # Publish temperature every x seconds
+        sleep(30*60)  # Publish frequency, every x seconds
 
 def publish_temperature(client):
     while True:
@@ -343,7 +354,7 @@ def publish_temperature(client):
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient temperature: {e}")
-        sleep(30*60)  # Publish temperature every x seconds
+        sleep(30*60)  # Publish frequency, every x seconds
 
 def publish_humidity(client):
     while True:
@@ -353,7 +364,7 @@ def publish_humidity(client):
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish ambient humidity: {e}")
-        sleep(30*60)  # Publish temperature every x seconds
+        sleep(30*60)  # Publish frequency, every x seconds
 
 def publish_water_level(client):
     while True:
@@ -363,7 +374,7 @@ def publish_water_level(client):
             client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
         except Exception as e:
             logger.error(f"Failed to read or publish water level: {e}")
-        sleep(30*60)  # Publish temperature every x seconds
+        sleep(30*60)  # Publish frequency, every x seconds
 
 # def publish_images(client):
     # while True:
@@ -512,7 +523,7 @@ if __name__ == "__main__":
     water_level_thread.daemon = True
     water_level_thread.start()
 
-
+    # Todo: figure out image publishing over mqtt...
     # publish_images_thread = threading.Thread(target=publish_images, args=(client,))
     # publish_images_thread.daemon = True
     # publish_images_thread.start()
