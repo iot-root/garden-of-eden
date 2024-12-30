@@ -35,6 +35,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+logger.setLevel(logging.DEBUG)  # Ensure logger captures debug-level messages.
+
+logger.debug("This is a debug message")
+logger.info("This is an info message")
+logger.warning("This is a warning message")
+logger.error("This is an error message")
+
 # Initialize devices
 pin_factory = PiGPIOFactory()
 
@@ -155,8 +162,8 @@ def send_discovery_messages(client):
         "state_topic": BASE_TOPIC + "/pump/state",
         "command_topic": BASE_TOPIC + "/pump/command",
 
-        "brightness_state_topic": BASE_TOPIC + "/pump/brightness/state",
-        "brightness_command_topic": BASE_TOPIC + "/pump/brightness/set",
+        "brightness_state_topic": BASE_TOPIC + "/pump/speed/state",
+        "brightness_command_topic": BASE_TOPIC + "/pump/speed/set",
         "brightness_scale": 100,
 
         # if using fan....
