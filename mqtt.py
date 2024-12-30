@@ -21,11 +21,8 @@ from app.sensors.humidity.humidity import humidity_sensor
 from app.sensors.distance.distance import Distance
 
 # Configure logging
-#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("gardyn.log"),  # Log to a file
@@ -35,7 +32,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.DEBUG)  # Ensure logger captures debug-level messages.
+# set to INFO, for to capture mqtt messages at info-level messages.
+logger.setLevel(logging.WARNING)
 
 logger.debug("This is a debug message")
 logger.info("This is an info message")
