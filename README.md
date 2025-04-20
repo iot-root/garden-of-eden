@@ -197,11 +197,11 @@ Sensors:
 
 Open two terminals on the gardyn pi, in one run:
 
-`mosquitto_sub -t "gardyn/water/level" -u gardyn -P "wowcow2019"`
+`mosquitto_sub -t "gardyn/water/level" -u gardyn -P "somepassword"`
 
 In the second gardyn pi terminal, run:
 
-`mosquitto_pub -t "gardyn/water/level/get" -m ""-r  -u gardyn -P "wowcow2019"`
+`mosquitto_pub -t "gardyn/water/level/get" -m ""-r  -u gardyn -P "somepassword"`
 
 ```
 
