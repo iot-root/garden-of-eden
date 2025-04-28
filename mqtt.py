@@ -8,7 +8,7 @@ import json
 # import picamera
 # import cv2
 from time import sleep
-from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION
+from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION, WATER_LOW_CM
 
 from gpiozero import Button  # Import gpiozero Button
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -18,7 +18,7 @@ from app.sensors.pump.pump import Pump
 from app.sensors.pcb_temp.pcb_temp import get_pcb_temperature
 from app.sensors.temperature.temperature import temperature_sensor
 from app.sensors.humidity.humidity import humidity_sensor
-from app.sensors.distance.distance import Distance
+from app.sensors.distance.distance import Distance, MeasurementError
 
 # Configure logging
 logging.basicConfig(
@@ -121,6 +121,63 @@ def handle_double_press():
 
 # Set button event for press detection
 button.when_pressed = handle_button_press
+
+# helpers
+def flash_lights(times=3, delay=0.3):
+    original_brightness = light.get_brightness()  # Save the brightness (0–100 scale)
+    was_on = original_brightness > 0  # If >0%, we consider it "on"
+
+    logger.info(f"Flashing lights {times} times. Original brightness: {original_brightness}%")
+
+    for _ in range(times):
+        light.off()
+        sleep(delay)
+        light.set_brightness(100)  # Flash full brightness for maximum visibility
+        sleep(delay)
+    # Restore original state
+    if was_on:
+        light.set_brightness(original_brightness)
+    else:
+        light.off()
+
+def safe_distance_measure():
+    global distance_sensor
+    try:
+        return distance_sensor.measure_once()
+    except MeasurementError as e:
+        logger.warning(f"Distance measure failed: {e}, trying recovery")
+        try:
+            distance_sensor = Distance(pin_factory=pin_factory)
+            return distance_sensor.measure_once()
+        except Exception as e2:
+            logger.error(f"Distance full recovery failed: {e2}")
+            return None
+
+def publish_water_low_mode(client):
+    if WATER_LOW_CM not in (None, 0):
+        mode = "Enabled"
+    else:
+        mode = "Disabled"
+    logger.info(f"Publishing water low mode: {mode}")
+    client.publish(BASE_TOPIC + "/water/low/mode", mode, retain=True)
+
+
+def update_water_low_state(client):
+    if WATER_LOW_CM not in (None, 0):
+        distance = safe_distance_measure()
+        if distance is not None:
+            if distance > WATER_LOW_CM:
+                client.publish(BASE_TOPIC + "/water/low/state", "ON", retain=True)
+                logger.info(f"Updated water low state to ON (distance {distance:.2f}cm > {WATER_LOW_CM:.2f}cm)")
+            else:
+                client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
+                logger.info(f"Updated water low state to OFF (distance {distance:.2f}cm <= {WATER_LOW_CM:.2f}cm)")
+        else:
+            logger.warning("Could not update water low state because distance reading failed")
+    else:
+        # If checking is disabled, maybe set it to OFF by default
+        client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
+        logger.info("Water low checking disabled, setting water low state to OFF")
 
 # https://www.home-assistant.io/integrations/mqtt/#discovery-messages
 #  Note: homeassistant/<component>/[<node_id>/]<object_id>/config.
@@ -227,6 +284,63 @@ def send_discovery_messages(client):
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
+    # Config for Water Low Binary Sensor
+    TEMP_CONFIG_TOPIC = f"homeassistant/binary_sensor/gardyn/{IDENTIFIER}_water_low/config"
+    temp_config_payload = {
+        "name": "Water Low",
+        "unique_id": IDENTIFIER + "_water_low",
+        "platform": "mqtt",
+        "state_topic": BASE_TOPIC + "/water/low/state",
+        "device_class": "problem",
+        "payload_on": "ON",
+        "payload_off": "OFF",
+        "device": device_info
+    }
+    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+
+    # Config for Water Low Threshold (current value)
+        # Config for Water Low CM Set Number
+    TEMP_CONFIG_TOPIC = f"homeassistant/number/gardyn/{IDENTIFIER}_water_low_cm/config"
+    temp_config_payload = {
+        "name": "Set Water Low Threshold",
+        "unique_id": IDENTIFIER + "_water_low_cm",
+        "platform": "mqtt",
+        "state_topic": BASE_TOPIC + "/water/low/cm",
+        "command_topic": BASE_TOPIC + "/water/low/cm/set",
+        "min": 0,
+        "max": 15,
+        "step": 0.5,
+        "unit_of_measurement": "cm",
+        "device_class": "distance",
+        "device": device_info
+    }
+    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+
+    # TEMP_CONFIG_TOPIC = f"homeassistant/sensor/gardyn/{IDENTIFIER}_water_low_cm/config"
+    # temp_config_payload = {
+    #     "name": "Water Low CM Threshold",
+    #     "unique_id": IDENTIFIER + "_water_low_cm",
+    #     "platform": "mqtt",
+    #     "state_topic": BASE_TOPIC + "/water/low/cm",
+    #     "unit_of_measurement": "cm",
+    #     "device_class": "distance",
+    #     "device": device_info
+    # }
+    # client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+
+    # Config for Water Low Mode (Enabled/Disabled)
+    TEMP_CONFIG_TOPIC = f"homeassistant/sensor/gardyn/{IDENTIFIER}_water_low_mode/config"
+    temp_config_payload = {
+        "name": "Water Low Mode",
+        "unique_id": IDENTIFIER + "_water_low_mode",
+        "platform": "mqtt",
+        "state_topic": BASE_TOPIC + "/water/low/mode",
+        "icon": "mdi:toggle-switch",  # Optional: or use mdi:alert for dramatic effect
+        "device": device_info
+    }
+    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+
+
 #    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraleft/config"
 #    temp_config_payload = {
 #        "name": "Left Camera",
@@ -251,27 +365,46 @@ def on_connect(client, userdata, flags, rc, properties=None):
     client.subscribe(BASE_TOPIC + "/#")
     # client.subscribe(BASE_TOPIC + "/light/brightness/set")
     send_discovery_messages(client)
+    publish_water_low_mode(client)
 
 def on_message(client, userdata, msg):
+    global brightness
+    global speed
+    global WATER_LOW_CM
+        
     logger.debug(f"Message received on topic {msg.topic}: {msg.payload}")
     try:
         payload = msg.payload.decode("utf-8")
         logger.debug(f"Decoded payload: '{payload}'")
         topic = msg.topic.split("/")[-1]
 
-        global brightness
-        global speed
-
         # Handle pump commands
         if msg.topic == BASE_TOPIC + "/pump/command":
             if payload.upper() == "ON":
-                logger.info("/pump/state ON")
+                if WATER_LOW_CM not in (None, 0):
+                    distance = safe_distance_measure()
+                    if distance is not None:
+                        if distance > WATER_LOW_CM:
+                            logger.warning(f"Water level too low ({distance:.2f}cm > {WATER_LOW_CM:.2f}cm), flashing lights, not running pump")
+                            flash_lights()
+                            client.publish(BASE_TOPIC + "/water/low/state", "ON", retain=True)
+                            return  # Don't run the pump
+                        else:
+                            logger.info(f"Water level OK ({distance:.2f}cm <= {WATER_LOW_CM:.2f}cm), running pump")
+                            client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
+                    else:
+                        logger.error("Failed to read water level, running pump anyway")
+                else:
+                    logger.info("Water low checking disabled (None or 0 threshold), running pump without checking")
+
                 pump.set_speed(speed)
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
+            
             elif payload.upper() == "OFF":
                 logger.info("/pump/state OFF")
                 pump.off()
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
+
         elif msg.topic == BASE_TOPIC + "/pump/speed/set":
             if payload.isdigit():  # Ensure payload is a digit
                 speed = int(payload)
@@ -311,6 +444,17 @@ def on_message(client, userdata, msg):
                     client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
             except Exception as e:
                 logger.error(f"Failed to fetch and publish on-demand water level: {e}")
+
+        if msg.topic == BASE_TOPIC + "/water/low/cm/set":
+            try:
+                WATER_LOW_CM = float(payload)
+                logger.info(f"Updated WATER_LOW_CM threshold to {WATER_LOW_CM}cm")
+                client.publish(BASE_TOPIC + "/water/low/cm", f"{WATER_LOW_CM:.2f}", retain=True)
+                publish_water_low_mode(client)
+                update_water_low_state(client)
+            except ValueError:
+                logger.error(f"Invalid water low cm set value received: {payload}")
+
 
         if msg.topic == BASE_TOPIC + "/pcb/temperature/get":
             try:
@@ -373,13 +517,11 @@ def publish_humidity(client):
 
 def publish_water_level(client):
     while True:
-        try:
-            distance = distance_sensor.measure_once()
+        distance = safe_distance_measure()
+        if distance is not None:
             logger.info(f"Publishing Water Level: {distance:.2f}cm")
             client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
-        except Exception as e:
-            logger.error(f"Failed to read or publish water level: {e}")
-        sleep(30*60)  # Publish frequency, every x seconds
+        sleep(30 * 60)
 
 # def publish_images(client):
     # while True:
@@ -534,4 +676,3 @@ if __name__ == "__main__":
     # publish_images_thread.start()
 
     client.loop_forever()
-

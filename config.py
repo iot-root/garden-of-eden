@@ -19,3 +19,5 @@ USERNAME = os.getenv("MQTT_USERNAME")
 PASSWORD = os.getenv("MQTT_PASSWORD")
 
 SENSOR_TYPE = os.getenv('SENSOR_TYPE')
+
+WATER_LOW_CM = float(os.getenv("WATER_LOW_CM", 0)) or None
