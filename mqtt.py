@@ -8,7 +8,7 @@ import json
 # import picamera
 # import cv2
 from time import sleep
-from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION, WATER_LOW_CM
+from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION, WATER_LOW_CM, UPPER_CAMERA_DEVICE, LOWER_CAMERA_DEVICE, UPPER_IMAGE_PATH, LOWER_IMAGE_PATH, CAMERA_RESOLUTION
 
 from gpiozero import Button  # Import gpiozero Button
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -316,18 +316,6 @@ def send_discovery_messages(client):
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
-    # TEMP_CONFIG_TOPIC = f"homeassistant/sensor/gardyn/{IDENTIFIER}_water_low_cm/config"
-    # temp_config_payload = {
-    #     "name": "Water Low CM Threshold",
-    #     "unique_id": IDENTIFIER + "_water_low_cm",
-    #     "platform": "mqtt",
-    #     "state_topic": BASE_TOPIC + "/water/low/cm",
-    #     "unit_of_measurement": "cm",
-    #     "device_class": "distance",
-    #     "device": device_info
-    # }
-    # client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-
     # Config for Water Low Mode (Enabled/Disabled)
     TEMP_CONFIG_TOPIC = f"homeassistant/sensor/gardyn/{IDENTIFIER}_water_low_mode/config"
     temp_config_payload = {
@@ -340,25 +328,31 @@ def send_discovery_messages(client):
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
+    # Discovery configuration for Camera A (image entity)
+    TEMP_CONFIG_TOPIC = "homeassistant/image/gardyn/" + IDENTIFIER + "_upper_camera/config"
+    temp_config_payload = {
+        "name": "Upper Camera",
+        "unique_id": IDENTIFIER + "_upper_camera",
+        "image_topic": BASE_TOPIC + "/image/upper_camera",
+        "encoding": "b64",
+        "content_type": "image/jpeg",
+        "object_id": IDENTIFIER + "_upper_camera",
+        "device": device_info
+    }
+    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
-#    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraleft/config"
-#    temp_config_payload = {
-#        "name": "Left Camera",
-#        "unique_id": IDENTIFIER + "cameraleft",
-#        "state_topic": BASE_TOPIC + "/camera/left",
-#        "device": device_info
-#    }
-#    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-#
-#    TEMP_CONFIG_TOPIC = "homeassistant/camera/gardyn/"+IDENTIFIER+"_cameraright/config"
-#    temp_config_payload = {
-#        "name": "Right Camera",
-#        "unique_id": IDENTIFIER + "cameraright",
-#        "state_topic": BASE_TOPIC + "/camera/right",
-#        "device": device_info
-#    }
-#    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
-
+    # Discovery configuration for Camera B (image entity)
+    TEMP_CONFIG_TOPIC = "homeassistant/image/gardyn/" + IDENTIFIER + "_lower_camera/config"
+    temp_config_payload = {
+        "name": "Lower Camera",
+        "unique_id": IDENTIFIER + "_lower_camera",
+        "image_topic": BASE_TOPIC + "/image/lower_camera",
+        "encoding": "b64",
+        "content_type": "image/jpeg",
+        "object_id": IDENTIFIER + "_lower_camera",
+        "device": device_info
+    }
+    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
 
 def on_connect(client, userdata, flags, rc, properties=None):
     logger.info(f"Connected with result code {rc}")
@@ -523,127 +517,42 @@ def publish_water_level(client):
             client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
         sleep(30 * 60)
 
-# def publish_images(client):
-    # while True:
-        # try:
-            # cap = cv2.VideoCapture('/dev/video0')
-            # ret, frame = cap.read()
-            # cap.release()
-            # if not ret:
-                # raise ValueError("Could not read from device")
-            # image = cv2.imencode('.jpg', frame)[1].tobytes()
-            # client.publish(BASE_TOPIC+"/camera/right",payload=image)
-
-            # cap = cv2.VideoCapture('/dev/video1')
-            # ret, frame = cap.read()
-            # cap.release()
-            # if not ret:
-                # raise ValueError("Could not read from device")
-            # image = cv2.imencode('.jpg', frame)[1].tobytes()
-            # client.publish(BASE_TOPIC+"/camera/left",payload=image)
-        # except Exception as e:
-            # logger.error(f"Failed to read or publish water level: {e}")
-    # sleep(60*60*24)  # Publish temperature every 60 seconds
-
-# def publish_images(client):
-    # while True:
-        # try:
-            # # Define paths for the left and right camera images
-            # left_image_path = '/tmp/camera_left.jpg'
-            # right_image_path = '/tmp/camera_right.jpg'
-
-            # # Capture images from the cameras
-            # subprocess.run(['fswebcam', '-r', '640x480', '--no-banner', left_image_path], check=True)
-            # subprocess.run(['fswebcam', '-r', '640x480', '--no-banner', right_image_path], check=True)
-
-            # # Read and publish the left image
-            # with open(left_image_path, 'rb') as image_file:
-                # left_image = image_file.read()
-            # client.publish(BASE_TOPIC+"/camera/left", payload=left_image)
-
-            # # Read and publish the right image
-            # with open(right_image_path, 'rb') as image_file:
-                # right_image = image_file.read()
-            # client.publish(BASE_TOPIC+"/camera/right", payload=right_image)
-
-        # except subprocess.CalledProcessError as e:
-            # logger.error(f"Failed to capture images: {e}")
-        # except Exception as e:
-            # logger.error(f"Failed to read or publish images: {e}")
-
-        # sleep(60*60*24)  # Adjust the sleep duration as needed
-
-def capture_and_publish_image(client, camera_position):
-    # Initialize the camera
-    camera = PiCamera()
-    camera.resolution = (640, 480)
-    sleep(2)  # Camera warm-up time
-
-    file_name = camera_position + '_image_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.jpg'
-    print(f'Taking photo for {camera_position}')
-
-    # Capture image into an in-memory stream
-    image_stream = BytesIO()
-    camera.capture(image_stream, 'jpeg')
-    image_stream.seek(0)  # Rewind the stream to the beginning so we can read its content
-    image_data = image_stream.read()
-
-    # Optional: Save the image file locally
-    with open(file_name, "wb") as imageFile:
-        imageFile.write(image_data)
-
-    # Publish the image
-    encoded_image = base64.b64encode(image_data).decode('utf-8')
-    client.publish(BASE_TOPIC + f"/camera/{camera_position}", payload=encoded_image)
-    print(f'{file_name} image published')
-
 def publish_images(client):
     while True:
         try:
-            # Capture and publish images for the left and right positions
-            capture_and_publish_image(client,'left')
-            capture_and_publish_image(client,'right')
+            # Capture upper camera image
+            subprocess.check_call([
+                'fswebcam', '-d', UPPER_CAMERA_DEVICE, '-r', CAMERA_RESOLUTION,
+                '-S', '2', '-F', '2', '--no-banner', UPPER_IMAGE_PATH
+            ])
+            logger.info(f"Captured image from upper camera ({UPPER_CAMERA_DEVICE})")
 
+            # Capture lower camera image
+            subprocess.check_call([
+                'fswebcam', '-d', LOWER_CAMERA_DEVICE, '-r', CAMERA_RESOLUTION,
+                '-S', '2', '-F', '2', '--no-banner', LOWER_IMAGE_PATH
+            ])
+            logger.info(f"Captured image from lower camera ({LOWER_CAMERA_DEVICE})")
+
+            # Publish upper camera image
+            with open(UPPER_IMAGE_PATH, 'rb') as f:
+                upper_cam_jpeg_data = f.read()  # Read as raw binary
+                client.publish(BASE_TOPIC + "/image/upper_camera", payload=upper_cam_jpeg_data, qos=0, retain=False)
+                logger.info("Published image to /image/upper_camera")
+
+            # Publish lower camera image
+            with open(LOWER_IMAGE_PATH, 'rb') as f:
+                lower_cam_jpeg_data = f.read()  # Read as raw binary
+                client.publish(BASE_TOPIC + "/image/lower_camera", payload=lower_cam_jpeg_data, qos=0, retain=False)
+                logger.info("Published image to /image/lower_camera")
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Camera capture failed: {e}")
         except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            # Handle other unexpected errors
+            logger.exception("Unexpected error during image capture/publish")
 
-        # Adjust the sleep duration as needed, e.g., for a 1-hour interval, use sleep(3600)
-        sleep(30)  # Sleep for 1 hour before the next capture cycle
+        sleep(IMAGE_INTERVAL_SECONDS)
 
-# def publish_images(client):
-    # while True:
-        # try:
-            # # Define paths for the left and right camera images
-            # left_image_path = '/tmp/camera_left.jpg'
-            # right_image_path = '/tmp/camera_right.jpg'
-
-            # # Capture images from the cameras
-            # subprocess.check_call(['fswebcam', '-r', '640x480', '--no-banner', left_image_path])
-            # subprocess.check_call(['fswebcam', '-r', '640x480', '--no-banner', right_image_path])
-
-            # # Read, encode in Base64, and publish the left image
-            # with open(left_image_path, 'rb') as image_file:
-                # left_image = base64.b64encode(image_file.read()).decode('utf-8')
-            # client.publish(BASE_TOPIC + "/camera/left", payload=left_image)
-
-            # # Read, encode in Base64, and publish the right image
-            # with open(right_image_path, 'rb') as image_file:
-                # right_image = base64.b64encode(image_file.read()).decode('utf-8')
-            # client.publish(BASE_TOPIC + "/camera/right", payload=right_image)
-
-        # except subprocess.CalledProcessError as e:
-            # logger.error(f"Failed to capture images: {e}")
-            # # Handle specific recovery or retry logic here if necessary
-        # except IOError as e:
-            # logger.error(f"File IO Error: {e}")
-            # # Handle file access or permission errors
-        # except Exception as e:
-            # logger.error(f"Unexpected error: {e}")
-            # # Handle other unexpected errors
-
-        # # Adjust the sleep duration as needed, e.g., for a 1-hour interval, use sleep(3600)
-        # sleep(3600)  # Sleep for 1 hour before the next capture cycle
 
 if __name__ == "__main__":
     logger.info(f"Connecting to {BROKER} on port {PORT} with keep alive {KEEP_ALIVE_INTERVAL}")
@@ -653,7 +562,6 @@ if __name__ == "__main__":
     client.username_pw_set(USERNAME, PASSWORD)
     client.connect(BROKER, PORT, KEEP_ALIVE_INTERVAL)
 
-    # Start the PCB temperature publishing routine in a separate thread
     pcb_temp_thread = threading.Thread(target=publish_pcb_temperature, args=(client,))
     pcb_temp_thread.daemon = True
     pcb_temp_thread.start()
@@ -670,9 +578,9 @@ if __name__ == "__main__":
     water_level_thread.daemon = True
     water_level_thread.start()
 
-    # Todo: figure out image publishing over mqtt...
-    # publish_images_thread = threading.Thread(target=publish_images, args=(client,))
-    # publish_images_thread.daemon = True
-    # publish_images_thread.start()
+
+    publish_images_thread = threading.Thread(target=publish_images, args=(client,))
+    publish_images_thread.daemon = True
+    publish_images_thread.start()
 
     client.loop_forever()
