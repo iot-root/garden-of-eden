@@ -74,19 +74,19 @@ function setup_python_env {
     python3 -m venv $INSTALL_DIR/venv > "$PYTHON_ENV_LOG_FILE" 2>&1 &
     show_spinner
     wait $!
-    
+
     source $INSTALL_DIR/venv/bin/activate
     pip3 install -r $INSTALL_DIR/requirements.txt >> "$PYTHON_ENV_LOG_FILE" 2>&1 &
     show_spinner
     wait $!
-    
+
     if [ $? -ne 0 ]; then
         log_error "Python environment setup failed. Check the log file for details."
         cat "$PYTHON_ENV_LOG_FILE"
     else
         log_pass "Python environment set up successfully. See $PYTHON_ENV_LOG_FILE"
     fi
-    
+
     deactivate
 }
 
@@ -157,7 +157,7 @@ function add_user_to_groups {
     local current_user=$(whoami)
     local groups=("i2c" "gpio" "dialout")
     log_info "The script is being run by: $current_user"
-    
+
     for group in "${groups[@]}"; do
         if getent group $group > /dev/null; then
             sudo usermod -a -G $group $current_user
@@ -234,7 +234,7 @@ function enable_pigpiod_service {
 # Setup and start MQTT service
 function setup_mqtt_service {
     local service_file="$INSTALL_DIR/services/etc/systemd/system/mqtt.service"
-    
+
     cat > $service_file <<EOF
 [Unit]
 Description=MQTT Service

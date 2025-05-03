@@ -56,9 +56,6 @@ min_per_hr  = 60
 # publish twice an hour
 publish_frequency = sec_per_min * min_per_hr / 2
 
-# camera = picamera.PiCamera()
-# camera.vflip=True
-
 # Button GPIO setup using gpiozero
 button_pin = 13
 button = Button(button_pin, pin_factory=pin_factory, bounce_time=0.2, hold_time=2)  # hold_time = 2 seconds for long press detection
@@ -365,7 +362,7 @@ def on_message(client, userdata, msg):
     global brightness
     global speed
     global WATER_LOW_CM
-        
+
     logger.debug(f"Message received on topic {msg.topic}: {msg.payload}")
     try:
         payload = msg.payload.decode("utf-8")
@@ -393,7 +390,7 @@ def on_message(client, userdata, msg):
 
                 pump.set_speed(speed)
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
-            
+
             elif payload.upper() == "OFF":
                 logger.info("/pump/state OFF")
                 pump.off()
