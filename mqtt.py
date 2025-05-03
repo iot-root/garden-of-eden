@@ -359,122 +359,90 @@ def on_connect(client, userdata, flags, rc, properties=None):
     publish_water_low_mode(client)
 
 def on_message(client, userdata, msg):
-    global brightness
-    global speed
-    global WATER_LOW_CM
+    global brightness, speed, WATER_LOW_CM
 
-    logger.debug(f"Message received on topic {msg.topic}: {msg.payload}")
+    # Handle binary payloads (like image topics) — skip decoding
+    if msg.topic.endswith("/image/upper_camera") or msg.topic.endswith("/image/lower_camera"):
+        logger.debug(f"Received binary image on topic {msg.topic}, skipping decode.")
+        return
+
     try:
-        payload = msg.payload.decode("utf-8")
-        logger.debug(f"Decoded payload: '{payload}'")
-        topic = msg.topic.split("/")[-1]
+        payload = msg.payload.decode("utf-8").strip()
+        logger.debug(f"Decoded payload on {msg.topic}: '{payload}'")
+    except UnicodeDecodeError:
+        logger.error(f"Failed to decode message on topic {msg.topic}. Likely binary.")
+        return
 
-        # Handle pump commands
-        if msg.topic == BASE_TOPIC + "/pump/command":
+    topic_suffix = msg.topic.replace(BASE_TOPIC + "/", "")
+
+    try:
+        # === Pump Logic ===
+        if topic_suffix == "pump/command":
             if payload.upper() == "ON":
                 if WATER_LOW_CM not in (None, 0):
                     distance = safe_distance_measure()
-                    if distance is not None:
-                        if distance > WATER_LOW_CM:
-                            logger.warning(f"Water level too low ({distance:.2f}cm > {WATER_LOW_CM:.2f}cm), flashing lights, not running pump")
-                            flash_lights()
-                            client.publish(BASE_TOPIC + "/water/low/state", "ON", retain=True)
-                            return  # Don't run the pump
-                        else:
-                            logger.info(f"Water level OK ({distance:.2f}cm <= {WATER_LOW_CM:.2f}cm), running pump")
-                            client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
+                    if distance is not None and distance > WATER_LOW_CM:
+                        logger.warning(f"Water too low ({distance:.2f}cm > {WATER_LOW_CM:.2f}cm), aborting pump")
+                        flash_lights()
+                        client.publish(BASE_TOPIC + "/water/low/state", "ON", retain=True)
+                        return
                     else:
-                        logger.error("Failed to read water level, running pump anyway")
-                else:
-                    logger.info("Water low checking disabled (None or 0 threshold), running pump without checking")
-
+                        client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
                 pump.set_speed(speed)
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
-
             elif payload.upper() == "OFF":
-                logger.info("/pump/state OFF")
                 pump.off()
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
 
-        elif msg.topic == BASE_TOPIC + "/pump/speed/set":
-            if payload.isdigit():  # Ensure payload is a digit
-                speed = int(payload)
-                pump.set_speed(speed)
-                logger.info(f"/pump/speed/state {speed}")
-                client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
-            else:
-                logger.error("Invalid speed value received.")
+        elif topic_suffix == "pump/speed/set" and payload.isdigit():
+            speed = int(payload)
+            pump.set_speed(speed)
+            client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
 
-        # Handle light commands
-        if msg.topic == BASE_TOPIC + "/light/command":
+        # === Light Logic ===
+        elif topic_suffix == "light/command":
             if payload.upper() == "ON":
                 light.set_duty_cycle(brightness)
-                logger.info("/light/state ON")
                 client.publish(BASE_TOPIC + "/light/state", "ON")
             elif payload.upper() == "OFF":
                 light.off()
-                logger.info("/light/state OFF")
                 client.publish(BASE_TOPIC + "/light/state", "OFF")
-        elif msg.topic == BASE_TOPIC + "/light/brightness/set":
-            if payload.isdigit():  # Ensure payload is a digit
-                brightness = int(payload)
-                light.set_duty_cycle(brightness)
-                logger.info(f"/light/brightness/state {brightness}")
-                client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
-            else:
-                logger.error("Invalid brightness value received.")
 
-        # on demand sensor readings
-        if msg.topic == BASE_TOPIC + "/water/level/get":
-            try:
-                distance = distance_sensor.measure_once()
-                if distance is None:
-                    logger.warning("No echo received; sensor might be out of range.")
-                else:
-                    logger.info(f"Received on-demand water level request: {distance:.2f}cm")
-                    client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
-            except Exception as e:
-                logger.error(f"Failed to fetch and publish on-demand water level: {e}")
+        elif topic_suffix == "light/brightness/set" and payload.isdigit():
+            brightness = int(payload)
+            light.set_duty_cycle(brightness)
+            client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
 
-        if msg.topic == BASE_TOPIC + "/water/low/cm/set":
+        # === Water Level ===
+        elif topic_suffix == "water/level/get":
+            distance = safe_distance_measure()
+            if distance is not None:
+                client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
+
+        elif topic_suffix == "water/low/cm/set":
             try:
                 WATER_LOW_CM = float(payload)
-                logger.info(f"Updated WATER_LOW_CM threshold to {WATER_LOW_CM}cm")
                 client.publish(BASE_TOPIC + "/water/low/cm", f"{WATER_LOW_CM:.2f}", retain=True)
                 publish_water_low_mode(client)
                 update_water_low_state(client)
             except ValueError:
-                logger.error(f"Invalid water low cm set value received: {payload}")
+                logger.error(f"Invalid water low cm value: {payload}")
 
+        # === Sensor Data on Request ===
+        elif topic_suffix == "pcb/temperature/get":
+            pcb_temp = get_pcb_temperature()
+            client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
 
-        if msg.topic == BASE_TOPIC + "/pcb/temperature/get":
-            try:
-                pcb_temp = get_pcb_temperature()
-                logger.info(f"Publishing PCB Temperature: {pcb_temp:.2f}°C")
-                client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
-            except Exception as e:
-                logger.error(f"Failed to read or publish pcb temperature: {e}")
+        elif topic_suffix == "temperature/get":
+            temperature = temperature_sensor.read()
+            client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
 
-        if msg.topic == BASE_TOPIC + "/temperature/get":
-            try:
-                temperature = temperature_sensor.read()
-                logger.info(f"Publishing PCB Temperature: {temperature:.2f}°C")
-                client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
-            except Exception as e:
-                logger.error(f"Failed to read or publish ambient temperature: {e}")
+        elif topic_suffix == "humidity/get":
+            humidity = humidity_sensor.read()
+            client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
 
-        if msg.topic == BASE_TOPIC + "/humidity/get":
-            try:
-                humidity = humidity_sensor.read()
-                logger.info(f"Publishing Humidity: {humidity:.2f}%")
-                client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
-            except Exception as e:
-                logger.error(f"Failed to read or publish ambient humidity: {e}")
-
-    except UnicodeDecodeError as e:
-        logger.error(f"Error decoding message: {e}. Data may not be text.")
-    except ValueError as e:
-        logger.error(f"ValueError encountered: {e}")
+    except Exception as e:
+        logger.exception(f"Error handling message on topic {msg.topic}: {e}")
 
 def publish_pcb_temperature(client):
     while True:
