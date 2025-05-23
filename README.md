@@ -12,6 +12,9 @@ Work in progress. We should be picking up some steam here to give the DYI commun
 
 [Milestones](https://github.com/iot-root/garden-of-eden/milestones)
 
+![image](https://github.com/user-attachments/assets/ce530eec-bf10-49a4-aba8-0e46ffa8dd8f)
+
+
 ## Table of Contents
 
 - [Garden of Eden](#garden-of-eden)
