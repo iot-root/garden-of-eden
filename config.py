@@ -28,3 +28,9 @@ UPPER_IMAGE_PATH = os.getenv("UPPER_IMAGE_PATH", "/tmp/upper_camera.jpg")
 LOWER_IMAGE_PATH = os.getenv("LOWER_IMAGE_PATH", "/tmp/lower_camera.jpg")
 CAMERA_RESOLUTION = os.getenv("CAMERA_RESOLUTION", "640x480")
 IMAGE_INTERVAL_SECONDS = int(os.getenv("IMAGE_INTERVAL_SECONDS", "3600"))
+
+# Logging level (single word, e.g. "INFO", "WARNING", "DEBUG")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING")
+
+# Publish frequency in minutes (integer). Used by mqtt publishers.
+PUBLISH_FREQUENCY_MINUTES = int(os.getenv("PUBLISH_FREQUENCY_MINUTES", "30"))
