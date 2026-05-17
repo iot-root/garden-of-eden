@@ -8,7 +8,7 @@ import json
 # import picamera
 # import cv2
 from time import sleep
-from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION, WATER_LOW_CM, UPPER_CAMERA_DEVICE, LOWER_CAMERA_DEVICE, UPPER_IMAGE_PATH, LOWER_IMAGE_PATH, CAMERA_RESOLUTION, IMAGE_INTERVAL_SECONDS
+from config import USERNAME, PASSWORD, BROKER, PORT, KEEP_ALIVE_INTERVAL, BASE_TOPIC, IDENTIFIER, MODEL, VERSION, WATER_LOW_CM, UPPER_CAMERA_DEVICE, LOWER_CAMERA_DEVICE, UPPER_IMAGE_PATH, LOWER_IMAGE_PATH, CAMERA_RESOLUTION, IMAGE_INTERVAL_SECONDS, MAX_PUMP_ON_SECONDS, LIGHT_BRIGHTNESS
 
 from gpiozero import Button  # Import gpiozero Button
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -19,6 +19,8 @@ from app.sensors.pcb_temp.pcb_temp import get_pcb_temperature
 from app.sensors.temperature.temperature import temperature_sensor
 from app.sensors.humidity.humidity import humidity_sensor
 from app.sensors.distance.distance import Distance, MeasurementError
+from app.sensors.water_level.water_level import WaterLevelSampler
+from app.sensors.pump.pump_guardian import PumpGuardian
 
 # Configure logging
 logging.basicConfig(
@@ -40,6 +42,9 @@ logger.info("This is an info message")
 logger.warning("This is a warning message")
 logger.error("This is an error message")
 
+sampler = None
+guardian = None
+
 # Initialize devices
 pin_factory = PiGPIOFactory()
 
@@ -48,7 +53,7 @@ light = Light(pin_factory=pin_factory)
 distance_sensor = Distance(pin_factory=pin_factory)
 
 # default on brightness
-brightness  = 50
+brightness = LIGHT_BRIGHTNESS
 speed       = 100
 sec_per_min = 60
 min_per_hr  = 60
@@ -87,10 +92,18 @@ def toggle_pump():
         logger.info("Toggling Pump ON")
         pump.set_speed(speed)
         client.publish(BASE_TOPIC + "/pump/state", "ON")
+        if sampler:
+            sampler.on_pump_state_change("on")
+        if guardian:
+            guardian.on_pump_on()
     else:
         logger.info("Toggling Pump OFF")
         pump.off()
         client.publish(BASE_TOPIC + "/pump/state", "OFF")
+        if sampler:
+            sampler.on_pump_state_change("off")
+        if guardian:
+            guardian.on_pump_off()
 
 def handle_button_press():
     global press_count, double_press_timer
@@ -357,6 +370,14 @@ def on_connect(client, userdata, flags, rc, properties=None):
     # client.subscribe(BASE_TOPIC + "/light/brightness/set")
     send_discovery_messages(client)
     publish_water_low_mode(client)
+    # Sync actual device state to HA on connect/reconnect
+    client.publish(BASE_TOPIC + "/light/state", "OFF")
+    client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
+    client.publish(BASE_TOPIC + "/pump/state", "OFF")
+    client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
+    if WATER_LOW_CM not in (None, 0):
+        client.publish(BASE_TOPIC + "/water/low/cm", f"{WATER_LOW_CM:.2f}", retain=True)
+    update_water_low_state(client)
 
 def on_message(client, userdata, msg):
     global brightness, speed, WATER_LOW_CM
@@ -390,13 +411,22 @@ def on_message(client, userdata, msg):
                         client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
                 pump.set_speed(speed)
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
+                if sampler:
+                    sampler.on_pump_state_change("on")
+                if guardian:
+                    guardian.on_pump_on()
             elif payload.upper() == "OFF":
                 pump.off()
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
+                if sampler:
+                    sampler.on_pump_state_change("off")
+                if guardian:
+                    guardian.on_pump_off()
 
         elif topic_suffix == "pump/speed/set" and payload.isdigit():
             speed = int(payload)
-            pump.set_speed(speed)
+            if pump_state:
+                pump.set_speed(speed)
             client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
 
         # === Light Logic ===
@@ -415,9 +445,11 @@ def on_message(client, userdata, msg):
 
         # === Water Level ===
         elif topic_suffix == "water/level/get":
-            distance = safe_distance_measure()
-            if distance is not None:
-                client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
+            value = sampler.get_current_value() if sampler else None
+            if value is None:
+                value = safe_distance_measure()
+            if value is not None:
+                client.publish(BASE_TOPIC + "/water/level", f"{value:.2f}")
 
         elif topic_suffix == "water/low/cm/set":
             try:
@@ -476,10 +508,12 @@ def publish_humidity(client):
 
 def publish_water_level(client):
     while True:
-        distance = safe_distance_measure()
-        if distance is not None:
-            logger.info(f"Publishing Water Level: {distance:.2f}cm")
-            client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
+        value = sampler.get_current_value() if sampler else None
+        if value is None:
+            value = safe_distance_measure()
+        if value is not None:
+            logger.info(f"Publishing Water Level: {value:.2f}cm")
+            client.publish(BASE_TOPIC + "/water/level", f"{value:.2f}")
         sleep(30 * 60)
 
 def publish_images(client):
@@ -526,6 +560,21 @@ if __name__ == "__main__":
     client.on_message = on_message
     client.username_pw_set(USERNAME, PASSWORD)
     client.connect(BROKER, PORT, KEEP_ALIVE_INTERVAL)
+
+    def on_water_level_publish(value):
+        logger.info(f"Water level realtime publish: {value:.2f}cm")
+        client.publish(BASE_TOPIC + "/water/level", f"{value:.2f}")
+        update_water_low_state(client)
+
+    sampler = WaterLevelSampler(sensor_fn=safe_distance_measure, on_publish=on_water_level_publish)
+    sampler.start()
+
+    guardian = PumpGuardian(
+        pump_off_fn=pump.off,
+        mqtt_publish_fn=client.publish,
+        base_topic=BASE_TOPIC,
+        max_on_seconds=MAX_PUMP_ON_SECONDS,
+    )
 
     pcb_temp_thread = threading.Thread(target=publish_pcb_temperature, args=(client,))
     pcb_temp_thread.daemon = True

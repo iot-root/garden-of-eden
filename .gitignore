@@ -6,3 +6,5 @@ venv/
 # If using Jython
 *.class
 .env
+PR_DRAFT.md
+pump-guardian-spec.md

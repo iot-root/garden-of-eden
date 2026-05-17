@@ -22,6 +22,9 @@ SENSOR_TYPE = os.getenv('SENSOR_TYPE')
 
 WATER_LOW_CM = float(os.getenv("WATER_LOW_CM", 0)) or None
 
+MAX_PUMP_ON_SECONDS = int(os.getenv("MAX_PUMP_ON_SECONDS", 900))
+LIGHT_BRIGHTNESS = int(os.getenv("LIGHT_BRIGHTNESS", 50))
+
 UPPER_CAMERA_DEVICE = os.getenv("UPPER_CAMERA_DEVICE", "/dev/video0")
 LOWER_CAMERA_DEVICE = os.getenv("LOWER_CAMERA_DEVICE", "/dev/video2")
 UPPER_IMAGE_PATH = os.getenv("UPPER_IMAGE_PATH", "/tmp/upper_camera.jpg")
