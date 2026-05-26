@@ -21,6 +21,10 @@ class GPIOController:
             self.pi.set_PWM_frequency(self.pin, frequency)
         else:
             raise RuntimeError("pigpio.pi client is not initialized.")
+
+    def stop(self):
+        if self.pi:
+            self.pi.stop()
         
 class Pump:
     def __init__(self, pin=24, frequency=50, pin_factory=None):

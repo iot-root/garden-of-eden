@@ -16,8 +16,8 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 from app.sensors.light.light import Light
 from app.sensors.pump.pump import Pump
 from app.sensors.pcb_temp.pcb_temp import get_pcb_temperature
-from app.sensors.temperature.temperature import temperature_sensor
-from app.sensors.humidity.humidity import humidity_sensor
+from app.sensors.temperature.temperature import get_temperature_sensor
+from app.sensors.humidity.humidity import get_humidity_sensor
 from app.sensors.distance.distance import Distance, MeasurementError
 
 # Configure logging
@@ -35,30 +35,25 @@ logger = logging.getLogger(__name__)
 # set to INFO, for to capture mqtt messages at info-level messages.
 logger.setLevel(logging.WARNING)
 
-logger.debug("This is a debug message")
-logger.info("This is an info message")
-logger.warning("This is a warning message")
-logger.error("This is an error message")
-
-# Initialize devices
-pin_factory = PiGPIOFactory()
-
-pump = Pump(pin_factory=pin_factory)
-light = Light(pin_factory=pin_factory)
-distance_sensor = Distance(pin_factory=pin_factory)
+pin_factory = None
+pump = None
+light = None
+distance_sensor = None
+button = None
+client = None
+capture_lock = threading.Lock()
+distance_measure_lock = threading.Lock()
 
 # default on brightness
 brightness  = 50
 speed       = 100
+DEFAULT_BRIGHTNESS = 50
+DEFAULT_SPEED = 100
 sec_per_min = 60
 min_per_hr  = 60
 
 # publish twice an hour
 publish_frequency = sec_per_min * min_per_hr / 2
-
-# Button GPIO setup using gpiozero
-button_pin = 13
-button = Button(button_pin, pin_factory=pin_factory, bounce_time=0.2, hold_time=2)  # hold_time = 2 seconds for long press detection
 
 # Variables to track the state of the light and pump
 light_state = False
@@ -67,30 +62,71 @@ double_press_time = 1  # Time to detect a double press (in seconds)
 press_count = 0
 double_press_timer = None
 
+def get_pin_factory():
+    global pin_factory
+    if pin_factory is None:
+        pin_factory = PiGPIOFactory()
+    return pin_factory
+
+def get_pump():
+    global pump
+    if pump is None:
+        pump = Pump(pin_factory=get_pin_factory())
+    return pump
+
+def get_light():
+    global light
+    if light is None:
+        light = Light(pin_factory=get_pin_factory())
+    return light
+
+def get_distance_sensor():
+    global distance_sensor
+    if distance_sensor is None:
+        distance_sensor = Distance(pin_factory=get_pin_factory())
+    return distance_sensor
+
+def configure_button_handlers():
+    global button
+    if button is None:
+        button_pin = 13
+        button = Button(button_pin, pin_factory=get_pin_factory(), bounce_time=0.2, hold_time=2)
+        button.when_pressed = handle_button_press
+
+def initialize_devices():
+    get_pump()
+    get_light()
+    get_distance_sensor()
+    configure_button_handlers()
+
 # Button press callbacks
 def toggle_light():
     global light_state
     light_state = not light_state
     if light_state:
         logger.info("Toggling Light ON")
-        light.set_duty_cycle(brightness)
-        client.publish(BASE_TOPIC + "/light/state", "ON")
+        get_light().set_duty_cycle(brightness)
+        if client is not None:
+            client.publish(BASE_TOPIC + "/light/state", "ON")
     else:
         logger.info("Toggling Light OFF")
-        light.off()
-        client.publish(BASE_TOPIC + "/light/state", "OFF")
+        get_light().off()
+        if client is not None:
+            client.publish(BASE_TOPIC + "/light/state", "OFF")
 
 def toggle_pump():
     global pump_state
     pump_state = not pump_state
     if pump_state:
         logger.info("Toggling Pump ON")
-        pump.set_speed(speed)
-        client.publish(BASE_TOPIC + "/pump/state", "ON")
+        get_pump().set_speed(speed)
+        if client is not None:
+            client.publish(BASE_TOPIC + "/pump/state", "ON")
     else:
         logger.info("Toggling Pump OFF")
-        pump.off()
-        client.publish(BASE_TOPIC + "/pump/state", "OFF")
+        get_pump().off()
+        if client is not None:
+            client.publish(BASE_TOPIC + "/pump/state", "OFF")
 
 def handle_button_press():
     global press_count, double_press_timer
@@ -116,39 +152,55 @@ def handle_single_press():
 def handle_double_press():
     toggle_pump()  # Double press toggles the pump
 
-# Set button event for press detection
-button.when_pressed = handle_button_press
-
 # helpers
 def flash_lights(times=3, delay=0.3):
-    original_brightness = light.get_brightness()  # Save the brightness (0–100 scale)
+    light_device = get_light()
+    original_brightness = light_device.get_brightness()  # Save the brightness (0–100 scale)
     was_on = original_brightness > 0  # If >0%, we consider it "on"
 
     logger.info(f"Flashing lights {times} times. Original brightness: {original_brightness}%")
 
     for _ in range(times):
-        light.off()
+        light_device.off()
         sleep(delay)
-        light.set_brightness(100)  # Flash full brightness for maximum visibility
+        light_device.set_brightness(100)  # Flash full brightness for maximum visibility
         sleep(delay)
     # Restore original state
     if was_on:
-        light.set_brightness(original_brightness)
+        light_device.set_brightness(original_brightness)
     else:
-        light.off()
+        light_device.off()
 
 def safe_distance_measure():
     global distance_sensor
+    if not distance_measure_lock.acquire(blocking=False):
+        logger.warning("Distance measure already in progress, skipping request")
+        return None
     try:
-        return distance_sensor.measure_once()
+        return get_distance_sensor().measure_once()
     except MeasurementError as e:
         logger.warning(f"Distance measure failed: {e}, trying recovery")
         try:
-            distance_sensor = Distance(pin_factory=pin_factory)
+            if distance_sensor is not None:
+                distance_sensor.cleanup()
+            distance_sensor = Distance(pin_factory=get_pin_factory())
             return distance_sensor.measure_once()
         except Exception as e2:
             logger.error(f"Distance full recovery failed: {e2}")
             return None
+    finally:
+        distance_measure_lock.release()
+
+def parse_percentage(payload, label):
+    try:
+        value = int(payload)
+    except (TypeError, ValueError):
+        logger.error(f"Invalid {label} value: {payload}")
+        return None
+    if not 0 <= value <= 100:
+        logger.error(f"{label} must be between 0 and 100: {value}")
+        return None
+    return value
 
 def publish_water_low_mode(client):
     if WATER_LOW_CM not in (None, 0):
@@ -359,7 +411,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
     publish_water_low_mode(client)
 
 def on_message(client, userdata, msg):
-    global brightness, speed, WATER_LOW_CM
+    global brightness, speed, WATER_LOW_CM, light_state, pump_state
 
     # Handle binary payloads (like image topics) — skip decoding
     if msg.topic.endswith("/image/upper_camera") or msg.topic.endswith("/image/lower_camera"):
@@ -388,29 +440,59 @@ def on_message(client, userdata, msg):
                         return
                     else:
                         client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
-                pump.set_speed(speed)
+                if speed <= 0:
+                    speed = DEFAULT_SPEED
+                get_pump().set_speed(speed)
+                pump_state = True
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
+                client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
             elif payload.upper() == "OFF":
-                pump.off()
+                get_pump().off()
+                pump_state = False
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
 
-        elif topic_suffix == "pump/speed/set" and payload.isdigit():
-            speed = int(payload)
-            pump.set_speed(speed)
+        elif topic_suffix == "pump/speed/set":
+            parsed_speed = parse_percentage(payload, "pump speed")
+            if parsed_speed is None:
+                return
+            speed = parsed_speed
+            if speed == 0:
+                get_pump().off()
+                pump_state = False
+                client.publish(BASE_TOPIC + "/pump/state", "OFF")
+            else:
+                get_pump().set_speed(speed)
+                pump_state = True
+                client.publish(BASE_TOPIC + "/pump/state", "ON")
             client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
 
         # === Light Logic ===
         elif topic_suffix == "light/command":
             if payload.upper() == "ON":
-                light.set_duty_cycle(brightness)
+                if brightness <= 0:
+                    brightness = DEFAULT_BRIGHTNESS
+                get_light().set_duty_cycle(brightness)
+                light_state = True
                 client.publish(BASE_TOPIC + "/light/state", "ON")
+                client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
             elif payload.upper() == "OFF":
-                light.off()
+                get_light().off()
+                light_state = False
                 client.publish(BASE_TOPIC + "/light/state", "OFF")
 
-        elif topic_suffix == "light/brightness/set" and payload.isdigit():
-            brightness = int(payload)
-            light.set_duty_cycle(brightness)
+        elif topic_suffix == "light/brightness/set":
+            parsed_brightness = parse_percentage(payload, "light brightness")
+            if parsed_brightness is None:
+                return
+            brightness = parsed_brightness
+            if brightness == 0:
+                get_light().off()
+                light_state = False
+                client.publish(BASE_TOPIC + "/light/state", "OFF")
+            else:
+                get_light().set_duty_cycle(brightness)
+                light_state = True
+                client.publish(BASE_TOPIC + "/light/state", "ON")
             client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
 
         # === Water Level ===
@@ -434,10 +516,16 @@ def on_message(client, userdata, msg):
             client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
 
         elif topic_suffix == "temperature/get":
+            temperature_sensor = get_temperature_sensor()
+            if temperature_sensor is None:
+                raise RuntimeError("Temperature sensor is not initialized")
             temperature = temperature_sensor.read()
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
 
         elif topic_suffix == "humidity/get":
+            humidity_sensor = get_humidity_sensor()
+            if humidity_sensor is None:
+                raise RuntimeError("Humidity sensor is not initialized")
             humidity = humidity_sensor.read()
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
 
@@ -457,6 +545,9 @@ def publish_pcb_temperature(client):
 def publish_temperature(client):
     while True:
         try:
+            temperature_sensor = get_temperature_sensor()
+            if temperature_sensor is None:
+                raise RuntimeError("Temperature sensor is not initialized")
             temperature = temperature_sensor.read()
             logger.info(f"Publishing Temperature: {temperature:.2f}°C")
             client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
@@ -467,6 +558,9 @@ def publish_temperature(client):
 def publish_humidity(client):
     while True:
         try:
+            humidity_sensor = get_humidity_sensor()
+            if humidity_sensor is None:
+                raise RuntimeError("Humidity sensor is not initialized")
             humidity = humidity_sensor.read()
             logger.info(f"Publishing Humidity: {humidity:.2f}%")
             client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
@@ -482,34 +576,39 @@ def publish_water_level(client):
             client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
         sleep(30 * 60)
 
+def capture_images(client):
+    if not capture_lock.acquire(blocking=False):
+        logger.warning("Camera capture already in progress, skipping request")
+        return
+    try:
+        subprocess.check_call([
+            'fswebcam', '-d', UPPER_CAMERA_DEVICE, '-r', CAMERA_RESOLUTION,
+            '-S', '2', '-F', '2', '--no-banner', UPPER_IMAGE_PATH
+        ])
+        logger.info(f"Captured image from upper camera ({UPPER_CAMERA_DEVICE})")
+
+        subprocess.check_call([
+            'fswebcam', '-d', LOWER_CAMERA_DEVICE, '-r', CAMERA_RESOLUTION,
+            '-S', '2', '-F', '2', '--no-banner', LOWER_IMAGE_PATH
+        ])
+        logger.info(f"Captured image from lower camera ({LOWER_CAMERA_DEVICE})")
+
+        with open(UPPER_IMAGE_PATH, 'rb') as f:
+            upper_cam_jpeg_data = f.read()
+            client.publish(BASE_TOPIC + "/image/upper_camera", payload=upper_cam_jpeg_data, qos=0, retain=False)
+            logger.info("Published image to /image/upper_camera")
+
+        with open(LOWER_IMAGE_PATH, 'rb') as f:
+            lower_cam_jpeg_data = f.read()
+            client.publish(BASE_TOPIC + "/image/lower_camera", payload=lower_cam_jpeg_data, qos=0, retain=False)
+            logger.info("Published image to /image/lower_camera")
+    finally:
+        capture_lock.release()
+
 def publish_images(client):
     while True:
         try:
-            # Capture upper camera image
-            subprocess.check_call([
-                'fswebcam', '-d', UPPER_CAMERA_DEVICE, '-r', CAMERA_RESOLUTION,
-                '-S', '2', '-F', '2', '--no-banner', UPPER_IMAGE_PATH
-            ])
-            logger.info(f"Captured image from upper camera ({UPPER_CAMERA_DEVICE})")
-
-            # Capture lower camera image
-            subprocess.check_call([
-                'fswebcam', '-d', LOWER_CAMERA_DEVICE, '-r', CAMERA_RESOLUTION,
-                '-S', '2', '-F', '2', '--no-banner', LOWER_IMAGE_PATH
-            ])
-            logger.info(f"Captured image from lower camera ({LOWER_CAMERA_DEVICE})")
-
-            # Publish upper camera image
-            with open(UPPER_IMAGE_PATH, 'rb') as f:
-                upper_cam_jpeg_data = f.read()  # Read as raw binary
-                client.publish(BASE_TOPIC + "/image/upper_camera", payload=upper_cam_jpeg_data, qos=0, retain=False)
-                logger.info("Published image to /image/upper_camera")
-
-            # Publish lower camera image
-            with open(LOWER_IMAGE_PATH, 'rb') as f:
-                lower_cam_jpeg_data = f.read()  # Read as raw binary
-                client.publish(BASE_TOPIC + "/image/lower_camera", payload=lower_cam_jpeg_data, qos=0, retain=False)
-                logger.info("Published image to /image/lower_camera")
+            capture_images(client)
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Camera capture failed: {e}")
@@ -521,11 +620,12 @@ def publish_images(client):
 
 if __name__ == "__main__":
     logger.info(f"Connecting to {BROKER} on port {PORT} with keep alive {KEEP_ALIVE_INTERVAL}")
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"{IDENTIFIER}_mqtt")
     client.on_connect = on_connect
     client.on_message = on_message
     client.username_pw_set(USERNAME, PASSWORD)
     client.connect(BROKER, PORT, KEEP_ALIVE_INTERVAL)
+    initialize_devices()
 
     pcb_temp_thread = threading.Thread(target=publish_pcb_temperature, args=(client,))
     pcb_temp_thread.daemon = True

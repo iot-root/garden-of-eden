@@ -30,6 +30,7 @@ class Distance:
         Raises:
             MeasurementError: If the DistanceSensor fails to initialize.
         """
+        self.owns_pin_factory = pin_factory is None
         self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
         try:
             self.sensor = DistanceSensor(echo=19, trigger=26, pin_factory=self.pin_factory)
@@ -96,6 +97,31 @@ class Distance:
         else:
             mid = data_length // 2
             return [(sorted_data[mid - 1] + sorted_data[mid]) / 2]
+
+    def cleanup(self):
+        """
+        Properly closes the sensor and pin factory connections.
+        """
+        try:
+            if hasattr(self, 'sensor') and self.sensor:
+                self.sensor.close()
+            if self.owns_pin_factory and hasattr(self, 'pin_factory') and self.pin_factory:
+                self.pin_factory.close()
+        except Exception as e:
+            print(f"Warning during cleanup: {e}")
+
+    def __enter__(self):
+        """
+        Context manager entry.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Context manager exit, ensuring resources are closed.
+        """
+        self.cleanup()
+        return False
 
 if __name__ == "__main__":
     """

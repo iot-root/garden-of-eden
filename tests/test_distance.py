@@ -8,8 +8,9 @@ from app.sensors.distance.distance import Distance, MeasurementError
 
 class TestDistance(unittest.TestCase):
 
+    @patch('app.sensors.distance.distance.PiGPIOFactory')
     @patch('app.sensors.distance.distance.DistanceSensor', autospec=True)
-    def setUp(self, MockDistanceSensor):
+    def setUp(self, MockDistanceSensor, MockPiGPIOFactory):
         # Mock the behavior of the DistanceSensor so it returns some fixed values
         self.mock_sensor = MockDistanceSensor.return_value
         self.mock_sensor.distance = 0.5
@@ -46,6 +47,20 @@ class TestDistance(unittest.TestCase):
         mock_measure_once.side_effect = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         measured_distance = self.distance.measure()
         self.assertAlmostEqual(measured_distance, 55.00)
+
+    @patch('app.sensors.distance.distance.DistanceSensor', autospec=True)
+    def test_cleanup_does_not_close_injected_pin_factory(self, MockDistanceSensor):
+        pin_factory = Mock()
+        distance = Distance(pin_factory=pin_factory)
+        distance.cleanup()
+        pin_factory.close.assert_not_called()
+
+    @patch('app.sensors.distance.distance.PiGPIOFactory')
+    @patch('app.sensors.distance.distance.DistanceSensor', autospec=True)
+    def test_cleanup_closes_owned_pin_factory(self, MockDistanceSensor, MockPiGPIOFactory):
+        distance = Distance()
+        distance.cleanup()
+        MockPiGPIOFactory.return_value.close.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()

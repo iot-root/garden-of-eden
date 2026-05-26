@@ -1,12 +1,11 @@
 # coding=utf-8
-import smbus
-from ina219 import INA219
-from ina219 import DeviceRangeError
 import time
 
 SHUNT_OHMS = 0.08
 
 def is_ina219_present(address):
+    import smbus
+
     try:
         bus = smbus.SMBus(1)  # Use SMBus(0) for older versions of Raspberry Pi
         bus.read_byte_data(address, 0)  # Try to read a byte from the specified address
@@ -15,6 +14,9 @@ def is_ina219_present(address):
         return False
 
 def fetch_ina219_data():
+    from ina219 import INA219
+    from ina219 import DeviceRangeError
+
     data = {}
     if is_ina219_present(0x40):  # Check if the INA219 is present at address 0x40
         try:
