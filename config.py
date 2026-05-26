@@ -21,6 +21,11 @@ PASSWORD = os.getenv("MQTT_PASSWORD")
 SENSOR_TYPE = os.getenv('SENSOR_TYPE')
 
 WATER_LOW_CM = float(os.getenv("WATER_LOW_CM", 0)) or None
+WATER_REFILL_AMOUNT = os.getenv("WATER_REFILL_AMOUNT", "2L")
+
+FOOD_INTERVAL_DAYS = int(os.getenv("FOOD_INTERVAL_DAYS", "14"))
+FOOD_AMOUNT = os.getenv("FOOD_AMOUNT", "5ml per liter")
+FOOD_CHECK_INTERVAL_HOURS = int(os.getenv("FOOD_CHECK_INTERVAL_HOURS", "6"))
 
 UPPER_CAMERA_DEVICE = os.getenv("UPPER_CAMERA_DEVICE", "/dev/video0")
 LOWER_CAMERA_DEVICE = os.getenv("LOWER_CAMERA_DEVICE", "/dev/video2")
