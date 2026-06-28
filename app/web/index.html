@@ -120,6 +120,11 @@
     .pill button { border:0; background:rgba(0,0,0,.06); color:var(--amber); border-radius:999px;
       padding:2px 9px; font-size:.7rem; cursor:pointer; font-weight:700; }
     .runs .run { display:flex; align-items:center; gap:9px; margin-top:9px; }
+    .sched-days { display:flex; flex-direction:column; margin-top:10px; }
+    .sched-day { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--line); }
+    .sched-day .dname { width:42px; flex:0 0 42px; padding-top:6px; font-weight:700; color:var(--muted); text-transform:capitalize; }
+    .sched-day .entries { flex:1; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+    .sched-day .entry { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
 
     #settings { display:none; } #settings.open { display:block; }
 
@@ -211,7 +216,7 @@
       </div>
       <div class="row">
         <label>Run for</label>
-        <input type="number" id="run-secs" min="1" max="3600" value="300" style="width:90px"> <span class="muted">seconds</span>
+        <input type="number" id="run-secs" min="1" max="300" value="300" style="width:90px"> <span class="muted">seconds (max 300)</span>
         <button class="btn" onclick="runPump()">Run</button>
       </div>
     </div>
@@ -245,20 +250,23 @@
 
     <div class="card">
       <h2>Schedule</h2>
+      <p class="muted" style="margin:-4px 0 12px">Add as many light windows and pump runs as you like for each day. Cron runs them on the Pi, surviving reboots.</p>
+
       <div class="row">
         <label class="switch"><input type="checkbox" id="sch-lights-en"><span class="track"></span>Lights</label>
-        <label>On <input type="time" id="sch-on" value="08:00"></label>
-        <label>Off <input type="time" id="sch-off" value="22:00"></label>
-        <label>Bright <input type="number" id="sch-bright" min="0" max="100" value="70" style="width:64px"></label>
+        <button class="ghost" onclick="copyDay('light')">Copy Mon → all days</button>
       </div>
-      <div class="row" style="margin-top:14px">
+      <div class="sched-days" id="sch-light-days"></div>
+
+      <div class="row" style="margin-top:18px">
         <label class="switch"><input type="checkbox" id="sch-pump-en"><span class="track"></span>Pump runs</label>
-        <button class="ghost" onclick="addRun()">+ Add run</button>
+        <button class="ghost" onclick="copyDay('pump')">Copy Mon → all days</button>
       </div>
-      <div class="runs" id="sch-runs"></div>
+      <div class="sched-days" id="sch-pump-days"></div>
+
       <div class="row" style="margin-top:16px">
         <button class="btn" onclick="saveSchedule()">Save schedule</button>
-        <span class="muted" id="sch-status">cron runs on the Pi, surviving reboots</span>
+        <span class="muted" id="sch-status">pump runs are capped at 5 min for safety</span>
       </div>
     </div>
   </div>
@@ -267,7 +275,10 @@
 
   <script>
     let API_KEY = localStorage.getItem("garden_key") || "";
-    let camTimer = null, pumpRuns = [];
+    let camTimer = null;
+    const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
+    let lightDays = emptyDays(), pumpDays = emptyDays();
 
     const $ = id => document.getElementById(id);
     function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
@@ -370,33 +381,69 @@
     function setStage(stage) { post("/grow/stage", { stage }); }
     function startGrow() { post("/grow/start").then(loadGrow); }
 
-    function renderRuns() {
-      const box = $("sch-runs"); box.innerHTML = "";
-      pumpRuns.forEach((run, i) => {
-        const div = document.createElement("div"); div.className = "run";
-        div.innerHTML = `<input type="time" value="${run.time}" onchange="pumpRuns[${i}].time=this.value">
-          <input type="number" min="1" max="60" value="${run.duration}" style="width:64px" onchange="pumpRuns[${i}].duration=+this.value"> <span class="muted">min</span>
-          <button class="ghost" onclick="pumpRuns.splice(${i},1);renderRuns()">Remove</button>`;
-        box.appendChild(div);
+    // Clamp a pump duration input to the 1..5 minute safety range.
+    function clampPumpMin(input) { let v = Math.round(+input.value || 0); v = Math.min(5, Math.max(1, v)); input.value = v; return v; }
+
+    function renderSchedule() {
+      renderDays("light", lightDays, $("sch-light-days"));
+      renderDays("pump", pumpDays, $("sch-pump-days"));
+    }
+
+    function renderDays(kind, model, box) {
+      box.innerHTML = "";
+      SCH_DAYS.forEach(day => {
+        const row = document.createElement("div"); row.className = "sched-day";
+        const name = document.createElement("div"); name.className = "dname"; name.textContent = day;
+        const entries = document.createElement("div"); entries.className = "entries";
+        (model[day] || []).forEach((e, i) => {
+          const div = document.createElement("div"); div.className = "entry";
+          if (kind === "light") {
+            div.innerHTML = `On <input type="time" value="${e.onTime}" onchange="lightDays['${day}'][${i}].onTime=this.value">
+              Off <input type="time" value="${e.offTime}" onchange="lightDays['${day}'][${i}].offTime=this.value">
+              <input type="number" min="0" max="100" value="${e.brightness}" style="width:58px" onchange="lightDays['${day}'][${i}].brightness=+this.value"><span class="muted">%</span>
+              <button class="ghost" onclick="lightDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
+          } else {
+            div.innerHTML = `<input type="time" value="${e.time}" onchange="pumpDays['${day}'][${i}].time=this.value">
+              <input type="number" min="1" max="5" value="${e.duration}" style="width:58px" onchange="pumpDays['${day}'][${i}].duration=clampPumpMin(this)"><span class="muted">min (max 5)</span>
+              <button class="ghost" onclick="pumpDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
+          }
+          entries.appendChild(div);
+        });
+        const add = document.createElement("button"); add.className = "ghost"; add.textContent = "+ Add";
+        add.onclick = () => { model[day].push(kind === "light" ? { onTime: "06:00", offTime: "22:00", brightness: 70 } : { time: "12:00", duration: 5 }); renderSchedule(); };
+        entries.appendChild(add);
+        row.append(name, entries); box.appendChild(row);
       });
     }
-    function addRun() { pumpRuns.push({ time: "12:00", duration: 5 }); renderRuns(); }
+
+    // Copy Monday's entries to every other day.
+    function copyDay(kind) {
+      const model = kind === "light" ? lightDays : pumpDays;
+      const src = JSON.stringify(model.mon || []);
+      SCH_DAYS.forEach(d => { model[d] = JSON.parse(src); });
+      renderSchedule();
+    }
+
+    const mergeDays = days => {
+      const o = emptyDays();
+      if (days) SCH_DAYS.forEach(d => { if (Array.isArray(days[d])) o[d] = days[d].map(x => Object.assign({}, x)); });
+      return o;
+    };
 
     async function loadSchedule() {
       try {
         const s = await get("/schedule"); const l = s.lights || {}, p = s.pump || {};
         $("sch-lights-en").checked = !!l.enabled;
-        if (l.onTime) $("sch-on").value = l.onTime;
-        if (l.offTime) $("sch-off").value = l.offTime;
-        if (l.brightness != null) $("sch-bright").value = l.brightness;
         $("sch-pump-en").checked = !!p.enabled;
-        pumpRuns = (p.runs || []).map(r => ({ time: r.time, duration: r.duration })); renderRuns();
+        lightDays = mergeDays(l.days);
+        pumpDays = mergeDays(p.days);
+        renderSchedule();
       } catch {}
     }
     function saveSchedule() {
       post("/schedule", {
-        lights: { enabled: $("sch-lights-en").checked, onTime: $("sch-on").value, offTime: $("sch-off").value, brightness: +$("sch-bright").value },
-        pump: { enabled: $("sch-pump-en").checked, runs: pumpRuns },
+        lights: { enabled: $("sch-lights-en").checked, days: lightDays },
+        pump: { enabled: $("sch-pump-en").checked, days: pumpDays },
       });
     }
 
