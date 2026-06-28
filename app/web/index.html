@@ -135,14 +135,25 @@
 <body>
   <div class="wrap">
     <header>
-      <div class="logo">🌱</div>
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20v-9"/>
+          <path d="M12 11c0-4 3-7 8-7 0 4-3 7-8 7z"/>
+          <path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>
+        </svg>
+      </div>
       <div>
         <h1>Garden of Eden</h1>
         <div class="sub" id="meta">connecting…</div>
       </div>
       <div class="spacer"></div>
       <span class="chip"><span class="dot" id="conn"></span><span>status</span></span>
-      <button class="icon-btn" title="Settings" onclick="toggleSettings()">⚙</button>
+      <button class="icon-btn" title="Settings" onclick="toggleSettings()" aria-label="Settings">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
     </header>
 
     <div class="card" id="settings">
@@ -156,15 +167,15 @@
     </div>
 
     <div class="card">
-      <h2>Sensors <button class="ghost" onclick="refresh()">↻ Refresh</button></h2>
+      <h2>Sensors <button class="ghost" onclick="refresh()">Refresh</button></h2>
       <div class="tiles">
-        <div class="tile"><div class="top">🌡 Air</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
-        <div class="tile"><div class="top">💧 Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
-        <div class="tile"><div class="top">🔌 PCB</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
-        <div class="tile" id="s-water-card"><div class="top">🪣 Water</div><div class="val"><span id="s-water">—</span><small>cm</small></div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
+        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
+        <div class="tile" id="s-water-card"><div class="top">Water</div><div class="val"><span id="s-water">—</span><small>cm</small></div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
       </div>
       <div class="tiles" style="margin-top:12px">
-        <div class="tile sm"><div class="top">⚡ Pump</div><div class="val"><span id="p-volt">—</span><small>V</small></div></div>
+        <div class="tile sm"><div class="top">Pump Voltage</div><div class="val"><span id="p-volt">—</span><small>V</small></div></div>
         <div class="tile sm"><div class="top">Current</div><div class="val"><span id="p-curr">—</span><small>mA</small></div></div>
         <div class="tile sm"><div class="top">Power</div><div class="val"><span id="p-pow">—</span><small>mW</small></div></div>
       </div>
@@ -208,7 +219,7 @@
       <h2>Cameras
         <span style="display:flex; gap:12px; align-items:center">
           <label class="switch"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"><span class="track"></span>auto</label>
-          <button class="ghost" onclick="loadCams()">↻</button>
+          <button class="ghost" onclick="loadCams()">Reload</button>
         </span>
       </h2>
       <div class="cams">
@@ -304,7 +315,7 @@
         "/pcb-temp": ["s-pcb", "pcb-temp"],
       };
       for (const [path, [id, key]] of Object.entries(sensors)) {
-        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "✕"; }
+        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "n/a"; }
       }
       try {
         const w = await get("/distance"); const cm = w.distance;
@@ -312,7 +323,7 @@
         // Map ~5cm (full) .. ~20cm (empty) to a 0..100% bar.
         const pct = Math.max(0, Math.min(100, (1 - (cm - 5) / 15) * 100));
         $("s-water-bar").style.width = pct + "%";
-      } catch { $("s-water").textContent = "✕"; }
+      } catch { $("s-water").textContent = "n/a"; }
       try {
         const p = await get("/pump/stats");
         if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; }
@@ -364,7 +375,7 @@
         const div = document.createElement("div"); div.className = "run";
         div.innerHTML = `<input type="time" value="${run.time}" onchange="pumpRuns[${i}].time=this.value">
           <input type="number" min="1" max="60" value="${run.duration}" style="width:64px" onchange="pumpRuns[${i}].duration=+this.value"> <span class="muted">min</span>
-          <button class="ghost" onclick="pumpRuns.splice(${i},1);renderRuns()">✕</button>`;
+          <button class="ghost" onclick="pumpRuns.splice(${i},1);renderRuns()">Remove</button>`;
         box.appendChild(div);
       });
     }
