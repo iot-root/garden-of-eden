@@ -5,161 +5,250 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Garden of Eden</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #edf2ed; --surface: #fff; --border: #d0e4d0;
-      --accent: #2d6a4f; --accent2: #40916c; --text: #1a3a1a;
-      --muted: #4a7a5a; --red: #c96a6a; --amber: #d8a657;
+      --bg1:#e8f1ea; --bg2:#dDe9e0;
+      --surface:#ffffff; --surface-2:#f4f9f5;
+      --line:#e2ece4; --line-2:#d2e2d6;
+      --ink:#16271c; --muted:#5d7d68; --faint:#8aa593;
+      --green:#2f7a57; --green-2:#3f9b6e; --green-ink:#1d5a3e;
+      --amber:#c8862f; --amber-bg:#fdf3e1;
+      --red:#cf6b6b; --red-ink:#9b3d3d;
+      --shadow:0 1px 2px rgba(24,60,40,.04), 0 8px 24px -12px rgba(24,60,40,.18);
+      --radius:18px;
     }
-    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 16px; max-width: 820px; margin: 0 auto; }
-    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
-    header h1 { color: var(--accent); font-size: 1.4rem; }
-    .hmeta { font-size: .72rem; color: var(--muted); text-align: right; }
-    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #bbb; margin-right: 4px; }
-    .dot.ok { background: #4caf50; } .dot.bad { background: var(--red); }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
-    .card h2 { font-size: .95rem; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
-    .status { font-size: .8rem; color: var(--muted); margin-left: auto; }
-    button { background: #9bb3a3; color: #fff; border: 2px solid transparent; border-radius: 7px; padding: 8px 14px; font-size: .85rem; cursor: pointer; }
-    button:active { transform: translateY(1px); }
-    button.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
-    button.active { background: var(--accent2); border-color: var(--accent); box-shadow: 0 0 0 2px rgba(45,106,79,.2); }
-    button.active.danger { background: var(--red); border-color: #a04a4a; box-shadow: 0 0 0 2px rgba(201,106,106,.25); }
-    input[type=range] { flex: 1; min-width: 120px; accent-color: var(--accent2); }
-    input[type=time], input[type=number], input[type=password], select { padding: 6px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; background: #fff; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
-    .stat { background: #f0f5f0; border-radius: 8px; padding: 10px; text-align: center; position: relative; }
-    .stat .v { font-size: 1.25rem; font-weight: 600; color: var(--accent); }
-    .stat .l { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
-    .stat.alert { outline: 2px solid var(--red); }
-    .bar { height: 6px; background: #dde7dd; border-radius: 4px; margin-top: 6px; overflow: hidden; }
-    .bar > i { display: block; height: 100%; background: var(--accent2); }
-    .cams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .cams figure { font-size: .7rem; color: var(--muted); text-align: center; }
-    .cams img { width: 100%; border-radius: 8px; background: #dde; min-height: 90px; }
-    label { font-size: .8rem; color: var(--muted); }
-    .pill { display: inline-flex; align-items: center; background: #fbf1dd; color: #7a5b1a; border-radius: 20px; padding: 4px 10px; font-size: .75rem; margin: 2px; }
-    .pill button { padding: 2px 8px; font-size: .7rem; margin-left: 6px; }
-    .runs .run { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-    #settings { display: none; }
-    #settings.open { display: block; }
-    #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: .8rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
-    #toast.show { opacity: .96; }
-    #toast.err { background: var(--red); }
-    .muted { color: var(--muted); font-size: .75rem; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html { -webkit-text-size-adjust:100%; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+      color:var(--ink); line-height:1.5;
+      background:radial-gradient(1200px 600px at 80% -10%, #f3faf4 0%, var(--bg1) 45%, var(--bg2) 100%);
+      min-height:100vh; padding:20px 16px 60px;
+    }
+    .wrap { max-width:880px; margin:0 auto; }
+
+    /* Header */
+    header { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+    .logo { width:44px; height:44px; flex:0 0 auto; border-radius:13px;
+      background:linear-gradient(150deg,var(--green-2),var(--green)); display:grid; place-items:center;
+      box-shadow:var(--shadow); font-size:22px; }
+    header h1 { font-size:1.4rem; font-weight:700; letter-spacing:-.02em; }
+    header .sub { font-size:.78rem; color:var(--muted); margin-top:1px; }
+    header .spacer { flex:1; }
+    .chip { display:inline-flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--line);
+      border-radius:999px; padding:6px 12px; font-size:.76rem; color:var(--muted); box-shadow:var(--shadow); }
+    .dot { width:9px; height:9px; border-radius:50%; background:#c2cfc6; transition:background .3s; }
+    .dot.ok { background:#43b97f; box-shadow:0 0 0 3px rgba(67,185,127,.18); }
+    .dot.bad { background:var(--red); box-shadow:0 0 0 3px rgba(207,107,107,.18); }
+    .icon-btn { border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:12px;
+      width:38px; height:38px; font-size:16px; cursor:pointer; box-shadow:var(--shadow); transition:.15s; }
+    .icon-btn:hover { color:var(--green); border-color:var(--line-2); }
+
+    /* Cards */
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+      padding:18px 20px; margin-bottom:16px; box-shadow:var(--shadow); }
+    .card h2 { font-size:.7rem; text-transform:uppercase; letter-spacing:.09em; color:var(--faint);
+      font-weight:700; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
+    .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .row + .row { margin-top:14px; }
+    label { font-size:.82rem; color:var(--muted); }
+
+    /* Stat tiles */
+    .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; }
+    .tile { background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:14px;
+      transition:.15s; }
+    .tile:hover { border-color:var(--line-2); transform:translateY(-1px); }
+    .tile .top { display:flex; align-items:center; gap:6px; color:var(--faint); font-size:.7rem;
+      text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+    .tile .val { font-size:1.7rem; font-weight:700; letter-spacing:-.02em; color:var(--green-ink); margin-top:6px; }
+    .tile .val small { font-size:.8rem; font-weight:600; color:var(--faint); margin-left:2px; }
+    .tile.sm .val { font-size:1.15rem; }
+    .tile.alert { border-color:var(--red); background:#fdf1f1; }
+    .bar { height:7px; background:#e2ece4; border-radius:999px; margin-top:10px; overflow:hidden; }
+    .bar > i { display:block; height:100%; border-radius:999px;
+      background:linear-gradient(90deg,var(--green-2),var(--green)); transition:width .5s ease; }
+
+    /* Segmented on/off */
+    .seg { display:inline-flex; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:4px; gap:4px; }
+    .seg button { border:0; background:transparent; color:var(--muted); font-weight:600; font-size:.85rem;
+      padding:7px 18px; border-radius:9px; cursor:pointer; transition:.15s; }
+    .seg button.active { background:var(--green); color:#fff; box-shadow:0 2px 8px -2px rgba(47,122,87,.5); }
+    .seg button.active.danger { background:var(--red); box-shadow:0 2px 8px -2px rgba(207,107,107,.5); }
+    .statuschip { margin-left:auto; font-size:.72rem; font-weight:700; letter-spacing:.06em; color:var(--faint); }
+
+    /* Range slider */
+    input[type=range]{ -webkit-appearance:none; appearance:none; flex:1; min-width:130px; height:7px;
+      background:#e2ece4; border-radius:999px; outline:none; }
+    input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+      background:#fff; border:3px solid var(--green); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+    input[type=range]::-moz-range-thumb{ width:18px; height:18px; border-radius:50%; background:#fff;
+      border:3px solid var(--green); cursor:pointer; }
+    .pct { font-variant-numeric:tabular-nums; font-weight:700; color:var(--green-ink); min-width:42px; text-align:right; }
+
+    /* Buttons / inputs */
+    button.btn { background:var(--green); color:#fff; border:0; border-radius:11px; padding:9px 16px;
+      font-size:.85rem; font-weight:600; cursor:pointer; transition:.15s; }
+    button.btn:hover { background:var(--green-2); }
+    button.ghost { background:var(--surface); color:var(--green-ink); border:1px solid var(--line-2);
+      border-radius:11px; padding:8px 14px; font-size:.82rem; font-weight:600; cursor:pointer; }
+    button.ghost:hover { border-color:var(--green); color:var(--green); }
+    input[type=time],input[type=number],input[type=password],select{
+      font:inherit; font-size:.85rem; padding:8px 10px; border:1px solid var(--line-2); border-radius:10px;
+      background:#fff; color:var(--ink); }
+    input:focus,select:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
+    .muted { color:var(--faint); font-size:.76rem; }
+
+    /* Toggle switch */
+    .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-size:.82rem; color:var(--muted); }
+    .switch input { position:absolute; opacity:0; width:0; height:0; }
+    .switch .track { width:40px; height:23px; background:#cdddd2; border-radius:999px; transition:.2s; flex:0 0 auto; position:relative; }
+    .switch .track::after { content:""; position:absolute; top:3px; left:3px; width:17px; height:17px;
+      background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .switch input:checked + .track { background:var(--green-2); }
+    .switch input:checked + .track::after { transform:translateX(17px); }
+
+    /* Cameras */
+    .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .cam { position:relative; border-radius:14px; overflow:hidden; background:#dde7e0; aspect-ratio:4/3; border:1px solid var(--line); }
+    .cam img { width:100%; height:100%; object-fit:cover; display:block; }
+    .cam figcaption { position:absolute; left:10px; bottom:8px; color:#fff; font-size:.72rem; font-weight:600;
+      text-shadow:0 1px 4px rgba(0,0,0,.6); }
+
+    /* Pills (reminders) */
+    .pill { display:inline-flex; align-items:center; gap:6px; background:var(--amber-bg); color:var(--amber);
+      border:1px solid #f0dcb6; border-radius:999px; padding:5px 12px; font-size:.76rem; font-weight:600; }
+    .pill button { border:0; background:rgba(0,0,0,.06); color:var(--amber); border-radius:999px;
+      padding:2px 9px; font-size:.7rem; cursor:pointer; font-weight:700; }
+    .runs .run { display:flex; align-items:center; gap:9px; margin-top:9px; }
+
+    #settings { display:none; } #settings.open { display:block; }
+
+    /* Toast */
+    #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(8px);
+      background:var(--green-ink); color:#fff; padding:11px 20px; border-radius:12px; font-size:.85rem; font-weight:500;
+      opacity:0; transition:.25s; pointer-events:none; box-shadow:0 10px 30px -8px rgba(0,0,0,.4); }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    #toast.err { background:var(--red-ink); }
+
+    @media (max-width:520px){ .cams{ grid-template-columns:1fr; } header h1{ font-size:1.2rem; } }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🌱 Garden of Eden</h1>
-    <div>
-      <div class="hmeta"><span class="dot" id="conn"></span><span id="meta">connecting…</span></div>
-      <div class="hmeta"><button class="ghost" style="padding:2px 8px;font-size:.7rem" onclick="toggleSettings()">⚙ settings</button></div>
-    </div>
-  </header>
+  <div class="wrap">
+    <header>
+      <div class="logo">🌱</div>
+      <div>
+        <h1>Garden of Eden</h1>
+        <div class="sub" id="meta">connecting…</div>
+      </div>
+      <div class="spacer"></div>
+      <span class="chip"><span class="dot" id="conn"></span><span>status</span></span>
+      <button class="icon-btn" title="Settings" onclick="toggleSettings()">⚙</button>
+    </header>
 
-  <div class="card" id="settings">
-    <h2>Settings</h2>
-    <div class="row">
-      <label>API key (for remote/authed access):</label>
-      <input type="password" id="api-key" placeholder="leave blank on the Pi">
-      <button onclick="saveKey()">Save</button>
+    <div class="card" id="settings">
+      <h2>Settings</h2>
+      <div class="row">
+        <label>API key</label>
+        <input type="password" id="api-key" placeholder="leave blank on the Pi" style="flex:1; min-width:160px">
+        <button class="btn" onclick="saveKey()">Save</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
     </div>
-    <p class="muted">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
-  </div>
 
-  <div class="card">
-    <h2>Sensors <button class="ghost" onclick="refresh()">↻ refresh</button></h2>
-    <div class="grid">
-      <div class="stat"><div class="v" id="s-temp">—</div><div class="l">Air °C</div></div>
-      <div class="stat"><div class="v" id="s-hum">—</div><div class="l">Humidity %</div></div>
-      <div class="stat"><div class="v" id="s-pcb">—</div><div class="l">PCB °C</div></div>
-      <div class="stat" id="s-water-card"><div class="v" id="s-water">—</div><div class="l">Water cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+    <div class="card">
+      <h2>Sensors <button class="ghost" onclick="refresh()">↻ Refresh</button></h2>
+      <div class="tiles">
+        <div class="tile"><div class="top">🌡 Air</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">💧 Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
+        <div class="tile"><div class="top">🔌 PCB</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
+        <div class="tile" id="s-water-card"><div class="top">🪣 Water</div><div class="val"><span id="s-water">—</span><small>cm</small></div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+      </div>
+      <div class="tiles" style="margin-top:12px">
+        <div class="tile sm"><div class="top">⚡ Pump</div><div class="val"><span id="p-volt">—</span><small>V</small></div></div>
+        <div class="tile sm"><div class="top">Current</div><div class="val"><span id="p-curr">—</span><small>mA</small></div></div>
+        <div class="tile sm"><div class="top">Power</div><div class="val"><span id="p-pow">—</span><small>mW</small></div></div>
+      </div>
+      <div class="muted" id="updated" style="margin-top:12px">—</div>
     </div>
-    <div class="grid" style="margin-top:10px">
-      <div class="stat"><div class="v" id="p-volt">—</div><div class="l">Pump V</div></div>
-      <div class="stat"><div class="v" id="p-curr">—</div><div class="l">Pump mA</div></div>
-      <div class="stat"><div class="v" id="p-pow">—</div><div class="l">Pump mW</div></div>
-    </div>
-    <div class="muted" id="updated" style="margin-top:8px">—</div>
-  </div>
 
-  <div class="card">
-    <h2>Light</h2>
-    <div class="row">
-      <button id="light-on" onclick="setLight(true)">On</button>
-      <button id="light-off" onclick="setLight(false)">Off</button>
-      <span class="status" id="light-status">—</span>
+    <div class="card">
+      <h2>Light</h2>
+      <div class="row">
+        <div class="seg"><button id="light-on" onclick="setLight(true)">On</button><button id="light-off" onclick="setLight(false)">Off</button></div>
+        <span class="statuschip" id="light-status">—</span>
+      </div>
+      <div class="row">
+        <label>Brightness</label>
+        <input type="range" min="0" max="100" id="brightness" oninput="lbl('brightness')"
+               onchange="post('/light/brightness', {value:+this.value}); setActive('light', +this.value>0)">
+        <span class="pct" id="brightness-val">50%</span>
+      </div>
     </div>
-    <div class="row">
-      <label>Brightness</label>
-      <input type="range" min="0" max="100" id="brightness" oninput="lbl('brightness')"
-             onchange="post('/light/brightness', {value:+this.value}); setActive('light', +this.value>0)">
-      <span id="brightness-val">50%</span>
-    </div>
-  </div>
 
-  <div class="card">
-    <h2>Pump</h2>
-    <div class="row">
-      <button id="pump-on" onclick="setPump(true)">On</button>
-      <button id="pump-off" onclick="setPump(false)">Off</button>
-      <span class="status" id="pump-status">—</span>
+    <div class="card">
+      <h2>Pump</h2>
+      <div class="row">
+        <div class="seg"><button id="pump-on" onclick="setPump(true)">On</button><button id="pump-off" onclick="setPump(false)">Off</button></div>
+        <span class="statuschip" id="pump-status">—</span>
+      </div>
+      <div class="row">
+        <label>Speed</label>
+        <input type="range" min="0" max="100" id="speed" oninput="lbl('speed')"
+               onchange="post('/pump/speed', {value:+this.value}); setActive('pump', +this.value>0)">
+        <span class="pct" id="speed-val">100%</span>
+      </div>
+      <div class="row">
+        <label>Run for</label>
+        <input type="number" id="run-secs" min="1" max="3600" value="300" style="width:90px"> <span class="muted">seconds</span>
+        <button class="btn" onclick="runPump()">Run</button>
+      </div>
     </div>
-    <div class="row">
-      <label>Speed</label>
-      <input type="range" min="0" max="100" id="speed" oninput="lbl('speed')"
-             onchange="post('/pump/speed', {value:+this.value}); setActive('pump', +this.value>0)">
-      <span id="speed-val">100%</span>
-    </div>
-    <div class="row">
-      <label>Run for</label>
-      <input type="number" id="run-secs" min="1" max="3600" value="300" style="width:80px"> s
-      <button onclick="runPump()">Run</button>
-    </div>
-  </div>
 
-  <div class="card">
-    <h2>Cameras
-      <span>
-        <label class="muted"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"> auto</label>
-        <button class="ghost" onclick="loadCams()">↻</button>
-      </span>
-    </h2>
-    <div class="cams">
-      <figure><img id="cam-upper" alt="upper"><figcaption>Upper</figcaption></figure>
-      <figure><img id="cam-lower" alt="lower"><figcaption>Lower</figcaption></figure>
+    <div class="card">
+      <h2>Cameras
+        <span style="display:flex; gap:12px; align-items:center">
+          <label class="switch"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"><span class="track"></span>auto</label>
+          <button class="ghost" onclick="loadCams()">↻</button>
+        </span>
+      </h2>
+      <div class="cams">
+        <figure class="cam"><img id="cam-upper" alt="upper camera"><figcaption>Upper</figcaption></figure>
+        <figure class="cam"><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
+      </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Grow Cycle</h2>
-    <div class="row">
-      <label>Stage</label>
-      <select id="grow-stage" onchange="setStage(this.value)">
-        <option>germination</option><option>thinning</option>
-        <option>root_check</option><option>harvest</option>
-      </select>
-      <span class="muted" id="grow-days">—</span>
-      <button class="ghost" onclick="startGrow()">Start new cycle</button>
+    <div class="card">
+      <h2>Grow Cycle</h2>
+      <div class="row">
+        <label>Stage</label>
+        <select id="grow-stage" onchange="setStage(this.value)">
+          <option>germination</option><option>thinning</option>
+          <option>root_check</option><option>harvest</option>
+        </select>
+        <span class="pill" id="grow-days" style="background:var(--surface-2); color:var(--muted); border-color:var(--line)">—</span>
+        <button class="ghost" onclick="startGrow()" style="margin-left:auto">Start new cycle</button>
+      </div>
+      <div class="row" id="grow-reminders" style="margin-top:14px"></div>
     </div>
-    <div class="row" id="grow-reminders"></div>
-  </div>
 
-  <div class="card">
-    <h2>Schedule</h2>
-    <div class="row">
-      <label><input type="checkbox" id="sch-lights-en"> Lights</label>
-      <label>On <input type="time" id="sch-on" value="08:00"></label>
-      <label>Off <input type="time" id="sch-off" value="22:00"></label>
-      <label>Bright <input type="number" id="sch-bright" min="0" max="100" value="70" style="width:60px"></label>
+    <div class="card">
+      <h2>Schedule</h2>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="sch-lights-en"><span class="track"></span>Lights</label>
+        <label>On <input type="time" id="sch-on" value="08:00"></label>
+        <label>Off <input type="time" id="sch-off" value="22:00"></label>
+        <label>Bright <input type="number" id="sch-bright" min="0" max="100" value="70" style="width:64px"></label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <label class="switch"><input type="checkbox" id="sch-pump-en"><span class="track"></span>Pump runs</label>
+        <button class="ghost" onclick="addRun()">+ Add run</button>
+      </div>
+      <div class="runs" id="sch-runs"></div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" onclick="saveSchedule()">Save schedule</button>
+        <span class="muted" id="sch-status">cron runs on the Pi, surviving reboots</span>
+      </div>
     </div>
-    <div class="row"><label><input type="checkbox" id="sch-pump-en"> Pump runs</label>
-      <button class="ghost" onclick="addRun()">+ add run</button></div>
-    <div class="runs" id="sch-runs"></div>
-    <div class="row"><button onclick="saveSchedule()">Save schedule</button>
-      <span class="status" id="sch-status">cron runs on the Pi, surviving reboots</span></div>
   </div>
 
   <div id="toast"></div>
@@ -274,7 +363,7 @@
       pumpRuns.forEach((run, i) => {
         const div = document.createElement("div"); div.className = "run";
         div.innerHTML = `<input type="time" value="${run.time}" onchange="pumpRuns[${i}].time=this.value">
-          <input type="number" min="1" max="60" value="${run.duration}" style="width:60px" onchange="pumpRuns[${i}].duration=+this.value"> min
+          <input type="number" min="1" max="60" value="${run.duration}" style="width:64px" onchange="pumpRuns[${i}].duration=+this.value"> <span class="muted">min</span>
           <button class="ghost" onclick="pumpRuns.splice(${i},1);renderRuns()">✕</button>`;
         box.appendChild(div);
       });
