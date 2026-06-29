@@ -437,6 +437,7 @@
             div.innerHTML = `On <input type="time" value="${e.onTime}" onchange="lightDays['${day}'][${i}].onTime=this.value">
               Off <input type="time" value="${e.offTime}" onchange="lightDays['${day}'][${i}].offTime=this.value">
               <input type="number" min="0" max="100" value="${e.brightness}" style="width:58px" onchange="lightDays['${day}'][${i}].brightness=+this.value"><span class="muted">%</span>
+              <input type="number" min="0" max="120" value="${e.rampMinutes || 0}" style="width:48px" title="sunrise/sunset ramp (minutes)" onchange="lightDays['${day}'][${i}].rampMinutes=+this.value"><span class="muted">↗ min</span>
               <button class="ghost" onclick="lightDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
           } else {
             div.innerHTML = `<input type="time" value="${e.time}" onchange="pumpDays['${day}'][${i}].time=this.value">
@@ -446,7 +447,7 @@
           entries.appendChild(div);
         });
         const add = document.createElement("button"); add.className = "ghost"; add.textContent = "+ Add";
-        add.onclick = () => { model[day].push(kind === "light" ? { onTime: "06:00", offTime: "22:00", brightness: 70 } : { time: "12:00", duration: 5 }); renderSchedule(); };
+        add.onclick = () => { model[day].push(kind === "light" ? { onTime: "06:00", offTime: "22:00", brightness: 70, rampMinutes: 0 } : { time: "12:00", duration: 5 }); renderSchedule(); };
         entries.appendChild(add);
         row.append(name, entries); box.appendChild(row);
       });
