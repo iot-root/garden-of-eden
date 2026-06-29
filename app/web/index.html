@@ -174,6 +174,8 @@
     .pod { border:1px solid var(--line); background:var(--surface-2); border-radius:10px; padding:8px; }
     .pod .pn { font-size:.6rem; color:var(--faint); font-weight:700; letter-spacing:.05em; }
     .pod input { width:100%; margin:4px 0; font-size:.8rem; padding:4px 6px; border-radius:7px; }
+    .pod select { width:100%; margin:4px 0; font-size:.76rem; padding:4px 6px; }
+    .pod .pguide { font-size:.58rem; line-height:1.3; margin:0 0 5px; }
     .pod .shapes { display:flex; flex-wrap:wrap; gap:3px; }
     .pod .shapes button { width:21px; height:21px; border:1px solid var(--line); background:var(--surface);
       color:var(--muted); border-radius:5px; font-size:11px; line-height:1; cursor:pointer; padding:0; }
@@ -621,18 +623,48 @@
 
     // ---- Per-pod plant tracking (name + shape code) ----
     const SHAPE_GLYPH = { circle: "●", square: "■", triangle: "▲", diamond: "◆", star: "★", hexagon: "⬢", heart: "♥", plus: "✚" };
-    let pods = [], podShapes = [];
+    let pods = [], podShapes = [], plantCatalog = [];
     async function loadPods() {
-      try { const d = await get("/pods"); pods = d.pods || []; podShapes = d.shapes || []; renderPods(); } catch {}
+      try {
+        const d = await get("/pods");
+        pods = d.pods || []; podShapes = d.shapes || []; plantCatalog = d.catalog || [];
+        renderPods();
+      } catch {}
     }
+    function catalogOptionsHTML() {
+      const cats = {};
+      plantCatalog.forEach(p => { (cats[p.category] = cats[p.category] || []).push(p); });
+      let html = '<option value="">— empty —</option><option value="__other__">✏️ Other…</option>';
+      Object.keys(cats).sort().forEach(cat => {
+        html += `<optgroup label="${cat}">`;
+        cats[cat].forEach(p => { html += `<option value="${p.name}">${p.name}</option>`; });
+        html += "</optgroup>";
+      });
+      return html;
+    }
+    const guideFor = name => {
+      const p = plantCatalog.find(x => x.name === name);
+      return p ? `${p.guide} · ${p.light_need} light · ~${p.days_to_harvest}d · ${p.difficulty}` : "";
+    };
     function renderPods() {
       const box = $("pods"); box.innerHTML = "";
+      const opts = catalogOptionsHTML();
       pods.forEach((p, i) => {
         if (!p.symbols) p.symbols = [];
         const cell = document.createElement("div"); cell.className = "pod";
         const pn = document.createElement("div"); pn.className = "pn"; pn.textContent = "POD " + p.id;
-        const name = document.createElement("input"); name.placeholder = "plant name"; name.value = p.name || "";
-        name.onchange = () => { pods[i].name = name.value; };
+        const isCustom = p.name && !plantCatalog.some(x => x.name === p.name);
+        const sel = document.createElement("select"); sel.innerHTML = opts;
+        sel.value = isCustom ? "__other__" : (p.name || "");
+        const custom = document.createElement("input"); custom.placeholder = "custom name"; custom.value = isCustom ? p.name : "";
+        custom.style.display = isCustom ? "" : "none";
+        const guide = document.createElement("div"); guide.className = "pguide muted"; guide.textContent = guideFor(p.name);
+        sel.onchange = () => {
+          if (sel.value === "__other__") { custom.style.display = ""; pods[i].name = custom.value; }
+          else { custom.style.display = "none"; custom.value = ""; pods[i].name = sel.value; }
+          guide.textContent = guideFor(pods[i].name);
+        };
+        custom.onchange = () => { pods[i].name = custom.value; };
         const shapes = document.createElement("div"); shapes.className = "shapes";
         podShapes.forEach(s => {
           const b = document.createElement("button"); b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
@@ -645,7 +677,7 @@
           };
           shapes.appendChild(b);
         });
-        cell.append(pn, name, shapes); box.appendChild(cell);
+        cell.append(pn, sel, custom, guide, shapes); box.appendChild(cell);
       });
     }
     function savePods() { post("/pods", pods); }
