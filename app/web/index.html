@@ -144,6 +144,30 @@
     .kv > div { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding:6px 0; }
     .kv .k { color:var(--muted); }
     .kv .v { font-weight:600; text-align:right; }
+    /* Stage preset modes */
+    .modes { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .mode { border:1px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:999px;
+      padding:8px 14px; font-size:.82rem; font-weight:600; cursor:pointer; transition:.15s; }
+    .mode:hover { border-color:var(--green-2); color:var(--green); transform:translateY(-1px); }
+    /* Week heatmap scheduler */
+    .heatmap { display:grid; grid-template-columns:30px repeat(24,1fr); gap:2px; align-items:center; }
+    .heatmap .hlabel { font-size:.6rem; color:var(--faint); text-align:right; padding-right:4px; }
+    .heatmap .hhour { font-size:.52rem; color:var(--faint); text-align:center; }
+    .heatmap .cell { height:15px; border-radius:3px; background:var(--surface-2); position:relative; }
+    .heatmap .cell.pump::after { content:""; position:absolute; inset:0; margin:auto; width:4px; height:4px;
+      border-radius:50%; background:#4a9be0; }
+    .hm-legend { display:flex; gap:16px; margin-top:10px; font-size:.7rem; color:var(--muted); align-items:center; }
+    .hm-legend .sw { display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:-1px; margin-right:5px; }
+    .hm-legend .sw.light { background:var(--green); } .hm-legend .sw.pump { background:#4a9be0; }
+    details.customize { margin-top:14px; }
+    details.customize > summary { cursor:pointer; font-size:.78rem; color:var(--green); font-weight:600; list-style:none; }
+    details.customize > summary::before { content:"⚙ "; }
+    /* Alert banners */
+    #alerts { display:flex; flex-direction:column; gap:8px; }
+    #alerts:not(:empty) { margin-bottom:16px; }
+    .alert-banner { display:flex; align-items:center; gap:10px; background:var(--amber-bg); border:1px solid var(--amber);
+      color:var(--amber); border-radius:14px; padding:12px 16px; font-size:.88rem; font-weight:600; box-shadow:var(--shadow); }
+    .alert-banner button { margin-left:auto; }
 
     #settings { display:none; } #settings.open { display:block; }
 
@@ -182,6 +206,8 @@
         </svg>
       </button>
     </header>
+
+    <div id="alerts"></div>
 
     <div class="card" id="settings">
       <h2>Settings</h2>
@@ -284,19 +310,34 @@
 
     <div class="card">
       <h2>Schedule</h2>
-      <p class="muted" style="margin:-4px 0 12px">Add as many light windows and pump runs as you like for each day. Cron runs them on the Pi, surviving reboots.</p>
-
-      <div class="row">
-        <label class="switch"><input type="checkbox" id="sch-lights-en"><span class="track"></span>Lights</label>
-        <button class="ghost" onclick="copyDay('light')">Copy Mon → all days</button>
+      <div class="modes">
+        <button class="mode" onclick="applyPreset('germinate')">🌱 Germinate</button>
+        <button class="mode" onclick="applyPreset('seedling')">🌿 Seedling</button>
+        <button class="mode" onclick="applyPreset('vegetative')">🍃 Vegetative</button>
+        <button class="mode" onclick="applyPreset('flower')">🌸 Flower</button>
+        <button class="mode" onclick="applyPreset('vacation')">✈️ Vacation</button>
       </div>
-      <div class="sched-days" id="sch-light-days"></div>
 
-      <div class="row" style="margin-top:18px">
-        <label class="switch"><input type="checkbox" id="sch-pump-en"><span class="track"></span>Pump runs</label>
-        <button class="ghost" onclick="copyDay('pump')">Copy Mon → all days</button>
+      <div class="heatmap" id="heatmap"></div>
+      <div class="hm-legend">
+        <span><i class="sw light"></i>light %</span>
+        <span><i class="sw pump"></i>pump run</span>
+        <span class="muted" style="margin-left:auto">tap a preset, then Save</span>
       </div>
-      <div class="sched-days" id="sch-pump-days"></div>
+
+      <details class="customize">
+        <summary>Customize per day</summary>
+        <div class="row" style="margin-top:12px">
+          <label class="switch"><input type="checkbox" id="sch-lights-en"><span class="track"></span>Lights</label>
+          <button class="ghost" onclick="copyDay('light')">Copy Mon → all</button>
+        </div>
+        <div class="sched-days" id="sch-light-days"></div>
+        <div class="row" style="margin-top:16px">
+          <label class="switch"><input type="checkbox" id="sch-pump-en"><span class="track"></span>Pump runs</label>
+          <button class="ghost" onclick="copyDay('pump')">Copy Mon → all</button>
+        </div>
+        <div class="sched-days" id="sch-pump-days"></div>
+      </details>
 
       <div class="row" style="margin-top:18px">
         <label class="switch"><input type="checkbox" id="sch-vacation-en"><span class="track"></span>Vacation mode</label>
@@ -424,6 +465,7 @@
     async function loadGrow() {
       try {
         const g = await get("/grow");
+        renderAlerts(g.due || []);
         $("grow-stage").value = g.stage;
         if (g.started) { const d = Math.floor((Date.now() - new Date(g.started)) / 86400000); $("grow-days").textContent = `day ${d}`; }
         const box = $("grow-reminders");
@@ -445,6 +487,76 @@
     function renderSchedule() {
       renderDays("light", lightDays, $("sch-light-days"));
       renderDays("pump", pumpDays, $("sch-pump-days"));
+      renderHeatmap();
+    }
+
+    // ---- Week heatmap (7 days x 24h): green shade = light %, dot = pump ----
+    const hourOf = t => parseInt((t || "0:0").split(":")[0], 10) || 0;
+    const inWin = (h, on, off) => on === off ? false : (on < off ? (h >= on && h < off) : (h >= on || h < off));
+    const hourTick = h => h === 0 ? "12a" : h === 12 ? "12p" : h < 12 ? h + "a" : (h - 12) + "p";
+    function renderHeatmap() {
+      const box = $("heatmap"); if (!box) return; box.innerHTML = "";
+      const cell = (cls, txt) => { const d = document.createElement("div"); d.className = cls; if (txt) d.textContent = txt; return d; };
+      box.appendChild(cell("hlabel", ""));
+      for (let h = 0; h < 24; h++) box.appendChild(cell("hhour", h % 6 === 0 ? hourTick(h) : ""));
+      SCH_DAYS.forEach(day => {
+        box.appendChild(cell("hlabel", day[0].toUpperCase() + day.slice(1, 3)));
+        const lit = new Array(24).fill(0);
+        (lightDays[day] || []).forEach(w => {
+          const on = hourOf(w.onTime), off = hourOf(w.offTime), b = +w.brightness || 0;
+          for (let h = 0; h < 24; h++) if (inWin(h, on, off)) lit[h] = Math.max(lit[h], b);
+        });
+        const pumps = new Set((pumpDays[day] || []).map(r => hourOf(r.time)));
+        for (let h = 0; h < 24; h++) {
+          const c = cell("cell" + (pumps.has(h) ? " pump" : ""), "");
+          if (lit[h] > 0) c.style.background = `rgba(63,155,110,${0.18 + 0.82 * lit[h] / 100})`;
+          c.title = `${day} ${h}:00${lit[h] ? ` · ${lit[h]}% light` : ""}${pumps.has(h) ? " · pump" : ""}`;
+          box.appendChild(c);
+        }
+      });
+    }
+
+    // ---- One-click stage presets (fill the editor; user reviews & Saves) ----
+    const PRESETS = {
+      germinate:  { light: { onTime: "06:00", offTime: "22:00", brightness: 30, rampMinutes: 15 }, pump: [{ time: "06:00", duration: 3 }, { time: "12:00", duration: 3 }, { time: "18:00", duration: 3 }] },
+      seedling:   { light: { onTime: "06:00", offTime: "22:00", brightness: 50, rampMinutes: 15 }, pump: [{ time: "08:00", duration: 4 }, { time: "16:00", duration: 4 }, { time: "00:00", duration: 4 }] },
+      vegetative: { light: { onTime: "06:00", offTime: "22:00", brightness: 80, rampMinutes: 20 }, pump: [{ time: "08:00", duration: 5 }, { time: "16:00", duration: 5 }, { time: "00:00", duration: 5 }] },
+      flower:     { light: { onTime: "07:00", offTime: "19:00", brightness: 100, rampMinutes: 20 }, pump: [{ time: "08:00", duration: 5 }, { time: "14:00", duration: 5 }, { time: "20:00", duration: 5 }] },
+    };
+    function applyPreset(name) {
+      if (name === "vacation") {
+        $("sch-vacation-en").checked = true;
+        if (!$("sch-vacation-until").value) {
+          const d = new Date(Date.now() + 14 * 864e5);
+          $("sch-vacation-until").value = d.toISOString().slice(0, 10);
+        }
+        toast("Vacation mode set — adjust the date & Save");
+        return;
+      }
+      const p = PRESETS[name]; if (!p) return;
+      SCH_DAYS.forEach(d => { lightDays[d] = [{ ...p.light }]; pumpDays[d] = p.pump.map(r => ({ ...r })); });
+      $("sch-lights-en").checked = true; $("sch-pump-en").checked = true;
+      if (name === "germinate") post("/grow/start").then(loadGrow);
+      renderSchedule();
+      toast(name + " preset loaded — review & Save");
+    }
+
+    // ---- Reminder alert banners ----
+    const REMINDER_LABELS = {
+      thinning: "🌱 Time to thin your plants",
+      root_check: "🔍 Check the roots",
+      harvest: "✂️ Ready to harvest / trim",
+      nutrient: "🧪 Add plant food (nutrients)",
+    };
+    function renderAlerts(due) {
+      const box = $("alerts"); box.innerHTML = "";
+      (due || []).forEach(key => {
+        const div = document.createElement("div"); div.className = "alert-banner";
+        const span = document.createElement("span"); span.textContent = REMINDER_LABELS[key] || key;
+        const btn = document.createElement("button"); btn.className = "btn"; btn.textContent = "Done";
+        btn.onclick = () => post("/grow/acknowledge", { key }).then(loadGrow);
+        div.append(span, btn); box.appendChild(div);
+      });
     }
 
     function renderDays(kind, model, box) {
