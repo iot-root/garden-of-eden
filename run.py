@@ -2,7 +2,7 @@
 from app import create_app
 from app.lib.logging_config import configure_logging
 
-configure_logging()
+configure_logging(log_file="garden-api.log")
 
 app = create_app("default")
 
