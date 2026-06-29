@@ -182,7 +182,7 @@
         <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
         <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
         <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
-        <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water">—</span><small>cm</small></div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+        <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water-gal">—</span><small>gal</small></div><div class="muted" style="font-size:.68rem"><span id="s-water">—</span> cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
       </div>
       <div class="tiles" style="margin-top:12px">
         <div class="tile sm"><div class="top">Pump Voltage</div><div class="val"><span id="p-volt">—</span><small>V</small></div></div>
@@ -350,6 +350,7 @@
       try {
         const w = await get("/distance"); const cm = w.distance;
         $("s-water").textContent = cm;
+        $("s-water-gal").textContent = (w.gallons != null) ? w.gallons : "—";
         // Map ~5cm (full) .. ~20cm (empty) to a 0..100% bar.
         const pct = Math.max(0, Math.min(100, (1 - (cm - 5) / 15) * 100));
         $("s-water-bar").style.width = pct + "%";
@@ -360,7 +361,7 @@
         } else if (waterLowCm != null) {
           badge.textContent = "OK"; badge.style.cssText = "";
         } else { badge.textContent = ""; }
-      } catch { $("s-water").textContent = "n/a"; $("s-water-status").textContent = ""; }
+      } catch { $("s-water").textContent = "n/a"; $("s-water-gal").textContent = "n/a"; $("s-water-status").textContent = ""; }
       try {
         const p = await get("/pump/stats");
         if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; $("p-shunt").textContent = p.ShuntVoltage ?? "—"; }
