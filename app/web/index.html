@@ -168,6 +168,16 @@
     .alert-banner { display:flex; align-items:center; gap:10px; background:var(--amber-bg); border:1px solid var(--amber);
       color:var(--amber); border-radius:14px; padding:12px 16px; font-size:.88rem; font-weight:600; box-shadow:var(--shadow); }
     .alert-banner button { margin-left:auto; }
+    /* Per-pod plant tracking */
+    .pods { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    @media (max-width:640px){ .pods { grid-template-columns:1fr 1fr; } }
+    .pod { border:1px solid var(--line); background:var(--surface-2); border-radius:10px; padding:8px; }
+    .pod .pn { font-size:.6rem; color:var(--faint); font-weight:700; letter-spacing:.05em; }
+    .pod input { width:100%; margin:4px 0; font-size:.8rem; padding:4px 6px; border-radius:7px; }
+    .pod .shapes { display:flex; flex-wrap:wrap; gap:3px; }
+    .pod .shapes button { width:21px; height:21px; border:1px solid var(--line); background:var(--surface);
+      color:var(--muted); border-radius:5px; font-size:11px; line-height:1; cursor:pointer; padding:0; }
+    .pod .shapes button.on { background:var(--green); color:#fff; border-color:var(--green); }
 
     #settings { display:none; } #settings.open { display:block; }
 
@@ -316,6 +326,12 @@
         <button class="ghost" onclick="startGrow()" style="margin-left:auto">Start new cycle</button>
       </div>
       <div class="row" id="grow-reminders" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Plants <button class="ghost" onclick="savePods()">Save plants</button></h2>
+      <p class="muted" style="margin:-4px 0 12px">Name each pod and tap the shapes to match the code printed on the physical pod.</p>
+      <div class="pods" id="pods"></div>
     </div>
 
     <div class="card">
@@ -577,6 +593,37 @@
       });
     }
 
+    // ---- Per-pod plant tracking (name + shape code) ----
+    const SHAPE_GLYPH = { circle: "●", square: "■", triangle: "▲", diamond: "◆", star: "★", hexagon: "⬢", heart: "♥", plus: "✚" };
+    let pods = [], podShapes = [];
+    async function loadPods() {
+      try { const d = await get("/pods"); pods = d.pods || []; podShapes = d.shapes || []; renderPods(); } catch {}
+    }
+    function renderPods() {
+      const box = $("pods"); box.innerHTML = "";
+      pods.forEach((p, i) => {
+        if (!p.symbols) p.symbols = [];
+        const cell = document.createElement("div"); cell.className = "pod";
+        const pn = document.createElement("div"); pn.className = "pn"; pn.textContent = "POD " + p.id;
+        const name = document.createElement("input"); name.placeholder = "plant name"; name.value = p.name || "";
+        name.onchange = () => { pods[i].name = name.value; };
+        const shapes = document.createElement("div"); shapes.className = "shapes";
+        podShapes.forEach(s => {
+          const b = document.createElement("button"); b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
+          if (p.symbols.includes(s)) b.classList.add("on");
+          b.onclick = () => {
+            const arr = pods[i].symbols;
+            const at = arr.indexOf(s);
+            if (at >= 0) arr.splice(at, 1); else if (arr.length < 5) arr.push(s);
+            b.classList.toggle("on", arr.includes(s));
+          };
+          shapes.appendChild(b);
+        });
+        cell.append(pn, name, shapes); box.appendChild(cell);
+      });
+    }
+    function savePods() { post("/pods", pods); }
+
     function renderDays(kind, model, box) {
       box.innerHTML = "";
       SCH_DAYS.forEach(day => {
@@ -650,7 +697,7 @@
     function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
 
     $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
-    loadSystem(); refresh(); loadGrow(); loadSchedule(); loadCams(); loadTimelapses(); syncToggles(); ping();
+    loadSystem(); refresh(); loadGrow(); loadSchedule(); loadPods(); loadCams(); loadTimelapses(); syncToggles(); ping();
     setInterval(refresh, 30000);
     setInterval(ping, 10000);
   </script>
