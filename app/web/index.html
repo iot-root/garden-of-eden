@@ -281,6 +281,11 @@
       </div>
       <div class="sched-days" id="sch-pump-days"></div>
 
+      <div class="row" style="margin-top:18px">
+        <label class="switch"><input type="checkbox" id="sch-vacation-en"><span class="track"></span>Vacation mode</label>
+        <label>until <input type="date" id="sch-vacation-until"></label>
+        <span class="muted">reduced light/water (10–16h @ 50%, one short pump) until this date</span>
+      </div>
       <div class="row" style="margin-top:16px">
         <button class="btn" onclick="saveSchedule()">Save schedule</button>
         <span class="muted" id="sch-status">pump runs are capped at 5 min for safety</span>
@@ -472,6 +477,9 @@
         const s = await get("/schedule"); const l = s.lights || {}, p = s.pump || {};
         $("sch-lights-en").checked = !!l.enabled;
         $("sch-pump-en").checked = !!p.enabled;
+        const v = s.vacation || {};
+        $("sch-vacation-en").checked = !!v.enabled;
+        $("sch-vacation-until").value = v.until || "";
         lightDays = mergeDays(l.days);
         pumpDays = mergeDays(p.days);
         renderSchedule();
@@ -481,6 +489,7 @@
       post("/schedule", {
         lights: { enabled: $("sch-lights-en").checked, days: lightDays },
         pump: { enabled: $("sch-pump-en").checked, days: pumpDays },
+        vacation: { enabled: $("sch-vacation-en").checked, until: $("sch-vacation-until").value || null },
       });
     }
 
