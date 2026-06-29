@@ -178,6 +178,17 @@
     .pod .shapes button { width:21px; height:21px; border:1px solid var(--line); background:var(--surface);
       color:var(--muted); border-radius:5px; font-size:11px; line-height:1; cursor:pointer; padding:0; }
     .pod .shapes button.on { background:var(--green); color:#fff; border-color:var(--green); }
+    /* Collapsible cards (accordion) */
+    .card > h2 { justify-content:flex-start; gap:8px; cursor:pointer; user-select:none; }
+    .card > h2 > button, .card > h2 > span { margin-left:auto; }
+    .card > h2::before { content:"▾"; color:var(--faint); font-size:.8rem; transition:transform .2s; flex:0 0 auto; }
+    .card.collapsed > h2::before { transform:rotate(-90deg); }
+    .card.collapsed > .card-body { display:none; }
+    .card.no-collapse > h2 { cursor:default; }
+    .card.no-collapse > h2::before { content:none; }
+    /* Consistent select styling */
+    select { font:inherit; color:var(--ink); background:var(--surface-2); border:1px solid var(--line);
+      border-radius:8px; padding:5px 8px; cursor:pointer; }
 
     #settings { display:none; } #settings.open { display:block; }
 
@@ -190,7 +201,7 @@
 
     @media (max-width:520px){ .cams{ grid-template-columns:1fr; } header h1{ font-size:1.2rem; } }
   </style>
-  <script>document.documentElement.dataset.theme = localStorage.getItem("theme") || "dark";</script>
+  <script>(function(){var t=localStorage.getItem("theme")||"dark";document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;})();</script>
 </head>
 <body>
   <div class="wrap">
@@ -227,6 +238,20 @@
         <button class="btn" onclick="saveKey()">Save</button>
       </div>
       <p class="muted" style="margin-top:10px">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
+      <div class="row" style="margin-top:14px">
+        <label>Theme</label>
+        <select id="set-theme" onchange="setThemePref(this.value)">
+          <option value="auto">Auto (system)</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+        <label>Live refresh</label>
+        <select id="set-caminterval" onchange="setCamInterval(+this.value)">
+          <option value="6000">6 s</option>
+          <option value="15000">15 s</option>
+          <option value="30000">30 s</option>
+        </select>
+      </div>
     </div>
 
     <div class="card">
@@ -382,6 +407,7 @@
   <script>
     let API_KEY = localStorage.getItem("garden_key") || "";
     let camTimer = null;
+    let camInterval = +localStorage.getItem("camInterval") || 6000;
     let waterLowCm = null;  // tank-low threshold (cm) from /system; null = disabled
     const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
@@ -479,7 +505,7 @@
       $("cam-lower").src = "/camera/lower?t=" + Date.now();
     }
     function toggleCamAuto() {
-      if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, 6000); }
+      if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, camInterval); }
       else { clearInterval(camTimer); camTimer = null; }
     }
     function loadTimelapses() {
@@ -687,16 +713,42 @@
       });
     }
 
-    function toggleTheme() {
-      const d = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = d;
-      localStorage.setItem("theme", d);
-      $("theme-btn").textContent = d === "dark" ? "🌙" : "☀️";
+    const resolveTheme = pref => pref === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : pref;
+    function setThemePref(pref) {
+      localStorage.setItem("theme", pref);
+      const eff = resolveTheme(pref);
+      document.documentElement.dataset.theme = eff;
+      $("theme-btn").textContent = eff === "dark" ? "🌙" : "☀️";
+      if ($("set-theme")) $("set-theme").value = pref;
+    }
+    function toggleTheme() { setThemePref(document.documentElement.dataset.theme === "dark" ? "light" : "dark"); }
+    function setCamInterval(ms) {
+      camInterval = ms; localStorage.setItem("camInterval", ms);
+      if ($("cam-auto").checked) { clearInterval(camTimer); camTimer = setInterval(loadCams, camInterval); }
+    }
+    // Wrap each card's content below its <h2> so the header can collapse it.
+    function setupCollapsible() {
+      document.querySelectorAll(".card").forEach((card, i) => {
+        if (card.id === "settings") { card.classList.add("no-collapse"); return; }
+        const h2 = card.querySelector(":scope > h2"); if (!h2) return;
+        const body = document.createElement("div"); body.className = "card-body";
+        while (h2.nextSibling) body.appendChild(h2.nextSibling);
+        card.appendChild(body);
+        const key = "card:" + (h2.textContent.trim().toLowerCase().replace(/\W+/g, "-") || i);
+        if (localStorage.getItem(key) === "1") card.classList.add("collapsed");
+        h2.addEventListener("click", e => {
+          if (e.target.closest("button,input,select,label,a")) return;
+          localStorage.setItem(key, card.classList.toggle("collapsed") ? "1" : "0");
+        });
+      });
     }
     function toggleSettings() { $("settings").classList.toggle("open"); $("api-key").value = API_KEY; }
     function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
 
+    setupCollapsible();
     $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
+    $("set-theme").value = localStorage.getItem("theme") || "dark";
+    $("set-caminterval").value = camInterval;
     loadSystem(); refresh(); loadGrow(); loadSchedule(); loadPods(); loadCams(); loadTimelapses(); syncToggles(); ping();
     setInterval(refresh, 30000);
     setInterval(ping, 10000);
