@@ -125,6 +125,10 @@
     .sched-day .dname { width:42px; flex:0 0 42px; padding-top:6px; font-weight:700; color:var(--muted); text-transform:capitalize; }
     .sched-day .entries { flex:1; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
     .sched-day .entry { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+    .kv { display:grid; grid-template-columns:1fr 1fr; gap:0 18px; }
+    .kv > div { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding:6px 0; }
+    .kv .k { color:var(--muted); }
+    .kv .v { font-weight:600; text-align:right; }
 
     #settings { display:none; } #settings.open { display:block; }
 
@@ -178,14 +182,27 @@
         <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
         <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
         <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
-        <div class="tile" id="s-water-card"><div class="top">Water</div><div class="val"><span id="s-water">—</span><small>cm</small></div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+        <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water">—</span><small>cm</small></div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
       </div>
       <div class="tiles" style="margin-top:12px">
         <div class="tile sm"><div class="top">Pump Voltage</div><div class="val"><span id="p-volt">—</span><small>V</small></div></div>
         <div class="tile sm"><div class="top">Current</div><div class="val"><span id="p-curr">—</span><small>mA</small></div></div>
         <div class="tile sm"><div class="top">Power</div><div class="val"><span id="p-pow">—</span><small>mW</small></div></div>
+        <div class="tile sm"><div class="top">Shunt</div><div class="val"><span id="p-shunt">—</span><small>mV</small></div></div>
       </div>
       <div class="muted" id="updated" style="margin-top:12px">—</div>
+    </div>
+
+    <div class="card">
+      <h2>Device</h2>
+      <div class="kv">
+        <div><span class="k">Model</span><span class="v" id="d-model">—</span></div>
+        <div><span class="k">Sensor</span><span class="v" id="d-sensor">—</span></div>
+        <div><span class="k">Firmware</span><span class="v" id="d-version">—</span></div>
+        <div><span class="k">Identifier</span><span class="v" id="d-id">—</span></div>
+        <div><span class="k">Water-low at</span><span class="v" id="d-waterlow">—</span></div>
+        <div><span class="k">Pump max run</span><span class="v" id="d-pumpcap">—</span></div>
+      </div>
     </div>
 
     <div class="card">
@@ -276,6 +293,7 @@
   <script>
     let API_KEY = localStorage.getItem("garden_key") || "";
     let camTimer = null;
+    let waterLowCm = null;  // tank-low threshold (cm) from /system; null = disabled
     const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
     let lightDays = emptyDays(), pumpDays = emptyDays();
@@ -335,18 +353,35 @@
         // Map ~5cm (full) .. ~20cm (empty) to a 0..100% bar.
         const pct = Math.max(0, Math.min(100, (1 - (cm - 5) / 15) * 100));
         $("s-water-bar").style.width = pct + "%";
-      } catch { $("s-water").textContent = "n/a"; }
+        // Tank-low warning: larger distance = lower water (threshold from /system).
+        const badge = $("s-water-status");
+        if (waterLowCm != null && cm > waterLowCm) {
+          badge.textContent = "LOW"; badge.style.cssText = "background:#c0392b;color:#fff;border-color:#c0392b";
+        } else if (waterLowCm != null) {
+          badge.textContent = "OK"; badge.style.cssText = "";
+        } else { badge.textContent = ""; }
+      } catch { $("s-water").textContent = "n/a"; $("s-water-status").textContent = ""; }
       try {
         const p = await get("/pump/stats");
-        if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; }
-        else { $("p-volt").textContent = $("p-curr").textContent = $("p-pow").textContent = "—"; }
+        if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; $("p-shunt").textContent = p.ShuntVoltage ?? "—"; }
+        else { $("p-volt").textContent = $("p-curr").textContent = $("p-pow").textContent = $("p-shunt").textContent = "—"; }
       } catch { /* optional */ }
       $("updated").textContent = "updated " + new Date().toLocaleTimeString();
     }
 
     async function loadSystem() {
-      try { const s = await get("/system"); $("meta").textContent = `${s.model} · v${s.version} · ${s.identifier}`; conn(true); }
-      catch { $("meta").textContent = "offline"; conn(false); }
+      try {
+        const s = await get("/system");
+        $("meta").textContent = `${s.model} · v${s.version} · ${s.identifier}`;
+        $("d-model").textContent = s.model || "—";
+        $("d-sensor").textContent = s.sensor_type || "—";
+        $("d-version").textContent = "v" + s.version;
+        $("d-id").textContent = s.identifier || "—";
+        waterLowCm = (s.water_low_cm != null && s.water_low_cm !== 0) ? s.water_low_cm : null;
+        $("d-waterlow").textContent = waterLowCm != null ? `> ${waterLowCm} cm` : "off";
+        $("d-pumpcap").textContent = s.pump_max_run_seconds != null ? `${Math.round(s.pump_max_run_seconds / 60)} min` : "—";
+        conn(true);
+      } catch { $("meta").textContent = "offline"; conn(false); }
     }
 
     function loadCams() {

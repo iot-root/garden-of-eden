@@ -29,5 +29,7 @@ def get_system():
             "model": model,
             "profile": _profile_for(model),
             "sensor_type": config.SENSOR_TYPE,
+            "water_low_cm": config.WATER_LOW_CM,
+            "pump_max_run_seconds": config.MAX_PUMP_RUN_SECONDS,
         }
     )
