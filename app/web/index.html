@@ -125,7 +125,7 @@
     /* Cameras */
     .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .cam { position:relative; border-radius:14px; overflow:hidden; background:#dde7e0; aspect-ratio:4/3; border:1px solid var(--line); }
-    .cam img { width:100%; height:100%; object-fit:cover; display:block; }
+    .cam img, .cam video { width:100%; height:100%; object-fit:cover; display:block; background:#000; }
     .cam figcaption { position:absolute; left:10px; bottom:8px; color:#fff; font-size:.72rem; font-weight:600;
       text-shadow:0 1px 4px rgba(0,0,0,.6); }
 
@@ -284,13 +284,23 @@
     <div class="card">
       <h2>Cameras
         <span style="display:flex; gap:12px; align-items:center">
-          <label class="switch"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"><span class="track"></span>auto</label>
+          <label class="switch"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"><span class="track"></span>live</label>
           <button class="ghost" onclick="loadCams()">Reload</button>
         </span>
       </h2>
       <div class="cams">
         <figure class="cam"><img id="cam-upper" alt="upper camera"><figcaption>Upper</figcaption></figure>
         <figure class="cam"><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
+      </div>
+      <h2 style="margin-top:18px">Timelapse
+        <span style="display:flex; gap:8px">
+          <button class="ghost" onclick="makeTimelapse('upper')">Build upper</button>
+          <button class="ghost" onclick="makeTimelapse('lower')">Build lower</button>
+        </span>
+      </h2>
+      <div class="cams">
+        <figure class="cam"><video id="tl-upper" controls preload="none" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
+        <figure class="cam"><video id="tl-lower" controls preload="none" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
       </div>
     </div>
 
@@ -453,8 +463,16 @@
       $("cam-lower").src = "/camera/lower?t=" + Date.now();
     }
     function toggleCamAuto() {
-      if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, 15000); }
+      if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, 6000); }
       else { clearInterval(camTimer); camTimer = null; }
+    }
+    function loadTimelapses() {
+      ["upper", "lower"].forEach(c => { $("tl-" + c).src = "/camera/timelapse/" + c + "?t=" + Date.now(); });
+    }
+    async function makeTimelapse(cam) {
+      toast("Building " + cam + " timelapse… (can take a minute)");
+      const r = await post("/camera/timelapse/" + cam);
+      if (r && !r.error) { const v = $("tl-" + cam); v.src = "/camera/timelapse/" + cam + "?t=" + Date.now(); v.load(); }
     }
 
     async function syncToggles() {
@@ -632,7 +650,7 @@
     function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
 
     $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
-    loadSystem(); refresh(); loadGrow(); loadSchedule(); loadCams(); syncToggles(); ping();
+    loadSystem(); refresh(); loadGrow(); loadSchedule(); loadCams(); loadTimelapses(); syncToggles(); ping();
     setInterval(refresh, 30000);
     setInterval(ping, 10000);
   </script>
