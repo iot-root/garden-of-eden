@@ -247,6 +247,11 @@
           <option value="dark">Dark</option>
           <option value="light">Light</option>
         </select>
+        <label>Units</label>
+        <select id="set-units" onchange="setUnits(this.value)">
+          <option value="c">Celsius</option>
+          <option value="f">Fahrenheit</option>
+        </select>
         <label>Live refresh</label>
         <select id="set-caminterval" onchange="setCamInterval(+this.value)">
           <option value="6000">6 s</option>
@@ -259,9 +264,9 @@
     <div class="card">
       <h2>Sensors <button class="ghost" onclick="refresh()">Refresh</button></h2>
       <div class="tiles">
-        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small class="unit-temp">°C</small></div></div>
         <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
-        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small class="unit-temp">°C</small></div></div>
         <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water-gal">—</span><small>gal</small></div><div class="muted" style="font-size:.68rem"><span id="s-water">—</span> cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
       </div>
       <div class="tiles" style="margin-top:12px">
@@ -411,6 +416,7 @@
     let API_KEY = localStorage.getItem("garden_key") || "";
     let camTimer = null;
     let camInterval = +localStorage.getItem("camInterval") || 6000;
+    let units = localStorage.getItem("units") || "c";  // "c" or "f", remembered per browser
     let waterLowCm = null;  // tank-low threshold (cm) from /system; null = disabled
     const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
@@ -447,6 +453,10 @@
     }
 
     function lbl(id) { $(id + "-val").textContent = $(id).value + "%"; }
+    // Sensors always report Celsius; the F conversion is presentation-only.
+    function fmtTemp(c) { const v = +c; if (!isFinite(v)) return "n/a"; return (units === "f" ? v * 9 / 5 + 32 : v).toFixed(1); }
+    function applyUnitLabels() { document.querySelectorAll(".unit-temp").forEach(e => { e.textContent = units === "f" ? "\u00b0F" : "\u00b0C"; }); }
+    function setUnits(u) { units = u; localStorage.setItem("units", u); applyUnitLabels(); refresh(); }
     function setActive(device, isOn) {
       $(device + "-on").classList.toggle("active", isOn);
       const off = $(device + "-off"); off.classList.toggle("active", !isOn); off.classList.toggle("danger", !isOn);
@@ -458,12 +468,13 @@
 
     async function refresh() {
       const sensors = {
-        "/temperature": ["s-temp", "temperature"],
-        "/humidity": ["s-hum", "humidity"],
-        "/pcb-temp": ["s-pcb", "pcb-temp"],
+        "/temperature": ["s-temp", "temperature", true],
+        "/humidity": ["s-hum", "humidity", false],
+        "/pcb-temp": ["s-pcb", "pcb-temp", true],
       };
-      for (const [path, [id, key]] of Object.entries(sensors)) {
-        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "n/a"; }
+      for (const [path, [id, key, isTemp]] of Object.entries(sensors)) {
+        try { const v = (await get(path))[key]; $(id).textContent = isTemp ? fmtTemp(v) : v; }
+        catch { $(id).textContent = "n/a"; }
       }
       try {
         const w = await get("/distance"); const cm = w.distance;
@@ -785,6 +796,7 @@
     $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
     $("set-theme").value = localStorage.getItem("theme") || "dark";
     $("set-caminterval").value = camInterval;
+    $("set-units").value = units; applyUnitLabels();
     loadSystem(); refresh(); loadGrow(); loadSchedule(); loadPods(); loadCams(); loadTimelapses(); syncToggles(); ping();
     setInterval(refresh, 30000);
     setInterval(ping, 10000);
