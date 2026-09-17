@@ -1,0 +1,14 @@
+# Dev/CI dependencies — pure-Python only, installable off-Pi.
+# Hardware libraries (gpiozero, board/blinka, adafruit-*, pigpio, smbus,
+# pi-ina219, etc.) are NOT listed here; the test suite stubs them via
+# tests/_hwstub.py so unit tests run on any machine.
+flask==3.0.2
+Flask-Cors==4.0.0
+paho-mqtt==2.0.0
+python-dotenv==1.0.1
+parameterized==0.9.0
+mock==5.1.0
+
+# Linting / formatting (CI gate)
+ruff==0.6.9
+black==24.10.0
