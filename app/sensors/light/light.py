@@ -5,13 +5,15 @@ import pigpio
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 
+import config
+
 
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
         self.pin = pin
         self.factory = pin_factory
-        if pin_factory:
-            self.pi = pigpio.pi()
+        if config.PIGPIO_HOST:
+            self.pi = pigpio.pi(config.PIGPIO_HOST, config.PIGPIO_PORT)
         else:
             self.pi = pigpio.pi()
 
@@ -28,7 +30,7 @@ class GPIOController:
 
 
 class Light:
-    def __init__(self, pin=18, frequency=8000, pin_factory=None):
+    def __init__(self, pin=config.LIGHT_PIN, frequency=config.LIGHT_FREQUENCY, pin_factory=None):
         # pigpiod is running on port 8888
         # Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
         self.pin = pin
@@ -117,7 +119,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    light = Light(18)  # Default frequency of 8kHz
+    light = Light()  # pins/frequency from config
 
     if args.on:
         light.on()

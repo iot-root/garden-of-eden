@@ -4,6 +4,8 @@
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
 
+import config
+
 
 class MeasurementError(Exception):
     """
@@ -35,7 +37,11 @@ class Distance:
         """
         self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
         try:
-            self.sensor = DistanceSensor(echo=19, trigger=26, pin_factory=self.pin_factory)
+            self.sensor = DistanceSensor(
+                echo=config.DISTANCE_ECHO_PIN,
+                trigger=config.DISTANCE_TRIGGER_PIN,
+                pin_factory=self.pin_factory,
+            )
         except Exception as e:
             raise MeasurementError(f"Failed to initialize DistanceSensor: {e}")
 

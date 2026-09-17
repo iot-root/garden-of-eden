@@ -4,13 +4,15 @@ import pigpio
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 
+import config
+
 
 class GPIOController:
     def __init__(self, pin, pin_factory=None):
         self.pin = pin
         self.pin_factory = pin_factory
-        if self.pin_factory:
-            self.pi = pigpio.pi()
+        if config.PIGPIO_HOST:
+            self.pi = pigpio.pi(config.PIGPIO_HOST, config.PIGPIO_PORT)
         else:
             self.pi = pigpio.pi()
 
@@ -27,7 +29,7 @@ class GPIOController:
 
 
 class Pump:
-    def __init__(self, pin=24, frequency=50, pin_factory=None):
+    def __init__(self, pin=config.PUMP_PIN, frequency=config.PUMP_FREQUENCY, pin_factory=None):
         # pigpiod is running on port 8888
         # Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
         self.pin = pin
@@ -103,7 +105,8 @@ class Pump:
 
     def close(self):
         self.pump.close()
-        self.gpio.stop()
+        if getattr(self.gpio, "pi", None):
+            self.gpio.pi.stop()
 
 
 if __name__ == "__main__":
@@ -122,9 +125,9 @@ if __name__ == "__main__":
 
     pin_factory = None
     if args.factory_host and args.factory_port:
-        pin_factory = {"host": args.factory_host, "port": args.factory_port}
+        pin_factory = PiGPIOFactory(host=args.factory_host, port=args.factory_port)
 
-    pump = Pump(24, pin_factory=pin_factory)  # Default frequency of 50Hz
+    pump = Pump(pin_factory=pin_factory)  # pins/frequency from config
 
     if args.on:
         pump.on()
