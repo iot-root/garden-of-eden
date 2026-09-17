@@ -38,10 +38,18 @@ def install():
     for name, cls in (
         ("adafruit_ahtx0", "AHTx0"),
         ("adafruit_am2320", "AM2320"),
-        ("adafruit_pct2075", "PCT2075"),
     ):
         mod = _module(name)
         setattr(mod, cls, MagicMock(name=f"{name}.{cls}"))
+
+    # PCT2075 returns a real number so get_pcb_temperature() serializes to JSON
+    # (a MagicMock .temperature would 503 on /pcb-temp).
+    class _PCT2075:
+        def __init__(self, *a, **k):
+            self.temperature = 30.0
+
+    pct = _module("adafruit_pct2075")
+    pct.PCT2075 = _PCT2075
 
     # --- gpiozero ---
     # These are real (empty) classes, not MagicMocks, so tests that patch them
