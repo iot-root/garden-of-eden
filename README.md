@@ -265,7 +265,8 @@ CI runs exactly these three on every PR. The `-t . -s tests` part matters: `test
 
 - **Pins, I2C addresses, thresholds, paths:** `config.py`, read from `.env`. Add the key there with a default, document it in `.env-dist`, and if it's a physical pin, add it to the sensor's "Pins" list under [Hardware Overview](#hardware-overview). Never hardcode a pin in a driver.
 - **Drivers:** `app/sensors/<name>/<name>.py`. A class that takes `pin_factory=None` and defaults everything from `config`. Give it a `__main__` block with argparse so it can be run by hand on the Pi.
-- **Routes:** `app/sensors/<name>/routes.py`. A Flask `Blueprint`, the driver built once at import inside `try/except` (so a missing sensor doesn't take the whole API down), and every route wrapped with `check_sensor_guard`.
+- **Routes:** `app/sensors/<name>/routes.py`. A Flask `Blueprint`, the driver built once at import inside `try/except` (so a missing sensor doesn't take the whole API down), and every route wrapped with `check_sensor_guard`. The guard gives you 400 if the driver never initialised, 503 if the hardware throws mid-request, and 400 on a `ValueError`, so raise `ValueError` for bad input and let it handle the response. For 0-100 inputs use `parse_level` from `app/lib/lib.py` instead of validating by hand.
+- **Logging:** `logging.getLogger(__name__)` in modules, never `print`. Any new entry point (a script with a `__main__`, a service) calls `configure_logging()` from `app/lib/logging_config.py` once at startup; level comes from `LOG_LEVEL` in `.env`.
 - **Tests:** `tests/test_<name>.py`. Import the driver or `create_app`, patch what you need, assert on the result.
 
 #### Adding a feature, start to finish

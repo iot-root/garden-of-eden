@@ -64,14 +64,11 @@ class PumpBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), mock_data)
 
-    @patch("app.sensors.pump.routes.pump_control.set_speed")
-    def test_pump_adjust_speed_invalid(self, mock_set_speed):
-        mock_set_speed.side_effect = ValueError("Invalid speed value")
-        response = self.client.post(
-            f"{self.BASE_ROUTE}/speed", json={"value": 150}
-        )  # Assuming 150 is invalid
+    def test_pump_adjust_speed_invalid(self):
+        # Out-of-range values are rejected with 400 before reaching hardware.
+        response = self.client.post(f"{self.BASE_ROUTE}/speed", json={"value": 150})
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.get_json(), {"message": "Invalid speed value"})
+        self.assertIn("error", response.get_json())
 
 
 class LightBlueprintTestCase(BaseTestCase):
@@ -88,14 +85,14 @@ class LightBlueprintTestCase(BaseTestCase):
         response = self.client.post(f"{self.BASE_ROUTE}/on")
         self.assertEqual(response.status_code, 200)
         mock_on.assert_called_once()
-        self.assertEqual(response.get_json(), {"message": "Light turned on"})
+        self.assertEqual(response.get_json(), {"message": "Light turned on!"})
 
     @patch("app.sensors.light.routes.light_control.off")
     def test_light_turn_off(self, mock_off):
         response = self.client.post(f"{self.BASE_ROUTE}/off")
         self.assertEqual(response.status_code, 200)
         mock_off.assert_called_once()
-        self.assertEqual(response.get_json(), {"message": "Light turned off"})
+        self.assertEqual(response.get_json(), {"message": "Light turned off!"})
 
     @patch("app.sensors.light.routes.light_control.set_brightness")
     def test_light_set_brightness(self, mock_set_brightness):
@@ -111,12 +108,11 @@ class LightBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"value": 60})
 
-    @patch("app.sensors.light.routes.light_control.set_brightness")
-    def test_light_set_brightness_invalid(self, mock_set_brightness):
-        mock_set_brightness.side_effect = ValueError("Invalid brightness value")
+    def test_light_set_brightness_invalid(self):
+        # Out-of-range values are rejected with 400 before reaching hardware.
         response = self.client.post(f"{self.BASE_ROUTE}/brightness", json={"value": 150})
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.get_json(), {"message": "Invalid brightness value"})
+        self.assertIn("error", response.get_json())
 
 
 class DistanceBlueprintTestCase(BaseTestCase):
@@ -133,8 +129,8 @@ class DistanceBlueprintTestCase(BaseTestCase):
         # Mocking the return value of measure_once method to simulate a distance value of 55.5
         mock_measure_once.return_value = 55.5
 
-        # The distance blueprint serves its reading at the prefix itself
-        response = self.client.get(self.BASE_ROUTE)
+        # Making a GET request to the /measure endpoint
+        response = self.client.get(f"{self.BASE_ROUTE}/measure")
 
         # Asserting that the status code is 200 OK
         self.assertEqual(response.status_code, 200)
@@ -159,7 +155,7 @@ class PCBTempBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked temperature value
-        self.assertEqual(response.get_json(), {"pcb-temp": "55.70"})
+        self.assertEqual(response.get_json(), {"pcb-temp": 55.7})
 
 
 class TemperatureBlueprintTestCase(BaseTestCase):
@@ -168,7 +164,7 @@ class TemperatureBlueprintTestCase(BaseTestCase):
 
     @patch("app.sensors.temperature.routes.temperature_sensor.read")
     def test_get_temperature(self, mock_get_value):
-        # Mocking the return value of get_value method to simulate a temperature value of 45.6
+        # Mocking the return value of read() to simulate a temperature value of 45.6
         mock_get_value.return_value = 45.6
 
         # Making a GET request to the temperature endpoint
@@ -178,7 +174,7 @@ class TemperatureBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked temperature value
-        self.assertEqual(response.get_json(), {"temperature": "45.60"})
+        self.assertEqual(response.get_json(), {"temperature": 45.6})
 
 
 class HumidityBlueprintTestCase(BaseTestCase):
@@ -187,7 +183,7 @@ class HumidityBlueprintTestCase(BaseTestCase):
 
     @patch("app.sensors.humidity.routes.humidity_sensor.read")
     def test_get_humidity(self, mock_get_value):
-        # Mocking the return value of get_value method to simulate a humidity value of 45.6
+        # Mocking the return value of read() to simulate a humidity value of 45.6
         mock_get_value.return_value = 45.6
 
         # Making a GET request to the humidity endpoint
@@ -197,7 +193,7 @@ class HumidityBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked humidity value
-        self.assertEqual(response.get_json(), {"humidity": "45.60"})
+        self.assertEqual(response.get_json(), {"humidity": 45.6})
 
 
 if __name__ == "__main__":

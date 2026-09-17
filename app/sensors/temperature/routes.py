@@ -11,4 +11,4 @@ check_sensor = check_sensor_guard(sensor=temperature_sensor, sensor_name="Temper
 @temperature_blueprint.route("", methods=["GET"])
 @check_sensor
 def get_temperature():
-    return jsonify(temperature="{:.2f}".format(temperature_sensor.read()))
+    return jsonify(temperature=round(temperature_sensor.read(), 2))
