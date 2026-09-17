@@ -86,14 +86,14 @@ class LightBlueprintTestCase(BaseTestCase):
         response = self.client.post(f'{self.BASE_ROUTE}/on')
         self.assertEqual(response.status_code, 200)
         mock_on.assert_called_once()
-        self.assertEqual(response.get_json(), {"message": "Light turned on!"})
+        self.assertEqual(response.get_json(), {"message": "Light turned on"})
 
     @patch('app.sensors.light.routes.light_control.off')
     def test_light_turn_off(self, mock_off):
         response = self.client.post(f'{self.BASE_ROUTE}/off')
         self.assertEqual(response.status_code, 200)
         mock_off.assert_called_once()
-        self.assertEqual(response.get_json(), {"message": "Light turned off!"})
+        self.assertEqual(response.get_json(), {"message": "Light turned off"})
 
     @patch('app.sensors.light.routes.light_control.set_brightness')
     def test_light_set_brightness(self, mock_set_brightness):
@@ -130,8 +130,8 @@ class DistanceBlueprintTestCase(BaseTestCase):
         # Mocking the return value of measure_once method to simulate a distance value of 55.5
         mock_measure_once.return_value = 55.5
 
-        # Making a GET request to the /measure endpoint
-        response = self.client.get(f'{self.BASE_ROUTE}/measure')
+        # The distance blueprint serves its reading at the prefix itself
+        response = self.client.get(self.BASE_ROUTE)
 
         # Asserting that the status code is 200 OK
         self.assertEqual(response.status_code, 200)
@@ -155,13 +155,13 @@ class PCBTempBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked temperature value
-        self.assertEqual(response.get_json(), {"pcb-temp": 55.7})
+        self.assertEqual(response.get_json(), {"pcb-temp": "55.70"})
 
 class TemperatureBlueprintTestCase(BaseTestCase):
 
     BASE_ROUTE = "/temperature"
 
-    @patch('app.sensors.temperature.routes.temperature_sensor.get_value')
+    @patch('app.sensors.temperature.routes.temperature_sensor.read')
     def test_get_temperature(self, mock_get_value):
         # Mocking the return value of get_value method to simulate a temperature value of 45.6
         mock_get_value.return_value = 45.6
@@ -173,13 +173,13 @@ class TemperatureBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked temperature value
-        self.assertEqual(response.get_json(), {"temperature": 45.6})
+        self.assertEqual(response.get_json(), {"temperature": "45.60"})
 
 class HumidityBlueprintTestCase(BaseTestCase):
 
     BASE_ROUTE = "/humidity"
 
-    @patch('app.sensors.humidity.routes.humidity_sensor.get_value')
+    @patch('app.sensors.humidity.routes.humidity_sensor.read')
     def test_get_humidity(self, mock_get_value):
         # Mocking the return value of get_value method to simulate a humidity value of 45.6
         mock_get_value.return_value = 45.6
@@ -191,7 +191,7 @@ class HumidityBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked humidity value
-        self.assertEqual(response.get_json(), {"humidity": 45.6})
+        self.assertEqual(response.get_json(), {"humidity": "45.60"})
 
 if __name__ == "__main__":
     unittest.main()
