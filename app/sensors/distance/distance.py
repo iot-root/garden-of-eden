@@ -1,15 +1,18 @@
 # distance.py
 
+
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
-from time import sleep
+
 
 class MeasurementError(Exception):
     """
     Raised when there's an error in distance measurement.
     """
+
     def __init__(self, message):
         super().__init__(message)
+
 
 class Distance:
     """
@@ -96,6 +99,7 @@ class Distance:
         else:
             mid = data_length // 2
             return [(sorted_data[mid - 1] + sorted_data[mid]) / 2]
+
 
 if __name__ == "__main__":
     """

@@ -3,20 +3,22 @@ This module provides functionality to read humidity values from the AM2320 senso
 using the adafruit_ahtx0 library.
 """
 
-import time
-import board
+import os
+import sys
+
 import adafruit_ahtx0
 import adafruit_am2320
+import board
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-import config  
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+import config
+
 
 class HumiditySensor:
     """
     Sensor class specific to reading humidity values.
     """
+
     def __init__(self, sensor):
         self._sensor = sensor
 
@@ -28,23 +30,24 @@ class HumiditySensor:
         """
         return self._sensor.relative_humidity
 
-humidity_sensor = None 
+
+humidity_sensor = None
 
 try:
     i2c = board.I2C()
-    if config.SENSOR_TYPE == 'AM2320':
+    if config.SENSOR_TYPE == "AM2320":
         base_sensor = adafruit_am2320.AM2320(i2c, address=0x5C)
-    elif config.SENSOR_TYPE == 'DHT20':
+    elif config.SENSOR_TYPE == "DHT20":
         base_sensor = adafruit_ahtx0.AHTx0(i2c, address=0x38)
     else:
         raise ValueError("Unsupported sensor type")
     humidity_sensor = HumiditySensor(base_sensor)
-except:
+except Exception:
     print("Failed to initiate humidity sensor")
 
 if __name__ == "__main__":
     """
-    If the module is executed as a standalone script, it will return the humidity in a telegraf friendly format. 
+    If the module is executed as a standalone script, it will return the humidity in a telegraf friendly format.
     """
     try:
         humidity = humidity_sensor.read()

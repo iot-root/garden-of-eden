@@ -1,0 +1,14 @@
+[tool.black]
+line-length = 100
+target-version = ["py39", "py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# E/F: pyflakes + pycodestyle errors; I: import sorting.
+select = ["E", "F", "I"]
+# E501 (line length) is handled by black; ignore module-level import-not-at-top
+# in the few files that must set sys.path before importing config.
+ignore = ["E501", "E402"]

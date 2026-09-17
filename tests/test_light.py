@@ -1,15 +1,17 @@
+import os
+import sys
 import unittest
 from unittest.mock import patch
-import sys
-import os
+
 # Add the root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.sensors.light.light import Light
 
+
 class TestLight(unittest.TestCase):
-    @patch('app.sensors.light.light.PWMLED')
-    @patch('app.sensors.light.light.PiGPIOFactory')
-    @patch('app.sensors.light.light.pigpio.pi')
+    @patch("app.sensors.light.light.PWMLED")
+    @patch("app.sensors.light.light.PiGPIOFactory")
+    @patch("app.sensors.light.light.pigpio.pi")
     def setUp(self, MockPi, MockFactory, MockPWMLED):
         self.mock_led = MockPWMLED.return_value
         self.mock_led.value = 0
@@ -20,19 +22,19 @@ class TestLight(unittest.TestCase):
         self.mock_led.value = 0
         self.light.on()
         self.assertEqual(self.mock_led.value, 1)
-        self.assertLogs('Turning light on')
+        self.assertLogs("Turning light on")
 
     def test_turn_on_from_nonzero(self):
         self.mock_led.value = 0.5
         self.light.on()
         self.assertEqual(self.mock_led.value, 0.5)
-        self.assertLogs('Light already on, skipping')
+        self.assertLogs("Light already on, skipping")
 
     def test_off(self):
         self.mock_led.value = 1
         self.light.off()
         self.assertEqual(self.mock_led.value, 0)
-        self.assertLogs('Turning light off')
+        self.assertLogs("Turning light off")
 
     def test_set_brightness_valid(self):
         valid_brightness = 70
@@ -52,5 +54,6 @@ class TestLight(unittest.TestCase):
         self.light.close()
         self.mock_led.close.assert_called_once()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

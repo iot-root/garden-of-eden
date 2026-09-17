@@ -1,15 +1,17 @@
-import unittest
-from unittest.mock import patch, Mock
-import sys
 import os
+import sys
+import unittest
+from unittest.mock import Mock, patch
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.sensors.pump.pump import Pump
 
+
 class TestPump(unittest.TestCase):
 
-    @patch('app.sensors.pump.pump.PWMLED')
-    @patch('app.sensors.pump.pump.PiGPIOFactory')
-    @patch('app.sensors.pump.pump.pigpio.pi')
+    @patch("app.sensors.pump.pump.PWMLED")
+    @patch("app.sensors.pump.pump.PiGPIOFactory")
+    @patch("app.sensors.pump.pump.pigpio.pi")
     def setUp(self, MockPi, MockFactory, MockPWMLED):
         self.mock_pwm_pump = MockPWMLED()
         self.mock_pwm_pump.value = Mock()  # Set an initial value as a new Mock
@@ -59,5 +61,6 @@ class TestPump(unittest.TestCase):
         self.mock_pwm_pump.close.assert_called_once()
         self.mock_pi.stop.assert_called_once()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
