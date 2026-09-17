@@ -5,6 +5,7 @@ from .sensors.humidity.routes import humidity_blueprint
 from .sensors.light.routes import light_blueprint
 from .sensors.pcb_temp.routes import pcb_temp_blueprint
 from .sensors.pump.routes import pump_blueprint
+from .sensors.system.routes import system_blueprint
 from .sensors.temperature.routes import temperature_blueprint
 
 
@@ -21,6 +22,7 @@ def create_app(config_name):
     app.register_blueprint(temperature_blueprint, url_prefix="/temperature")
     app.register_blueprint(humidity_blueprint, url_prefix="/humidity")
     app.register_blueprint(pcb_temp_blueprint, url_prefix="/pcb-temp")
+    app.register_blueprint(system_blueprint, url_prefix="/system")
 
     # @app.teardown_appcontext
     # def shutdown_session(exception=None):
