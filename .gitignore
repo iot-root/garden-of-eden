@@ -3,9 +3,16 @@ __pycache__/
 *.py[cod]
 *.pyo
 venv/
+.venv/
+.venv-dev/
+*.log
+gardyn.log
+simulator/.sim/
 # If using Jython
 *.class
 .env
+
+# Browser-validation artifacts
+.playwright-mcp/
+garden-*.png
 timelapse/
-simulator/.sim/
-*.log

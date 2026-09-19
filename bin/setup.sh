@@ -7,6 +7,30 @@ LOG_FILE="/tmp/install_packages.log"
 PYTHON_ENV_LOG_FILE="/tmp/setup_python_env.log"
 VERBOSE=false
 
+# Safety flags
+DRY_RUN=false
+ASSUME_YES=false
+for _arg in "$@"; do
+    case "$_arg" in
+        --dry-run) DRY_RUN=true ;;
+        -y|--yes) ASSUME_YES=true ;;
+        -v|--verbose) VERBOSE=true ;;
+        -h|--help)
+            cat <<'USAGE'
+Usage: bin/setup.sh [--dry-run] [--yes] [--verbose]
+
+  --dry-run   Print every system change that would be made, then exit.
+              Makes NO changes. Run this first if you're unsure.
+  --yes       Skip the confirmation prompt.
+  --verbose   Extra logging.
+
+setup.sh backs up every system file it edits to <file>.garden.bak, and
+bin/uninstall.sh reverses the install. See docs/access.md.
+USAGE
+            exit 0 ;;
+    esac
+done
+
 # Colors
 GRN="\e[32m"
 RED="\e[31m"
@@ -34,6 +58,26 @@ function log {
     fi
 }
 
+# Make a one-time backup of a system file before modifying it, so every change
+# is reversible (bin/uninstall.sh restores these).
+function _backup_file {
+    local f="$1"
+    if [ -f "$f" ] && [ ! -f "${f}.garden.bak" ]; then
+        sudo cp -a "$f" "${f}.garden.bak" && log_info "Backed up $f -> ${f}.garden.bak"
+    fi
+}
+
+# Locate the active boot config. Raspberry Pi OS Bookworm uses /boot/firmware.
+function boot_config_path {
+    if [ -f /boot/firmware/config.txt ]; then
+        echo /boot/firmware/config.txt
+    elif [ -f /boot/config.txt ]; then
+        echo /boot/config.txt
+    else
+        echo ""
+    fi
+}
+
 # Spinner function
 function show_spinner {
     local pid=$!
@@ -57,7 +101,7 @@ function install_packages {
     show_spinner
     wait $!
     log_info "Installing packages"
-    sudo apt install -y i2c-tools fswebcam ffmpeg pigpio python3 python3-pip python3-venv mosquitto mosquitto-clients >> "$LOG_FILE" 2>&1 &
+    sudo apt install -y i2c-tools fswebcam ffmpeg pigpio python3 python3-pip python3-venv mosquitto mosquitto-clients openssh-server avahi-daemon >> "$LOG_FILE" 2>&1 &
     show_spinner
     wait $!
     if [ $? -ne 0 ]; then
@@ -93,19 +137,31 @@ function setup_python_env {
 # Function to enable I2C in /boot/config.txt and configure I2C
 # See https://github.com/fivdi/i2c-bus/blob/master/doc/raspberry-pi-i2c.md
 function enable_i2c_config_txt() {
-    local config_file="/boot/config.txt"
-    local param="dtparam=i2c_arm=on"
-    log "Enabling I2C in $config_file..."
+    local config_file param="dtparam=i2c_arm=on"
+    config_file="$(boot_config_path)"
 
-    # Remove any existing line with dtparam=i2c_arm and add the correct one
-    sudo sed -i "/^#*dtparam=i2c_arm/c\\$param" "$config_file"
-    log "I2C has been enabled in $config_file."
+    if [ -n "$config_file" ]; then
+        _backup_file "$config_file"
+        log "Enabling I2C in $config_file..."
+        if grep -q "^#*dtparam=i2c_arm" "$config_file"; then
+            # Replace the existing (possibly commented) line.
+            sudo sed -i "/^#*dtparam=i2c_arm/c\\$param" "$config_file"
+        else
+            # No line present: append it (the old replace-only logic silently
+            # did nothing here, leaving I2C disabled in config.txt).
+            echo "$param" | sudo tee -a "$config_file" > /dev/null
+        fi
+        log_pass "I2C enabled in $config_file."
+    else
+        log_error "No config.txt found in /boot or /boot/firmware; relying on raspi-config for I2C."
+    fi
 
-    # Enable I2C interface
+    # Enable I2C interface via raspi-config (edits the correct file itself).
     sudo raspi-config nonint do_i2c 0
 
-    # Check if i2c-dev is already in /etc/modules
+    # Ensure the i2c-dev module loads on boot.
     log "Configuring I2C modules..."
+    _backup_file /etc/modules
     sudo sed -i '/^#*i2c-dev/d' /etc/modules
     echo "i2c-dev" | sudo tee -a /etc/modules > /dev/null
 }
@@ -222,6 +278,75 @@ function check_i2c_sensors {
 function create_bash_script_symlinks() {
     sudo ln -fs "${INSTALL_DIR}/bin/light.sh" "/usr/local/bin/light"
     sudo ln -fs "${INSTALL_DIR}/bin/water.sh" "/usr/local/bin/water"
+    sudo ln -fs "${INSTALL_DIR}/bin/update.sh" "/usr/local/bin/garden-update"
+}
+
+# Warn early if we're not on a supported Raspberry Pi OS. pigpio and the GPIO
+# wheels assume a Pi; on other platforms they may need to be built manually.
+function check_os_compatibility {
+    log_info "Checking OS compatibility"
+
+    if [ -f /proc/device-tree/model ] && grep -qi "raspberry pi" /proc/device-tree/model; then
+        log_pass "Detected $(tr -d '\0' < /proc/device-tree/model)"
+    else
+        log_error "Not running on a Raspberry Pi. pigpio/GPIO libraries may need to be built manually and hardware features will not work."
+    fi
+
+    if [ -f /etc/os-release ]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        log_info "OS: ${PRETTY_NAME:-unknown}"
+        case "${ID:-}" in
+            raspbian|debian) log_pass "Supported base OS (${ID})." ;;
+            *) log_error "Untested OS '${ID:-unknown}'. Raspberry Pi OS (Debian) is recommended." ;;
+        esac
+    fi
+
+    local pyver
+    pyver=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || echo "0.0")
+    log_info "Python ${pyver} detected (3.9+ recommended)."
+}
+
+# Enable SSH so the unit is reachable headlessly after flashing.
+function enable_ssh {
+    log_info "Enabling SSH"
+    if command -v raspi-config >/dev/null 2>&1; then
+        sudo raspi-config nonint do_ssh 0 || true
+    fi
+    sudo systemctl enable --now ssh 2>/dev/null \
+        || sudo systemctl enable --now sshd 2>/dev/null \
+        || log_error "Could not enable the SSH service automatically."
+    log_pass "SSH enabled."
+}
+
+# Set a stable hostname + mDNS so the unit is reachable at <hostname>.local
+# (e.g. gardyn.local) without knowing its IP. Honors GARDEN_HOSTNAME (default gardyn).
+function setup_mdns_hostname {
+    local desired="${GARDEN_HOSTNAME:-gardyn}"
+    local current
+    current=$(hostname)
+    if [ "$current" != "$desired" ]; then
+        log_info "Setting hostname to '$desired' (was '$current')"
+        sudo hostnamectl set-hostname "$desired" 2>/dev/null || true
+        # Keep /etc/hosts in sync so sudo doesn't complain.
+        if ! grep -q "127.0.1.1.*$desired" /etc/hosts; then
+            _backup_file /etc/hosts
+            echo "127.0.1.1 $desired" | sudo tee -a /etc/hosts > /dev/null
+        fi
+    fi
+    sudo systemctl enable --now avahi-daemon 2>/dev/null || true
+    log_pass "Reachable at ${desired}.local (mDNS) once avahi is running."
+}
+
+# Install udev rules so the cameras get stable /dev/gardyn-upper|lower names.
+function install_udev_rules {
+    local rules_src="${INSTALL_DIR}/services/etc/udev/rules.d/99-gardyn-cameras.rules"
+    if [ -f "$rules_src" ]; then
+        sudo cp "$rules_src" /etc/udev/rules.d/
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+        log_pass "Installed camera udev rules. Edit KERNELS in $rules_src to match your ports."
+    fi
 }
 
 # Ensure pigpio daemon runs after system reboots
@@ -239,13 +364,19 @@ function setup_mqtt_service {
 [Unit]
 Description=MQTT Service
 Requires=pigpiod.service
-After=network.target pigpiod.service
+After=network-online.target pigpiod.service
+Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 User=$USER
 WorkingDirectory=$INSTALL_DIR
+# Wait (up to 60s) for pigpiod to accept connections before starting, so the
+# service doesn't crash-restart during the boot race.
+ExecStartPre=/bin/bash -c 'for i in \$(seq 1 60); do (echo > /dev/tcp/127.0.0.1/8888) >/dev/null 2>&1 && exit 0; sleep 1; done; exit 0'
 ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/mqtt.py
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
@@ -258,8 +389,89 @@ EOF
     log_info "MQTT service has been started and enabled on boot."
 }
 
+# Setup and start the REST API + web UI service (served by waitress on :5000).
+function setup_api_service {
+    local service_file="$INSTALL_DIR/services/etc/systemd/system/garden-api.service"
+    mkdir -p "$(dirname "$service_file")"
+
+    cat > $service_file <<EOF
+[Unit]
+Description=Garden of Eden REST API + Web UI
+After=network.target pigpiod.service
+Wants=pigpiod.service
+
+[Service]
+User=$USER
+WorkingDirectory=$INSTALL_DIR
+ExecStart=$INSTALL_DIR/venv/bin/waitress-serve --listen=0.0.0.0:5000 run:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    sudo cp $service_file /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable garden-api.service
+    sudo systemctl start garden-api.service
+    log_info "Web UI/API service started on http://$(hostname).local:5000"
+}
+
+# Verify the REST API responds, if it is running (issue #51 checklist item).
+function verify_api {
+    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null -w '' "http://localhost:5000/temperature" 2>/dev/null; then
+        log_info "Running API smoke test (bin/api-test.sh)"
+        bash "${INSTALL_DIR}/bin/api-test.sh" >/dev/null 2>&1 \
+            && log_pass "API smoke test passed." \
+            || log_error "API smoke test reported errors. Start it with 'python run.py' and re-run bin/api-test.sh."
+    else
+        log_info "REST API not running; skipping smoke test. Start it with 'python run.py' then run bin/api-test.sh."
+    fi
+}
+
+# Summarize the system-level changes before touching anything.
+function print_plan {
+    local cfg
+    cfg="$(boot_config_path)"
+    [ -z "$cfg" ] && cfg="(no config.txt found)"
+    cat >&2 <<PLAN
+
+=== Garden of Eden setup — planned system changes (sudo) ===
+  1. apt install: i2c-tools fswebcam ffmpeg pigpio python3(-pip,-venv)
+     mosquitto(-clients) openssh-server avahi-daemon
+  2. Create Python venv in $INSTALL_DIR/venv and pip install requirements
+  3. Enable I2C: edit $cfg, /etc/modules, and raspi-config   [backups: *.garden.bak]
+  4. Add user '$(whoami)' to groups: i2c, gpio, dialout
+  5. Symlink /usr/local/bin/{light,water,garden-update}
+  6. Install camera udev rules -> /etc/udev/rules.d/
+  7. Enable SSH; set hostname '${GARDEN_HOSTNAME:-gardyn}' + avahi   [backup: /etc/hosts.garden.bak]
+  8. Install + enable systemd services: mqtt.service, garden-api.service
+Reversible with: bin/uninstall.sh
+============================================================
+
+PLAN
+}
+
 # Main script execution
 cd $INSTALL_DIR
+
+print_plan
+
+if [ "$DRY_RUN" = "true" ]; then
+    log_info "Dry run complete — NO changes were made. Re-run without --dry-run to apply."
+    exit 0
+fi
+
+if [ "$ASSUME_YES" != "true" ]; then
+    read -r -p "Proceed with these changes? [y/N] " _ans
+    case "$_ans" in
+        y|Y|yes|YES) ;;
+        *) log_info "Aborted by user — no changes made."; exit 0 ;;
+    esac
+fi
+
+check_os_compatibility
 
 install_packages
 setup_python_env
@@ -273,8 +485,13 @@ check_i2c_sensors
 add_sensor_type_to_env
 
 create_bash_script_symlinks
+install_udev_rules
+enable_ssh
+setup_mdns_hostname
 
 #Note: pigpiod will be started by mqtt.service
 #enable_pigpiod_service
 
 setup_mqtt_service
+setup_api_service
+verify_api
