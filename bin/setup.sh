@@ -418,6 +418,64 @@ EOF
     log_info "Web UI/API service started on http://$(hostname).local:5000"
 }
 
+# Nightly auto-update: a timer that fast-forwards the branch and restarts the
+# services only when something changed (bin/autoupdate.sh does the safe pull).
+function setup_autoupdate {
+    local svc="$INSTALL_DIR/services/etc/systemd/system/garden-autoupdate.service"
+    local tmr="$INSTALL_DIR/services/etc/systemd/system/garden-autoupdate.timer"
+    mkdir -p "$(dirname "$svc")"
+
+    chmod +x "$INSTALL_DIR/bin/autoupdate.sh"
+
+    # Let the (unattended) updater restart just these two services without a
+    # password. Nothing else is granted.
+    local sudoers=/etc/sudoers.d/garden-autoupdate
+    local tmp_sudoers
+    tmp_sudoers=$(mktemp)
+    cat > "$tmp_sudoers" <<EOF
+$USER ALL=(root) NOPASSWD: /usr/bin/systemctl restart mqtt.service, /usr/bin/systemctl restart garden-api.service
+EOF
+    if sudo visudo -cf "$tmp_sudoers" >/dev/null 2>&1; then
+        sudo cp "$tmp_sudoers" "$sudoers"
+        sudo chmod 440 "$sudoers"
+    else
+        log_error "Generated sudoers file failed validation; skipping (auto-update restarts may prompt)."
+    fi
+    rm -f "$tmp_sudoers"
+
+    cat > $svc <<EOF
+[Unit]
+Description=Garden of Eden nightly auto-update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=$USER
+WorkingDirectory=$INSTALL_DIR
+ExecStart=$INSTALL_DIR/bin/autoupdate.sh
+EOF
+
+    cat > $tmr <<EOF
+[Unit]
+Description=Run Garden of Eden auto-update nightly
+
+[Timer]
+# 03:30 local time, with jitter so many units don't hit GitHub at once.
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=1800
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    sudo cp "$svc" "$tmr" /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now garden-autoupdate.timer
+    log_info "Nightly auto-update enabled (garden-autoupdate.timer, ~03:30)."
+}
+
 # Verify the REST API responds, if it is running (issue #51 checklist item).
 function verify_api {
     if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null -w '' "http://localhost:5000/temperature" 2>/dev/null; then
@@ -447,6 +505,8 @@ function print_plan {
   6. Install camera udev rules -> /etc/udev/rules.d/
   7. Enable SSH; set hostname '${GARDEN_HOSTNAME:-gardyn}' + avahi   [backup: /etc/hosts.garden.bak]
   8. Install + enable systemd services: mqtt.service, garden-api.service
+  9. Enable nightly auto-update timer (garden-autoupdate.timer, ~03:30) +
+     a scoped sudoers rule to restart the two services unattended
 Reversible with: bin/uninstall.sh
 ============================================================
 
@@ -494,4 +554,5 @@ setup_mdns_hostname
 
 setup_mqtt_service
 setup_api_service
+setup_autoupdate
 verify_api

@@ -110,6 +110,14 @@ Dashboard example: `docs/homeassistant/lovelace-example.yaml`.
 garden-update        # = bin/update.sh: git pull + pip install + restart services
 ```
 
+A nightly timer (`garden-autoupdate.timer`, ~03:30) does the same pull automatically
+and restarts the services only when the branch actually moved; it fast-forwards only,
+so it never discards local changes. Disable it with
+`sudo systemctl disable --now garden-autoupdate.timer` if you'd rather update by hand.
+
+```bash
+```
+
 ---
 
 ## Notes for the install

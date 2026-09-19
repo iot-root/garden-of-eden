@@ -14,10 +14,12 @@ PURGE_HOSTNAME=false
 [ "${1:-}" = "--purge-hostname" ] && PURGE_HOSTNAME=true
 
 echo "Stopping and removing services..."
-for svc in garden-api.service mqtt.service; do
+sudo systemctl disable --now garden-autoupdate.timer 2>/dev/null
+for svc in garden-api.service mqtt.service garden-autoupdate.service garden-autoupdate.timer; do
     sudo systemctl disable --now "$svc" 2>/dev/null
     sudo rm -f "/etc/systemd/system/$svc"
 done
+sudo rm -f /etc/sudoers.d/garden-autoupdate
 sudo systemctl daemon-reload 2>/dev/null
 
 echo "Removing CLI symlinks and udev rules..."
