@@ -27,7 +27,10 @@ except Exception as exc:
 
 check_sensor = check_sensor_guard(sensor=pump_control, sensor_name="Pump")
 
-# Tracks the pending auto-off timer for /pump/run so repeated calls don't stack.
+# Tracks the pending auto-off timer so repeated calls don't stack and so the
+# pump is *always* armed with a shut-off. Whenever the pump is energized
+# (on/run/speed>0) we (re)arm a timer for at most MAX_PUMP_RUN_SECONDS;
+# turning it off cancels it.
 _run_timer = None
 _run_lock = threading.Lock()
 
@@ -38,10 +41,31 @@ def _safety_off():
     state_lib.save_state(pump_on=False)
 
 
+def _arm_auto_off(seconds):
+    """(Re)arm the single auto-off timer to stop the pump after ``seconds``."""
+    global _run_timer
+    with _run_lock:
+        if _run_timer is not None:
+            _run_timer.cancel()  # supersede any in-flight run
+        _run_timer = threading.Timer(seconds, _safety_off)
+        _run_timer.daemon = True
+        _run_timer.start()
+
+
+def _cancel_auto_off():
+    global _run_timer
+    with _run_lock:
+        if _run_timer is not None:
+            _run_timer.cancel()
+            _run_timer = None
+
+
 @pump_blueprint.route("/on", methods=["POST"])
 @check_sensor
 def turn_on():
     pump_control.on()
+    # Never leave the pump running longer than the cap, even if nobody calls /off.
+    _arm_auto_off(config.MAX_PUMP_RUN_SECONDS)
     state_lib.save_state(pump_on=True)
     return jsonify(message="Pump turned on!"), 200
 
@@ -50,6 +74,7 @@ def turn_on():
 @check_sensor
 def turn_off():
     pump_control.off()
+    _cancel_auto_off()
     state_lib.save_state(pump_on=False)
     return jsonify(message="Pump turned off!"), 200
 
@@ -60,6 +85,11 @@ def adjust_speed():
     data = request.get_json(silent=True) or {}
     speed_value = parse_level(data, default=config.DEFAULT_PUMP_SPEED)
     pump_control.set_speed(speed_value)
+    # A non-zero speed energizes the pump, so arm the shut-off too.
+    if speed_value > 0:
+        _arm_auto_off(config.MAX_PUMP_RUN_SECONDS)
+    else:
+        _cancel_auto_off()
     state_lib.save_state(pump_on=speed_value > 0, speed=speed_value)
     return jsonify(message=f"Pump adjusted to {speed_value}% speed!"), 200
 
@@ -78,20 +108,18 @@ def run_for():
     schedules the stop on a background timer and returns immediately."""
     data = request.get_json(silent=True) or {}
     try:
-        seconds = int(data.get("seconds", 300))
+        seconds = int(data.get("seconds", config.MAX_PUMP_RUN_SECONDS))
     except (TypeError, ValueError):
         return jsonify(message="seconds must be an integer"), 400
-    if not (1 <= seconds <= 3600):
-        return jsonify(message="seconds must be between 1 and 3600"), 400
+    if not (1 <= seconds <= config.MAX_PUMP_RUN_SECONDS):
+        return (
+            jsonify(message=f"seconds must be between 1 and {config.MAX_PUMP_RUN_SECONDS}"),
+            400,
+        )
 
-    global _run_timer
-    with _run_lock:
-        if _run_timer is not None:
-            _run_timer.cancel()  # supersede any in-flight run
-        pump_control.on()
-        _run_timer = threading.Timer(seconds, _safety_off)
-        _run_timer.daemon = True
-        _run_timer.start()
+    pump_control.on()
+    _arm_auto_off(seconds)
+    state_lib.save_state(pump_on=True)
     return jsonify(message=f"Pump running for {seconds}s"), 200
 
 
