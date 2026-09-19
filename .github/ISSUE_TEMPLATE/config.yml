@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Install and setup guide
+    url: https://github.com/iot-root/garden-of-eden/blob/main/docs/INSTALL.md
+    about: Check the install guide and troubleshooting before opening an issue.

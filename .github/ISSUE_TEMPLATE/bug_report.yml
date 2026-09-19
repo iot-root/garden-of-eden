@@ -1,0 +1,63 @@
+name: Bug report
+description: Something on the unit, the API, MQTT/Home Assistant, or setup doesn't work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One problem per issue. A fix PR links this issue, so clear repro steps get it fixed faster.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, including error messages or log lines (`journalctl -u mqtt.service`, `mqtt.log`, `garden-api.log`).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands, API calls, MQTT topics or HA actions, starting from a known state.
+      placeholder: |
+        1. Turn the light on from Home Assistant
+        2. Run `light --off` from cron
+        3. Restart mqtt.service
+        4. The light comes back on
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - MQTT / Home Assistant
+        - REST API
+        - Web UI
+        - CLI (light, water, driver scripts)
+        - Physical button
+        - setup.sh / update / services
+        - Simulator or tests (off-Pi)
+        - Docs
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      description: Gardyn model and Pi (e.g. Gardyn 3.0, Pi Zero 2 W). `curl localhost:5000/system` shows the detected model.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Output of `git -C ~/garden-of-eden log -1 --oneline` and the OS (e.g. Raspberry Pi OS bookworm 32-bit).
+    validations:
+      required: true

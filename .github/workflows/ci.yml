@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -35,3 +35,34 @@ jobs:
       - name: Unit tests
         # Hardware libraries are stubbed by tests/_hwstub.py, so no Pi needed.
         run: python -m unittest discover -t . -s tests -p 'test_*.py'
+
+  shell:
+    name: Shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax check (bash -n)
+        run: for f in bin/*.sh; do bash -n "$f" || exit 1; done
+
+      - name: ShellCheck (errors only)
+        # ubuntu-latest ships shellcheck. Errors only for now; raise to warning
+        # once the existing warnings in bin/ are cleaned up.
+        run: shellcheck --severity=error bin/*.sh
+
+  no-secrets:
+    name: No tracked secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if a secret-bearing file is tracked
+        # .gitignore does not help once a file is committed. The pattern does not
+        # match the .env-dist template.
+        run: |
+          found=$(git ls-files | grep -iE '(^|/)\.env(\..+)?$|\.pem$|\.key$|(^|/)id_(rsa|ed25519|ecdsa)$|(^|/)secrets?\.(ya?ml|json)$|(^|/)credentials(\.json)?$' || true)
+          if [ -n "$found" ]; then
+            echo "::error::Secret-bearing files are tracked in git. Remove them and rotate the secrets:"
+            echo "$found"
+            exit 1
+          fi

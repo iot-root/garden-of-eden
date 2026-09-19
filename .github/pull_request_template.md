@@ -1,34 +1,25 @@
-# PR Title
+<!--
+Title: a Conventional Commit, 72 characters max, e.g. `fix(pump): stop speed/set starting the pump when off`
+Branch: <type>/<short-description>, e.g. `fix/pump-speed-when-off` (not `main`, not a version)
+One issue per PR. Rules are checked automatically; see CONTRIBUTORS.md.
+-->
 
-## Description
+Closes #
 
-Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context.
+<!-- If this builds on another open PR, say so and it will be reviewed after that one: -->
+<!-- Depends on # -->
 
-Fixes # (issue number)
+## What changed and why
 
-## Type of change
+## How it was tested
 
-Please delete options that are not relevant.
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
-
-## How Has This Been Tested?
-
-Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration
-
-- [ ] Test A
-- [ ] Test B
+- [ ] Unit tests pass: `python -m unittest discover -t . -s tests -p 'test_*.py'`
+- [ ] `ruff check . && black --check .`
+- [ ] Tested on hardware (model / Pi): <!-- or explain why not needed -->
 
 ## Checklist
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
+- [ ] This PR does one thing and resolves the linked issue
+- [ ] New behaviour has tests
+- [ ] Docs and `.env-dist` are updated if config, endpoints, topics or setup changed
+- [ ] Breaking changes are marked with `!` in the title and explained in the description

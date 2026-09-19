@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a change in behaviour or a new capability.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What you're trying to do and why the current behaviour doesn't cover it.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What should happen instead. Mention any config, topics, endpoints or HA entities it would add or change.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: How it could be split up
+      description: Large ideas land as several small PRs, one issue each. If this is big, sketch the pieces.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
