@@ -136,7 +136,8 @@ class DistanceBlueprintTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Asserting that the response JSON contains the mocked distance value
-        self.assertEqual(response.get_json(), {"distance": 55.5})
+        # plus the derived gallons estimate (55.5cm is past empty -> 0 gallons).
+        self.assertEqual(response.get_json(), {"distance": 55.5, "gallons": 0.0})
 
 
 class PCBTempBlueprintTestCase(BaseTestCase):

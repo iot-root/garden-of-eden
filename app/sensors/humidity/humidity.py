@@ -5,6 +5,7 @@
 import logging
 import os
 import sys
+import time
 
 import adafruit_ahtx0
 import adafruit_am2320
@@ -36,14 +37,31 @@ class HumiditySensor:
             logger.error("Failed to initiate humidity sensor: %s", exc)
 
     def read(self):
-        """Return relative humidity (%). Raises if the sensor is unavailable."""
-        if self._sensor is None:
-            self._sensor = _make_sensor()  # re-probe; raises if still absent
-        try:
-            return self._sensor.relative_humidity
-        except Exception:
-            self._sensor = None
-            raise
+        """Return relative humidity (%). Retries transient I2C errors and the
+        DHT20's occasional bogus 0% reading; raises only if all attempts fail."""
+        last_exc = None
+        for attempt in range(3):
+            if self._sensor is None:
+                try:
+                    self._sensor = _make_sensor()  # re-probe the bus
+                except Exception as exc:
+                    last_exc = exc
+                    time.sleep(0.2)
+                    continue
+            try:
+                value = self._sensor.relative_humidity
+            except Exception as exc:  # transient [Errno 5] etc — drop handle, retry
+                last_exc = exc
+                self._sensor = None
+                time.sleep(0.2)
+                continue
+            if value and value > 0:
+                return value
+            # Implausible 0% (collision/garbage) — re-measure.
+            time.sleep(0.2)
+        if last_exc:
+            raise last_exc
+        raise RuntimeError("humidity read returned 0% on every attempt")
 
 
 humidity_sensor = HumiditySensor()

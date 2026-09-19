@@ -15,6 +15,7 @@ from gpiozero import Button  # Import gpiozero Button
 
 from app.lib import state as state_lib
 from app.lib.hardware import get_pin_factory
+from app.lib.water import is_water_low
 from app.sensors.distance.distance import MeasurementError
 from app.sensors.distance.routes import distance_control
 from app.sensors.humidity.humidity import humidity_sensor
@@ -39,6 +40,7 @@ from config import (
     UPPER_IMAGE_PATH,
     USERNAME,
     VERSION,
+    WATER_CHECK_SECONDS,
     WATER_LOW_CM,
 )
 
@@ -208,6 +210,60 @@ def safe_distance_measure():
             return None
 
 
+def measure_distance_median(samples=5):
+    """Median of several distance reads, to reject ultrasonic spikes.
+
+    A single missed echo reads as a large distance and would otherwise falsely
+    trip the "water low" alert on a full tank. Returns None only if every read
+    failed.
+    """
+    readings = []
+    for _ in range(samples):
+        d = safe_distance_measure()
+        if d is not None:
+            readings.append(d)
+        sleep(0.06)
+    if not readings:
+        return None
+    readings.sort()
+    return readings[len(readings) // 2]
+
+
+# Debounce so a borderline reading can't flap the alert: require two consecutive
+# low evaluations before reporting ON; clear to OFF immediately.
+_water_low_streak = 0
+
+
+def evaluate_water_low(client):
+    """Read the tank (spike-rejected) and publish a debounced low-water state."""
+    global _water_low_streak
+    if WATER_LOW_CM in (None, 0):
+        _water_low_streak = 0
+        client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
+        return None
+
+    distance = measure_distance_median()
+    if distance is None:
+        logger.warning("Skipping water-low update: distance reading failed")
+        return None
+
+    if is_water_low(distance, WATER_LOW_CM):
+        _water_low_streak += 1
+    else:
+        _water_low_streak = 0
+
+    low = _water_low_streak >= 2
+    client.publish(BASE_TOPIC + "/water/low/state", "ON" if low else "OFF", retain=True)
+    logger.info(
+        "Water level %.2fcm (threshold %.2fcm) -> low=%s (streak %d)",
+        distance,
+        WATER_LOW_CM,
+        low,
+        _water_low_streak,
+    )
+    return distance
+
+
 def publish_water_low_mode(client):
     if WATER_LOW_CM not in (None, 0):
         mode = "Enabled"
@@ -218,25 +274,11 @@ def publish_water_low_mode(client):
 
 
 def update_water_low_state(client):
-    if WATER_LOW_CM not in (None, 0):
-        distance = safe_distance_measure()
-        if distance is not None:
-            if distance > WATER_LOW_CM:
-                client.publish(BASE_TOPIC + "/water/low/state", "ON", retain=True)
-                logger.info(
-                    f"Updated water low state to ON (distance {distance:.2f}cm > {WATER_LOW_CM:.2f}cm)"
-                )
-            else:
-                client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
-                logger.info(
-                    f"Updated water low state to OFF (distance {distance:.2f}cm <= {WATER_LOW_CM:.2f}cm)"
-                )
-        else:
-            logger.warning("Could not update water low state because distance reading failed")
-    else:
-        # If checking is disabled, maybe set it to OFF by default
-        client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
-        logger.info("Water low checking disabled, setting water low state to OFF")
+    """On-demand refresh (e.g. after the threshold changes). Resets the debounce
+    so a fresh reading is reflected right away."""
+    global _water_low_streak
+    _water_low_streak = 0
+    evaluate_water_low(client)
 
 
 # https://www.home-assistant.io/integrations/mqtt/#discovery-messages
@@ -430,6 +472,9 @@ def on_connect(client, userdata, flags, rc, properties=None):
     # client.subscribe(BASE_TOPIC + "/light/brightness/set")
     send_discovery_messages(client)
     publish_water_low_mode(client)
+    # Publish a fresh low-water state on every connect so a stale retained "ON"
+    # (e.g. from before a restart) clears immediately instead of lingering.
+    update_water_low_state(client)
     restore_actuator_state(client)
 
 
@@ -595,11 +640,16 @@ def publish_humidity(client):
 
 def publish_water_level(client):
     while True:
-        distance = safe_distance_measure()
+        # One spike-rejected reading drives both the level telemetry and the
+        # debounced low-water alert. Checked every few minutes so a transient
+        # false alarm self-clears quickly instead of sticking for half an hour.
+        distance = evaluate_water_low(client)
+        if distance is None:
+            distance = measure_distance_median()
         if distance is not None:
             logger.info(f"Publishing Water Level: {distance:.2f}cm")
             client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
-        sleep(30 * 60)
+        sleep(WATER_CHECK_SECONDS)
 
 
 def publish_images(client):

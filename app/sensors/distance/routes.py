@@ -2,8 +2,10 @@ import logging
 
 from flask import Blueprint, jsonify
 
+import config
 from app.lib.hardware import get_pin_factory
 from app.lib.lib import check_sensor_guard
+from app.lib.water import gallons_remaining
 
 from .distance import Distance as DistanceControl
 
@@ -25,4 +27,10 @@ check_sensor = check_sensor_guard(sensor=distance_control, sensor_name="Distance
 @check_sensor
 def get_distance():
     distance_value = distance_control.measure_once()
-    return jsonify(distance=distance_value), 200
+    gallons = gallons_remaining(
+        distance_value,
+        config.WATER_FULL_CM,
+        config.WATER_EMPTY_CM,
+        config.TANK_CAPACITY_GALLONS,
+    )
+    return jsonify(distance=distance_value, gallons=gallons), 200
