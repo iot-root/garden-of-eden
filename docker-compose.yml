@@ -1,0 +1,49 @@
+# Run the Garden of Eden REST API + MQTT service in containers.
+#
+# Prerequisites on the Pi host:
+#   - pigpiod running and listening on the network:  sudo pigpiod -p 8888
+#   - (optional) a mosquitto broker; the bundled `broker` service provides one.
+#
+# GPIO drivers connect to the host's pigpiod via PIGPIO_HOST. On Linux,
+# host.docker.internal is mapped through extra_hosts below.
+services:
+  api:
+    build: .
+    image: garden-of-eden:latest
+    command: ["python", "run.py"]
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      PIGPIO_HOST: host.docker.internal
+      PIGPIO_PORT: "8888"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  mqtt:
+    build: .
+    image: garden-of-eden:latest
+    command: ["python", "mqtt.py"]
+    env_file:
+      - .env
+    environment:
+      PIGPIO_HOST: host.docker.internal
+      PIGPIO_PORT: "8888"
+      MQTT_BROKER: broker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - broker
+    restart: unless-stopped
+
+  # Optional MQTT broker. Remove this service if you run mosquitto elsewhere
+  # (e.g. on Home Assistant) and point MQTT_BROKER at it instead.
+  broker:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./services/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
