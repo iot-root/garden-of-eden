@@ -1,5 +1,6 @@
 from flask import Flask
 
+from .sensors.camera.routes import camera_blueprint
 from .sensors.distance.routes import distance_blueprint
 from .sensors.grow.routes import grow_blueprint
 from .sensors.humidity.routes import humidity_blueprint
@@ -25,6 +26,7 @@ def create_app(config_name):
     app.register_blueprint(pcb_temp_blueprint, url_prefix="/pcb-temp")
     app.register_blueprint(system_blueprint, url_prefix="/system")
     app.register_blueprint(grow_blueprint, url_prefix="/grow")
+    app.register_blueprint(camera_blueprint, url_prefix="/camera")
 
     # @app.teardown_appcontext
     # def shutdown_session(exception=None):

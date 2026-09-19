@@ -134,6 +134,14 @@ LOWER_IMAGE_PATH = os.getenv("LOWER_IMAGE_PATH", "/tmp/lower_camera.jpg")
 CAMERA_RESOLUTION = os.getenv("CAMERA_RESOLUTION", "640x480")
 IMAGE_INTERVAL_SECONDS = _get_int("IMAGE_INTERVAL_SECONDS", 3600)
 
+# Timelapse: archive a timestamped frame on each capture, capped at MAX_FRAMES,
+# and assemble into mp4 at TIMELAPSE_FPS. Stored under the repo by default.
+TIMELAPSE_DIR = os.getenv(
+    "TIMELAPSE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "timelapse")
+)
+TIMELAPSE_MAX_FRAMES = _get_int("TIMELAPSE_MAX_FRAMES", 720)
+TIMELAPSE_FPS = _get_int("TIMELAPSE_FPS", 12)
+
 # ---------------------------------------------------------------------------
 # REST API auth (optional). When GARDEN_API_KEY is set, non-localhost
 # requests must send it via the X-API-Key header. Localhost (cron) bypasses.

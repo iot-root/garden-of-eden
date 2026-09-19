@@ -6,3 +6,4 @@ venv/
 # If using Jython
 *.class
 .env
+timelapse/

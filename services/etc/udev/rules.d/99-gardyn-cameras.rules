@@ -1,0 +1,13 @@
+# Stable symlinks for the two Gardyn USB cameras (issue #8).
+#
+# USB webcams enumerate as /dev/video0, /dev/video2, ... but the numbering can
+# change across reboots/replugs. These rules pin each camera to a fixed name
+# based on its physical USB port (KERNELS), so config can point at
+# /dev/gardyn-upper and /dev/gardyn-lower instead of volatile /dev/videoN.
+#
+# Find your ports:  udevadm info -a -n /dev/video0 | grep KERNELS
+# then edit the KERNELS=="..." values below to match, and reinstall via
+# bin/setup.sh (or: sudo udevadm control --reload && sudo udevadm trigger).
+
+SUBSYSTEM=="video4linux", KERNELS=="1-1.2:1.0", SYMLINK+="gardyn-upper"
+SUBSYSTEM=="video4linux", KERNELS=="1-1.3:1.0", SYMLINK+="gardyn-lower"
