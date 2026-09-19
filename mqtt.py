@@ -12,18 +12,20 @@ from time import sleep
 
 import paho.mqtt.client as mqtt
 from gpiozero import Button  # Import gpiozero Button
-from gpiozero.pins.pigpio import PiGPIOFactory
 
 from app.lib import state as state_lib
-from app.sensors.distance.distance import Distance, MeasurementError
+from app.lib.hardware import get_pin_factory
+from app.sensors.distance.distance import MeasurementError
+from app.sensors.distance.routes import distance_control
 from app.sensors.humidity.humidity import humidity_sensor
-from app.sensors.light.light import Light
+from app.sensors.light.routes import light_control
 from app.sensors.pcb_temp.pcb_temp import get_pcb_temperature
-from app.sensors.pump.pump import Pump
+from app.sensors.pump.routes import pump_control
 from app.sensors.temperature.temperature import temperature_sensor
 from config import (
     BASE_TOPIC,
     BROKER,
+    BUTTON_PIN,
     CAMERA_RESOLUTION,
     IDENTIFIER,
     IMAGE_INTERVAL_SECONDS,
@@ -60,12 +62,14 @@ logger.info("This is an info message")
 logger.warning("This is a warning message")
 logger.error("This is an error message")
 
-# Initialize devices
-pin_factory = PiGPIOFactory()
+# Reuse the singleton drivers the route modules already created at import time.
+# Importing `app` instantiates pump/light/distance on their GPIO pins; creating a
+# second copy of each here raised GPIOPinInUse and crash-looped the service.
+pin_factory = get_pin_factory()
 
-pump = Pump(pin_factory=pin_factory)
-light = Light(pin_factory=pin_factory)
-distance_sensor = Distance(pin_factory=pin_factory)
+pump = pump_control
+light = light_control
+distance_sensor = distance_control
 
 # default on brightness
 brightness = 50
@@ -77,7 +81,7 @@ min_per_hr = 60
 publish_frequency = sec_per_min * min_per_hr / 2
 
 # Button GPIO setup using gpiozero
-button_pin = 13
+button_pin = BUTTON_PIN
 button = Button(
     button_pin, pin_factory=pin_factory, bounce_time=0.2, hold_time=2
 )  # hold_time = 2 seconds for long press detection
@@ -136,18 +140,37 @@ def handle_button_press():
         press_count = 0
 
 
+def publish_button_event(event):
+    """Publish a physical-button event so Home Assistant can trigger automations
+    on the gardyn button (issue #78). Values: "single", "double", "long"."""
+    try:
+        # HA's MQTT event platform expects a JSON payload with "event_type".
+        client.publish(BASE_TOPIC + "/button/event", json.dumps({"event_type": event}))
+        logger.info("Published button event: %s", event)
+    except Exception as exc:
+        logger.error("Failed to publish button event: %s", exc)
+
+
 def handle_single_press():
     global press_count
+    publish_button_event("single")
     toggle_light()  # Single press toggles the light
     press_count = 0
 
 
 def handle_double_press():
+    publish_button_event("double")
     toggle_pump()  # Double press toggles the pump
 
 
-# Set button event for press detection
+def handle_long_press():
+    # Long press is exposed to HA as an event; no local actuator change.
+    publish_button_event("long")
+
+
+# Set button events for press detection
 button.when_pressed = handle_button_press
+button.when_held = handle_long_press
 
 
 # helpers
@@ -170,16 +193,18 @@ def flash_lights(times=3, delay=0.3):
 
 
 def safe_distance_measure():
-    global distance_sensor
+    # Reuses the shared distance driver; re-instantiating would raise
+    # GPIOPinInUse against the copy the API already holds.
+    if distance_sensor is None:
+        return None
     try:
         return distance_sensor.measure_once()
     except MeasurementError as e:
-        logger.warning(f"Distance measure failed: {e}, trying recovery")
+        logger.warning(f"Distance measure failed: {e}, retrying once")
         try:
-            distance_sensor = Distance(pin_factory=pin_factory)
             return distance_sensor.measure_once()
         except Exception as e2:
-            logger.error(f"Distance full recovery failed: {e2}")
+            logger.error(f"Distance recovery failed: {e2}")
             return None
 
 
@@ -382,6 +407,18 @@ def send_discovery_messages(client):
         "encoding": "b64",
         "content_type": "image/jpeg",
         "object_id": IDENTIFIER + "_lower_camera",
+        "device": device_info,
+    }
+    client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
+
+    # Physical button as an HA event entity (issue #78): single / double / long.
+    TEMP_CONFIG_TOPIC = "homeassistant/event/gardyn/" + IDENTIFIER + "_button/config"
+    temp_config_payload = {
+        "name": "Button",
+        "unique_id": IDENTIFIER + "_button",
+        "state_topic": BASE_TOPIC + "/button/event",
+        "event_types": ["single", "double", "long"],
+        "device_class": "button",
         "device": device_info,
     }
     client.publish(TEMP_CONFIG_TOPIC, json.dumps(temp_config_payload), retain=True)
