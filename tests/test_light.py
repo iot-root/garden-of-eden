@@ -55,5 +55,35 @@ class TestLight(unittest.TestCase):
         self.mock_led.close.assert_called_once()
 
 
+class TestLightPreservesStateOnCreate(unittest.TestCase):
+    """Creating a Light (CLI, cron, service restart) must not switch it off."""
+
+    def _make(self, duty, rng=10000, raises=False):
+        with (
+            patch("app.sensors.light.light.PWMLED") as MockPWMLED,
+            patch("app.sensors.light.light.PiGPIOFactory"),
+            patch("app.sensors.light.light.pigpio.pi") as MockPi,
+        ):
+            pi = MockPi.return_value
+            if raises:
+                pi.get_PWM_dutycycle.side_effect = Exception("not PWM")
+            else:
+                pi.get_PWM_dutycycle.return_value = duty
+            pi.get_PWM_range.return_value = rng
+            led = MockPWMLED.return_value
+            led.value = 0  # what gpiozero does on construction
+            Light(18)
+            return led
+
+    def test_restores_previous_level(self):
+        self.assertAlmostEqual(self._make(5000).value, 0.5)
+
+    def test_stays_off_when_off(self):
+        self.assertEqual(self._make(0).value, 0)
+
+    def test_stays_off_when_not_pwm(self):
+        self.assertEqual(self._make(None, raises=True).value, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

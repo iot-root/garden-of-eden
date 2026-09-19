@@ -148,9 +148,19 @@ def _cancel_pump_safety():
 
 
 # Button press callbacks
+def _light_is_on():
+    """Actual light state from pigpiod, so changes made by Home Assistant, the
+    API, or a schedule are seen. Falls back to the last known state."""
+    try:
+        return light.get_duty_cycle() > 0
+    except Exception as exc:
+        logger.warning("Could not read light state, using last known: %s", exc)
+        return light_state
+
+
 def toggle_light():
     global light_state
-    light_state = not light_state
+    light_state = not _light_is_on()
     if light_state:
         logger.info("Toggling Light ON")
         light.set_duty_cycle(brightness)
@@ -830,7 +840,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
 
 
 def on_message(client, userdata, msg):
-    global brightness, speed, WATER_LOW_CM
+    global brightness, speed, WATER_LOW_CM, light_state
 
     # Handle binary payloads (like image topics) — skip decoding
     if msg.topic.endswith("/image/upper_camera") or msg.topic.endswith("/image/lower_camera"):
@@ -882,15 +892,20 @@ def on_message(client, userdata, msg):
         elif topic_suffix == "light/command":
             if payload.upper() == "ON":
                 light.set_duty_cycle(brightness)
+                light_state = True
                 client.publish(BASE_TOPIC + "/light/state", "ON")
             elif payload.upper() == "OFF":
                 light.off()
+                light_state = False
                 client.publish(BASE_TOPIC + "/light/state", "OFF")
+            state_lib.save_state(light_on=light_state, brightness=brightness)
 
         elif topic_suffix == "light/brightness/set" and payload.isdigit():
             brightness = int(payload)
             light.set_duty_cycle(brightness)
+            light_state = brightness > 0
             client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
+            state_lib.save_state(light_on=light_state, brightness=brightness)
 
         # === Water Level ===
         elif topic_suffix == "water/level/get":

@@ -30,15 +30,35 @@ class GPIOController:
             raise RuntimeError("pigpio.pi client is not initialized.")
 
 
+def _read_duty_fraction(pi, pin):
+    """Return the pin's current PWM duty cycle (0.0-1.0) as reported by
+    pigpiod, or 0.0 if it isn't in PWM mode or can't be read."""
+    try:
+        duty = pi.get_PWM_dutycycle(pin)
+        rng = pi.get_PWM_range(pin)
+    except Exception:
+        return 0.0
+    if not isinstance(duty, int) or not isinstance(rng, int) or rng <= 0:
+        return 0.0
+    return max(0.0, min(1.0, duty / rng))
+
+
 class Light:
     def __init__(self, pin=config.LIGHT_PIN, frequency=config.LIGHT_FREQUENCY, pin_factory=None):
         # pigpiod is running on port 8888
         # Note: for docker: PiGPIOFactory(host='pigpiod', port=8888)
         self.pin = pin
         self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
-        self.led = PWMLED(self.pin, pin_factory=self.pin_factory)
         self.gpio = GPIOController(pin, pin_factory)
+        # gpiozero's PWMLED always starts at 0, which turns the real light off
+        # whenever any process (CLI, cron, a service restart) creates a Light.
+        # Read the current level from pigpiod first and put it back afterwards.
+        previous = _read_duty_fraction(self.gpio.pi, pin)
+        self.led = PWMLED(self.pin, pin_factory=self.pin_factory)
         self.set_frequency(frequency)
+        if previous > 0:
+            logging.info(f"Restoring light duty_cycle to {previous * 100:.0f}%")
+            self.led.value = previous
 
     def on(self):
         """
