@@ -1,9 +1,12 @@
 # distance.py
 
+import os
+import sys
 
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 import config
 
 
