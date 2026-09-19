@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden of Eden</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232f7a57'/%3E%3Cpath d='M12 19v-8' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 12c0-3 2.5-5 6-5 0 3-2.5 5-6 5z' fill='white'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg1:#e8f1ea; --bg2:#dDe9e0;
+      --surface:#ffffff; --surface-2:#f4f9f5;
+      --line:#e2ece4; --line-2:#d2e2d6;
+      --ink:#16271c; --muted:#5d7d68; --faint:#8aa593;
+      --green:#2f7a57; --green-2:#3f9b6e; --green-ink:#1d5a3e;
+      --amber:#c8862f; --amber-bg:#fdf3e1;
+      --red:#cf6b6b; --red-ink:#9b3d3d;
+      --shadow:0 1px 2px rgba(24,60,40,.04), 0 8px 24px -12px rgba(24,60,40,.18);
+      --radius:18px;
+      color-scheme:light;
+    }
+    html[data-theme="dark"] {
+      --bg1:#0e1512; --bg2:#0a0f0c;
+      --surface:#15201b; --surface-2:#1c2922;
+      --line:#26352c; --line-2:#33473b;
+      --ink:#e6efe9; --muted:#9fb8a8; --faint:#7d9888;
+      --green:#2f9b68; --green-2:#54bd8a; --green-ink:#cdeede;
+      --amber:#e0a44a; --amber-bg:#2a2113;
+      --red:#e08a8a; --red-ink:#f0c9c9;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 26px -14px rgba(0,0,0,.7);
+      color-scheme:dark;
+    }
+    html[data-theme="dark"] body { background:radial-gradient(1200px 600px at 80% -10%, #18271f 0%, var(--bg1) 45%, var(--bg2) 100%); }
+    html[data-theme="dark"] .bar { background:#26352c; }
+    html[data-theme="dark"] .tile.alert { background:#3a2020; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html { -webkit-text-size-adjust:100%; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+      color:var(--ink); line-height:1.5;
+      background:radial-gradient(1200px 600px at 80% -10%, #f3faf4 0%, var(--bg1) 45%, var(--bg2) 100%);
+      min-height:100vh; padding:20px 16px 60px;
+    }
+    .wrap { max-width:880px; margin:0 auto; }
+
+    /* Header */
+    header { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+    .logo { width:44px; height:44px; flex:0 0 auto; border-radius:13px;
+      background:linear-gradient(150deg,var(--green-2),var(--green)); display:grid; place-items:center;
+      box-shadow:var(--shadow); font-size:22px; }
+    header h1 { font-size:1.4rem; font-weight:700; letter-spacing:-.02em; }
+    header .sub { font-size:.78rem; color:var(--muted); margin-top:1px; }
+    header .spacer { flex:1; }
+    .chip { display:inline-flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--line);
+      border-radius:999px; padding:6px 12px; font-size:.76rem; color:var(--muted); box-shadow:var(--shadow); }
+    .dot { width:9px; height:9px; border-radius:50%; background:#c2cfc6; transition:background .3s; }
+    .dot.ok { background:#43b97f; box-shadow:0 0 0 3px rgba(67,185,127,.18); }
+    .dot.bad { background:var(--red); box-shadow:0 0 0 3px rgba(207,107,107,.18); }
+    .icon-btn { border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:12px;
+      width:38px; height:38px; font-size:16px; cursor:pointer; box-shadow:var(--shadow); transition:.15s; }
+    .icon-btn:hover { color:var(--green); border-color:var(--line-2); }
+
+    /* Cards */
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+      padding:18px 20px; margin-bottom:16px; box-shadow:var(--shadow); }
+    .card h2 { font-size:.7rem; text-transform:uppercase; letter-spacing:.09em; color:var(--faint);
+      font-weight:700; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
+    .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .row + .row { margin-top:14px; }
+    label { font-size:.82rem; color:var(--muted); }
+
+    /* Stat tiles */
+    .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; }
+    .tile { background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:14px;
+      transition:.15s; }
+    .tile:hover { border-color:var(--line-2); transform:translateY(-1px); }
+    .tile .top { display:flex; align-items:center; gap:6px; color:var(--faint); font-size:.7rem;
+      text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+    .tile .val { font-size:1.7rem; font-weight:700; letter-spacing:-.02em; color:var(--green-ink); margin-top:6px; }
+    .tile .val small { font-size:.8rem; font-weight:600; color:var(--faint); margin-left:2px; }
+    .tile.sm .val { font-size:1.15rem; }
+    .tile.alert { border-color:var(--red); background:#fdf1f1; }
+    .bar { height:7px; background:#e2ece4; border-radius:999px; margin-top:10px; overflow:hidden; }
+    .bar > i { display:block; height:100%; border-radius:999px;
+      background:linear-gradient(90deg,var(--green-2),var(--green)); transition:width .5s ease; }
+
+    /* Segmented on/off */
+    .seg { display:inline-flex; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:4px; gap:4px; }
+    .seg button { border:0; background:transparent; color:var(--muted); font-weight:600; font-size:.85rem;
+      padding:7px 18px; border-radius:9px; cursor:pointer; transition:.15s; }
+    .seg button.active { background:var(--green); color:#fff; box-shadow:0 2px 8px -2px rgba(47,122,87,.5); }
+    .seg button.active.danger { background:var(--red); box-shadow:0 2px 8px -2px rgba(207,107,107,.5); }
+    .statuschip { margin-left:auto; font-size:.72rem; font-weight:700; letter-spacing:.06em; color:var(--faint); }
+
+    /* Range slider */
+    input[type=range]{ -webkit-appearance:none; appearance:none; flex:1; min-width:130px; height:7px;
+      background:#e2ece4; border-radius:999px; outline:none; }
+    input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+      background:#fff; border:3px solid var(--green); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+    input[type=range]::-moz-range-thumb{ width:18px; height:18px; border-radius:50%; background:#fff;
+      border:3px solid var(--green); cursor:pointer; }
+    .pct { font-variant-numeric:tabular-nums; font-weight:700; color:var(--green-ink); min-width:42px; text-align:right; }
+
+    /* Buttons / inputs */
+    button.btn { background:var(--green); color:#fff; border:0; border-radius:11px; padding:9px 16px;
+      font-size:.85rem; font-weight:600; cursor:pointer; transition:.15s; }
+    button.btn:hover { background:var(--green-2); }
+    button.ghost { background:var(--surface); color:var(--green-ink); border:1px solid var(--line-2);
+      border-radius:11px; padding:8px 14px; font-size:.82rem; font-weight:600; cursor:pointer; }
+    button.ghost:hover { border-color:var(--green); color:var(--green); }
+    input[type=time],input[type=number],input[type=password],select{
+      font:inherit; font-size:.85rem; padding:8px 10px; border:1px solid var(--line-2); border-radius:10px;
+      background:#fff; color:var(--ink); }
+    input:focus,select:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
+    .muted { color:var(--faint); font-size:.76rem; }
+
+    /* Toggle switch */
+    .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-size:.82rem; color:var(--muted); }
+    .switch input { position:absolute; opacity:0; width:0; height:0; }
+    .switch .track { width:40px; height:23px; background:#cdddd2; border-radius:999px; transition:.2s; flex:0 0 auto; position:relative; }
+    .switch .track::after { content:""; position:absolute; top:3px; left:3px; width:17px; height:17px;
+      background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .switch input:checked + .track { background:var(--green-2); }
+    .switch input:checked + .track::after { transform:translateX(17px); }
+
+    /* Cameras */
+    .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .cam { position:relative; border-radius:14px; overflow:hidden; background:#dde7e0; aspect-ratio:4/3; border:1px solid var(--line); }
+    .cam img, .cam video { width:100%; height:100%; object-fit:cover; display:block; background:#000; }
+    .cam figcaption { position:absolute; left:10px; bottom:8px; color:#fff; font-size:.72rem; font-weight:600;
+      text-shadow:0 1px 4px rgba(0,0,0,.6); }
+
+    /* Pills (reminders) */
+    .pill { display:inline-flex; align-items:center; gap:6px; background:var(--amber-bg); color:var(--amber);
+      border:1px solid #f0dcb6; border-radius:999px; padding:5px 12px; font-size:.76rem; font-weight:600; }
+    .pill button { border:0; background:rgba(0,0,0,.06); color:var(--amber); border-radius:999px;
+      padding:2px 9px; font-size:.7rem; cursor:pointer; font-weight:700; }
+    .runs .run { display:flex; align-items:center; gap:9px; margin-top:9px; }
+    .sched-days { display:flex; flex-direction:column; margin-top:10px; }
+    .sched-day { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--line); }
+    .sched-day .dname { width:42px; flex:0 0 42px; padding-top:6px; font-weight:700; color:var(--muted); text-transform:capitalize; }
+    .sched-day .entries { flex:1; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+    .sched-day .entry { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+    .kv { display:grid; grid-template-columns:1fr 1fr; gap:0 18px; }
+    .kv > div { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding:6px 0; }
+    .kv .k { color:var(--muted); }
+    .kv .v { font-weight:600; text-align:right; }
+    /* Stage preset modes */
+    .modes { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .mode { border:1px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:999px;
+      padding:8px 14px; font-size:.82rem; font-weight:600; cursor:pointer; transition:.15s; }
+    .mode:hover { border-color:var(--green-2); color:var(--green); transform:translateY(-1px); }
+    /* Week heatmap scheduler */
+    .heatmap { display:grid; grid-template-columns:30px repeat(24,1fr); gap:2px; align-items:center; }
+    .heatmap .hlabel { font-size:.6rem; color:var(--faint); text-align:right; padding-right:4px; }
+    .heatmap .hhour { font-size:.52rem; color:var(--faint); text-align:center; }
+    .heatmap .cell { height:15px; border-radius:3px; background:var(--surface-2); position:relative; }
+    .heatmap .cell.pump::after { content:""; position:absolute; inset:0; margin:auto; width:4px; height:4px;
+      border-radius:50%; background:#4a9be0; }
+    .hm-legend { display:flex; gap:16px; margin-top:10px; font-size:.7rem; color:var(--muted); align-items:center; }
+    .hm-legend .sw { display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:-1px; margin-right:5px; }
+    .hm-legend .sw.light { background:var(--green); } .hm-legend .sw.pump { background:#4a9be0; }
+    details.customize { margin-top:14px; }
+    details.customize > summary { cursor:pointer; font-size:.78rem; color:var(--green); font-weight:600; list-style:none; }
+    details.customize > summary::before { content:"⚙ "; }
+    /* Alert banners */
+    #alerts { display:flex; flex-direction:column; gap:8px; }
+    #alerts:not(:empty) { margin-bottom:16px; }
+    .alert-banner { display:flex; align-items:center; gap:10px; background:var(--amber-bg); border:1px solid var(--amber);
+      color:var(--amber); border-radius:14px; padding:12px 16px; font-size:.88rem; font-weight:600; box-shadow:var(--shadow); }
+    .alert-banner button { margin-left:auto; }
+    /* Per-pod plant tracking */
+    .pods { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    @media (max-width:640px){ .pods { grid-template-columns:1fr 1fr; } }
+    .pod { border:1px solid var(--line); background:var(--surface-2); border-radius:10px; padding:8px; }
+    .pod .pn { font-size:.6rem; color:var(--faint); font-weight:700; letter-spacing:.05em; }
+    .pod input { width:100%; margin:4px 0; font-size:.8rem; padding:4px 6px; border-radius:7px; }
+    .pod select { width:100%; margin:4px 0; font-size:.76rem; padding:4px 6px; }
+    .pod .pguide { font-size:.58rem; line-height:1.3; margin:0 0 5px; }
+    .pod .shapes { display:flex; flex-wrap:wrap; gap:3px; }
+    .pod .shapes button { width:21px; height:21px; border:1px solid var(--line); background:var(--surface);
+      color:var(--muted); border-radius:5px; font-size:11px; line-height:1; cursor:pointer; padding:0; }
+    .pod .shapes button.on { background:var(--green); color:#fff; border-color:var(--green); }
+    /* Collapsible cards (accordion) */
+    .card > h2 { justify-content:flex-start; gap:8px; cursor:pointer; user-select:none; }
+    .card > h2 > button, .card > h2 > span { margin-left:auto; }
+    .card > h2::before { content:"▾"; color:var(--faint); font-size:.8rem; transition:transform .2s; flex:0 0 auto; }
+    .card.collapsed > h2::before { transform:rotate(-90deg); }
+    .card.collapsed > .card-body { display:none; }
+    .card.no-collapse > h2 { cursor:default; }
+    .card.no-collapse > h2::before { content:none; }
+    /* Consistent select styling */
+    select { font:inherit; color:var(--ink); background:var(--surface-2); border:1px solid var(--line);
+      border-radius:8px; padding:5px 8px; cursor:pointer; }
+
+    #settings { display:none; } #settings.open { display:block; }
+
+    /* Toast */
+    #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(8px);
+      background:var(--green-ink); color:#fff; padding:11px 20px; border-radius:12px; font-size:.85rem; font-weight:500;
+      opacity:0; transition:.25s; pointer-events:none; box-shadow:0 10px 30px -8px rgba(0,0,0,.4); }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    #toast.err { background:var(--red-ink); }
+
+    @media (max-width:520px){ .cams{ grid-template-columns:1fr; } header h1{ font-size:1.2rem; } }
+  </style>
+  <script>(function(){var t=localStorage.getItem("theme")||"dark";document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;})();</script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20v-9"/>
+          <path d="M12 11c0-4 3-7 8-7 0 4-3 7-8 7z"/>
+          <path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Garden of Eden</h1>
+        <div class="sub" id="meta">connecting…</div>
+      </div>
+      <div class="spacer"></div>
+      <span class="chip"><span class="dot" id="conn"></span><span>status</span></span>
+      <button class="icon-btn" title="Toggle light/dark" onclick="toggleTheme()" aria-label="Toggle theme" id="theme-btn">🌙</button>
+      <button class="icon-btn" title="Settings" onclick="toggleSettings()" aria-label="Settings">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </header>
+
+    <div id="alerts"></div>
+
+    <div class="card" id="settings">
+      <h2>Settings</h2>
+      <div class="row">
+        <label>API key</label>
+        <input type="password" id="api-key" placeholder="leave blank on the Pi" style="flex:1; min-width:160px">
+        <button class="btn" onclick="saveKey()">Save</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
+      <div class="row" style="margin-top:14px">
+        <label>Theme</label>
+        <select id="set-theme" onchange="setThemePref(this.value)">
+          <option value="auto">Auto (system)</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+        <label>Live refresh</label>
+        <select id="set-caminterval" onchange="setCamInterval(+this.value)">
+          <option value="6000">6 s</option>
+          <option value="15000">15 s</option>
+          <option value="30000">30 s</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Sensors <button class="ghost" onclick="refresh()">Refresh</button></h2>
+      <div class="tiles">
+        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
+        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
+        <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water-gal">—</span><small>gal</small></div><div class="muted" style="font-size:.68rem"><span id="s-water">—</span> cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+      </div>
+      <div class="tiles" style="margin-top:12px">
+        <div class="tile sm"><div class="top">Pump Voltage</div><div class="val"><span id="p-volt">—</span><small>V</small></div></div>
+        <div class="tile sm"><div class="top">Current</div><div class="val"><span id="p-curr">—</span><small>mA</small></div></div>
+        <div class="tile sm"><div class="top">Power</div><div class="val"><span id="p-pow">—</span><small>mW</small></div></div>
+        <div class="tile sm"><div class="top">Shunt</div><div class="val"><span id="p-shunt">—</span><small>mV</small></div></div>
+      </div>
+      <div class="muted" id="updated" style="margin-top:12px">—</div>
+    </div>
+
+    <div class="card">
+      <h2>Device</h2>
+      <div class="kv">
+        <div><span class="k">Model</span><span class="v" id="d-model">—</span></div>
+        <div><span class="k">Sensor</span><span class="v" id="d-sensor">—</span></div>
+        <div><span class="k">Firmware</span><span class="v" id="d-version">—</span></div>
+        <div><span class="k">Identifier</span><span class="v" id="d-id">—</span></div>
+        <div><span class="k">Water-low at</span><span class="v" id="d-waterlow">—</span></div>
+        <div><span class="k">Pump max run</span><span class="v" id="d-pumpcap">—</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Light</h2>
+      <div class="row">
+        <div class="seg"><button id="light-on" onclick="setLight(true)">On</button><button id="light-off" onclick="setLight(false)">Off</button></div>
+        <span class="statuschip" id="light-status">—</span>
+      </div>
+      <div class="row">
+        <label>Brightness</label>
+        <input type="range" min="0" max="100" id="brightness" oninput="lbl('brightness')"
+               onchange="post('/light/brightness', {value:+this.value}); setActive('light', +this.value>0)">
+        <span class="pct" id="brightness-val">50%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pump</h2>
+      <div class="row">
+        <div class="seg"><button id="pump-on" onclick="setPump(true)">On</button><button id="pump-off" onclick="setPump(false)">Off</button></div>
+        <span class="statuschip" id="pump-status">—</span>
+      </div>
+      <div class="row">
+        <label>Speed</label>
+        <input type="range" min="0" max="100" id="speed" oninput="lbl('speed')"
+               onchange="post('/pump/speed', {value:+this.value}); setActive('pump', +this.value>0)">
+        <span class="pct" id="speed-val">100%</span>
+      </div>
+      <div class="row">
+        <label>Run for</label>
+        <input type="number" id="run-secs" min="1" max="900" value="300" style="width:90px"> <span class="muted">seconds (max 900)</span>
+        <button class="btn" onclick="runPump()">Run</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cameras
+        <span style="display:flex; gap:12px; align-items:center">
+          <label class="switch"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"><span class="track"></span>live</label>
+          <button class="ghost" onclick="loadCams()">Reload</button>
+        </span>
+      </h2>
+      <div class="cams">
+        <figure class="cam"><img id="cam-upper" alt="upper camera"><figcaption>Upper</figcaption></figure>
+        <figure class="cam"><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
+      </div>
+      <h2 style="margin-top:18px">Timelapse
+        <span style="display:flex; gap:8px">
+          <button class="ghost" onclick="makeTimelapse('upper')">Build upper</button>
+          <button class="ghost" onclick="makeTimelapse('lower')">Build lower</button>
+        </span>
+      </h2>
+      <div class="cams">
+        <figure class="cam"><video id="tl-upper" controls preload="none" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
+        <figure class="cam"><video id="tl-lower" controls preload="none" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Grow Cycle</h2>
+      <div class="row">
+        <label>Stage</label>
+        <select id="grow-stage" onchange="setStage(this.value)">
+          <option>germination</option><option>thinning</option>
+          <option>root_check</option><option>harvest</option>
+        </select>
+        <span class="pill" id="grow-days" style="background:var(--surface-2); color:var(--muted); border-color:var(--line)">—</span>
+        <button class="ghost" onclick="startGrow()" style="margin-left:auto">Start new cycle</button>
+      </div>
+      <div class="row" id="grow-reminders" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Plants <button class="ghost" onclick="savePods()">Save plants</button></h2>
+      <p class="muted" style="margin:-4px 0 12px">Name each pod and tap the shapes to match the code printed on the physical pod.</p>
+      <div class="pods" id="pods"></div>
+    </div>
+
+    <div class="card">
+      <h2>Schedule</h2>
+      <div class="modes">
+        <button class="mode" onclick="applyPreset('germinate')">🌱 Germinate</button>
+        <button class="mode" onclick="applyPreset('seedling')">🌿 Seedling</button>
+        <button class="mode" onclick="applyPreset('vegetative')">🍃 Vegetative</button>
+        <button class="mode" onclick="applyPreset('flower')">🌸 Flower</button>
+        <button class="mode" onclick="applyPreset('vacation')">✈️ Vacation</button>
+      </div>
+
+      <div class="heatmap" id="heatmap"></div>
+      <div class="hm-legend">
+        <span><i class="sw light"></i>light %</span>
+        <span><i class="sw pump"></i>pump run</span>
+        <span class="muted" style="margin-left:auto">tap a preset, then Save</span>
+      </div>
+
+      <details class="customize">
+        <summary>Customize per day</summary>
+        <div class="row" style="margin-top:12px">
+          <label class="switch"><input type="checkbox" id="sch-lights-en"><span class="track"></span>Lights</label>
+          <button class="ghost" onclick="copyDay('light')">Copy Mon → all</button>
+        </div>
+        <div class="sched-days" id="sch-light-days"></div>
+        <div class="row" style="margin-top:16px">
+          <label class="switch"><input type="checkbox" id="sch-pump-en"><span class="track"></span>Pump runs</label>
+          <button class="ghost" onclick="copyDay('pump')">Copy Mon → all</button>
+        </div>
+        <div class="sched-days" id="sch-pump-days"></div>
+      </details>
+
+      <div class="row" style="margin-top:18px">
+        <label class="switch"><input type="checkbox" id="sch-vacation-en"><span class="track"></span>Vacation mode</label>
+        <label>until <input type="date" id="sch-vacation-until"></label>
+        <span class="muted">reduced light/water (10–16h @ 50%, one short pump) until this date</span>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" onclick="saveSchedule()">Save schedule</button>
+        <span class="muted" id="sch-status">pump runs are capped at 15 min for safety</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let API_KEY = localStorage.getItem("garden_key") || "";
+    let camTimer = null;
+    let camInterval = +localStorage.getItem("camInterval") || 6000;
+    let waterLowCm = null;  // tank-low threshold (cm) from /system; null = disabled
+    const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
+    let lightDays = emptyDays(), pumpDays = emptyDays();
+
+    const $ = id => document.getElementById(id);
+    function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
+    function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : ""); setTimeout(() => t.className = "", 1600); }
+    function conn(ok) { $("conn").className = "dot " + (ok ? "ok" : "bad"); }
+
+    // fetch with a timeout so a hung/unreachable Pi never freezes the UI.
+    async function fetchT(path, opts, ms) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ms || 8000);
+      try { return await fetch(path, Object.assign({ signal: ctrl.signal }, opts)); }
+      finally { clearTimeout(timer); }
+    }
+    async function get(path) {
+      const r = await fetchT(path, { headers: headers() });
+      if (!r.ok) throw new Error(r.status);
+      conn(true); return r.json();
+    }
+    async function post(path, body) {
+      try {
+        const r = await fetchT(path, { method: "POST", headers: headers({ "Content-Type": "application/json" }), body: JSON.stringify(body || {}) });
+        let d = {}; try { d = await r.json(); } catch {}
+        conn(r.ok); toast(d.message || d.error || (r.ok ? "ok" : "error " + r.status), !r.ok); return d;
+      } catch (e) { conn(false); toast(e.name === "AbortError" ? "request timed out" : "error: " + e.message, true); }
+    }
+    // Lightweight reachability probe for the connection dot.
+    async function ping() {
+      try { const r = await fetchT("/health", {}, 4000); conn(r.ok); }
+      catch { conn(false); }
+    }
+
+    function lbl(id) { $(id + "-val").textContent = $(id).value + "%"; }
+    function setActive(device, isOn) {
+      $(device + "-on").classList.toggle("active", isOn);
+      const off = $(device + "-off"); off.classList.toggle("active", !isOn); off.classList.toggle("danger", !isOn);
+      $(device + "-status").textContent = isOn ? "ON" : "OFF";
+    }
+    async function setLight(on) { await post(on ? "/light/on" : "/light/off"); setActive("light", on); }
+    async function setPump(on) { await post(on ? "/pump/on" : "/pump/off"); setActive("pump", on); }
+    async function runPump() { const s = +$("run-secs").value; await post("/pump/run", { seconds: s }); setActive("pump", true); }
+
+    async function refresh() {
+      const sensors = {
+        "/temperature": ["s-temp", "temperature"],
+        "/humidity": ["s-hum", "humidity"],
+        "/pcb-temp": ["s-pcb", "pcb-temp"],
+      };
+      for (const [path, [id, key]] of Object.entries(sensors)) {
+        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "n/a"; }
+      }
+      try {
+        const w = await get("/distance"); const cm = w.distance;
+        $("s-water").textContent = cm;
+        $("s-water-gal").textContent = (w.gallons != null) ? w.gallons : "—";
+        // Map ~5cm (full) .. ~20cm (empty) to a 0..100% bar.
+        const pct = Math.max(0, Math.min(100, (1 - (cm - 5) / 15) * 100));
+        $("s-water-bar").style.width = pct + "%";
+        // Tank-low warning: larger distance = lower water (threshold from /system).
+        const badge = $("s-water-status");
+        if (waterLowCm != null && cm > waterLowCm) {
+          badge.textContent = "LOW"; badge.style.cssText = "background:#c0392b;color:#fff;border-color:#c0392b";
+        } else if (waterLowCm != null) {
+          badge.textContent = "OK"; badge.style.cssText = "";
+        } else { badge.textContent = ""; }
+      } catch { $("s-water").textContent = "n/a"; $("s-water-gal").textContent = "n/a"; $("s-water-status").textContent = ""; }
+      try {
+        const p = await get("/pump/stats");
+        if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; $("p-shunt").textContent = p.ShuntVoltage ?? "—"; }
+        else { $("p-volt").textContent = $("p-curr").textContent = $("p-pow").textContent = $("p-shunt").textContent = "—"; }
+      } catch { /* optional */ }
+      $("updated").textContent = "updated " + new Date().toLocaleTimeString();
+    }
+
+    async function loadSystem() {
+      try {
+        const s = await get("/system");
+        $("meta").textContent = `${s.model} · v${s.version} · ${s.identifier}`;
+        $("d-model").textContent = s.model || "—";
+        $("d-sensor").textContent = s.sensor_type || "—";
+        $("d-version").textContent = "v" + s.version;
+        $("d-id").textContent = s.identifier || "—";
+        waterLowCm = (s.water_low_cm != null && s.water_low_cm !== 0) ? s.water_low_cm : null;
+        $("d-waterlow").textContent = waterLowCm != null ? `> ${waterLowCm} cm` : "off";
+        $("d-pumpcap").textContent = s.pump_max_run_seconds != null ? `${Math.round(s.pump_max_run_seconds / 60)} min` : "—";
+        conn(true);
+      } catch { $("meta").textContent = "offline"; conn(false); }
+    }
+
+    function loadCams() {
+      $("cam-upper").src = "/camera/upper?t=" + Date.now();
+      $("cam-lower").src = "/camera/lower?t=" + Date.now();
+    }
+    function toggleCamAuto() {
+      if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, camInterval); }
+      else { clearInterval(camTimer); camTimer = null; }
+    }
+    function loadTimelapses() {
+      ["upper", "lower"].forEach(c => { $("tl-" + c).src = "/camera/timelapse/" + c + "?t=" + Date.now(); });
+    }
+    async function makeTimelapse(cam) {
+      toast("Building " + cam + " timelapse… (can take a minute)");
+      const r = await post("/camera/timelapse/" + cam);
+      if (r && !r.error) { const v = $("tl-" + cam); v.src = "/camera/timelapse/" + cam + "?t=" + Date.now(); v.load(); }
+    }
+
+    async function syncToggles() {
+      try { setActive("light", ((await get("/light/brightness")).value || 0) > 0); } catch {}
+      try { setActive("pump", ((await get("/pump/speed")).value || 0) > 0); } catch {}
+    }
+
+    async function loadGrow() {
+      try {
+        const g = await get("/grow");
+        renderAlerts(g.due || []);
+        $("grow-stage").value = g.stage;
+        if (g.started) { const d = Math.floor((Date.now() - new Date(g.started)) / 86400000); $("grow-days").textContent = `day ${d}`; }
+        const box = $("grow-reminders");
+        box.innerHTML = (g.due || []).length ? "" : "<span class='muted'>no reminders due</span>";
+        (g.due || []).forEach(key => {
+          const span = document.createElement("span"); span.className = "pill"; span.textContent = key;
+          const btn = document.createElement("button"); btn.textContent = "done";
+          btn.onclick = () => post("/grow/acknowledge", { key }).then(loadGrow);
+          span.appendChild(btn); box.appendChild(span);
+        });
+      } catch {}
+    }
+    function setStage(stage) { post("/grow/stage", { stage }); }
+    function startGrow() { post("/grow/start").then(loadGrow); }
+
+    // Clamp a pump duration input to the 1..15 minute safety range.
+    function clampPumpMin(input) { let v = Math.round(+input.value || 0); v = Math.min(15, Math.max(1, v)); input.value = v; return v; }
+
+    function renderSchedule() {
+      renderDays("light", lightDays, $("sch-light-days"));
+      renderDays("pump", pumpDays, $("sch-pump-days"));
+      renderHeatmap();
+    }
+
+    // ---- Week heatmap (7 days x 24h): green shade = light %, dot = pump ----
+    const hourOf = t => parseInt((t || "0:0").split(":")[0], 10) || 0;
+    const inWin = (h, on, off) => on === off ? false : (on < off ? (h >= on && h < off) : (h >= on || h < off));
+    const hourTick = h => h === 0 ? "12a" : h === 12 ? "12p" : h < 12 ? h + "a" : (h - 12) + "p";
+    function renderHeatmap() {
+      const box = $("heatmap"); if (!box) return; box.innerHTML = "";
+      const cell = (cls, txt) => { const d = document.createElement("div"); d.className = cls; if (txt) d.textContent = txt; return d; };
+      box.appendChild(cell("hlabel", ""));
+      for (let h = 0; h < 24; h++) box.appendChild(cell("hhour", h % 6 === 0 ? hourTick(h) : ""));
+      SCH_DAYS.forEach(day => {
+        box.appendChild(cell("hlabel", day[0].toUpperCase() + day.slice(1, 3)));
+        const lit = new Array(24).fill(0);
+        (lightDays[day] || []).forEach(w => {
+          const on = hourOf(w.onTime), off = hourOf(w.offTime), b = +w.brightness || 0;
+          for (let h = 0; h < 24; h++) if (inWin(h, on, off)) lit[h] = Math.max(lit[h], b);
+        });
+        const pumps = new Set((pumpDays[day] || []).map(r => hourOf(r.time)));
+        for (let h = 0; h < 24; h++) {
+          const c = cell("cell" + (pumps.has(h) ? " pump" : ""), "");
+          if (lit[h] > 0) c.style.background = `rgba(63,155,110,${0.18 + 0.82 * lit[h] / 100})`;
+          c.title = `${day} ${h}:00${lit[h] ? ` · ${lit[h]}% light` : ""}${pumps.has(h) ? " · pump" : ""}`;
+          box.appendChild(c);
+        }
+      });
+    }
+
+    // ---- One-click stage presets (fill the editor; user reviews & Saves) ----
+    const PRESETS = {
+      germinate:  { light: { onTime: "06:00", offTime: "22:00", brightness: 30, rampMinutes: 15 }, pump: [{ time: "06:00", duration: 3 }, { time: "12:00", duration: 3 }, { time: "18:00", duration: 3 }] },
+      seedling:   { light: { onTime: "06:00", offTime: "22:00", brightness: 50, rampMinutes: 15 }, pump: [{ time: "08:00", duration: 4 }, { time: "16:00", duration: 4 }, { time: "00:00", duration: 4 }] },
+      vegetative: { light: { onTime: "06:00", offTime: "22:00", brightness: 80, rampMinutes: 20 }, pump: [{ time: "08:00", duration: 5 }, { time: "16:00", duration: 5 }, { time: "00:00", duration: 5 }] },
+      flower:     { light: { onTime: "07:00", offTime: "19:00", brightness: 100, rampMinutes: 20 }, pump: [{ time: "08:00", duration: 5 }, { time: "14:00", duration: 5 }, { time: "20:00", duration: 5 }] },
+    };
+    function applyPreset(name) {
+      if (name === "vacation") {
+        $("sch-vacation-en").checked = true;
+        if (!$("sch-vacation-until").value) {
+          const d = new Date(Date.now() + 14 * 864e5);
+          $("sch-vacation-until").value = d.toISOString().slice(0, 10);
+        }
+        toast("Vacation mode set — adjust the date & Save");
+        return;
+      }
+      const p = PRESETS[name]; if (!p) return;
+      SCH_DAYS.forEach(d => { lightDays[d] = [{ ...p.light }]; pumpDays[d] = p.pump.map(r => ({ ...r })); });
+      $("sch-lights-en").checked = true; $("sch-pump-en").checked = true;
+      if (name === "germinate") post("/grow/start").then(loadGrow);
+      renderSchedule();
+      toast(name + " preset loaded — review & Save");
+    }
+
+    // ---- Reminder alert banners ----
+    const REMINDER_LABELS = {
+      thinning: "🌱 Time to thin your plants",
+      root_check: "🔍 Check the roots",
+      harvest: "✂️ Ready to harvest / trim",
+      nutrient: "🧪 Add plant food (nutrients)",
+    };
+    function renderAlerts(due) {
+      const box = $("alerts"); box.innerHTML = "";
+      (due || []).forEach(key => {
+        const div = document.createElement("div"); div.className = "alert-banner";
+        const span = document.createElement("span"); span.textContent = REMINDER_LABELS[key] || key;
+        const btn = document.createElement("button"); btn.className = "btn"; btn.textContent = "Done";
+        btn.onclick = () => post("/grow/acknowledge", { key }).then(loadGrow);
+        div.append(span, btn); box.appendChild(div);
+      });
+    }
+
+    // ---- Per-pod plant tracking (name + shape code) ----
+    const SHAPE_GLYPH = { circle: "●", square: "■", triangle: "▲", diamond: "◆", star: "★", hexagon: "⬢", heart: "♥", plus: "✚" };
+    let pods = [], podShapes = [], plantCatalog = [];
+    async function loadPods() {
+      try {
+        const d = await get("/pods");
+        pods = d.pods || []; podShapes = d.shapes || []; plantCatalog = d.catalog || [];
+        renderPods();
+      } catch {}
+    }
+    function catalogOptionsHTML() {
+      const cats = {};
+      plantCatalog.forEach(p => { (cats[p.category] = cats[p.category] || []).push(p); });
+      let html = '<option value="">— empty —</option><option value="__other__">✏️ Other…</option>';
+      Object.keys(cats).sort().forEach(cat => {
+        html += `<optgroup label="${cat}">`;
+        cats[cat].forEach(p => { html += `<option value="${p.name}">${p.name}</option>`; });
+        html += "</optgroup>";
+      });
+      return html;
+    }
+    const guideFor = name => {
+      const p = plantCatalog.find(x => x.name === name);
+      return p ? `${p.guide} · ${p.light_need} light · ~${p.days_to_harvest}d · ${p.difficulty}` : "";
+    };
+    function renderPods() {
+      const box = $("pods"); box.innerHTML = "";
+      const opts = catalogOptionsHTML();
+      pods.forEach((p, i) => {
+        if (!p.symbols) p.symbols = [];
+        const cell = document.createElement("div"); cell.className = "pod";
+        const pn = document.createElement("div"); pn.className = "pn"; pn.textContent = "POD " + p.id;
+        const isCustom = p.name && !plantCatalog.some(x => x.name === p.name);
+        const sel = document.createElement("select"); sel.innerHTML = opts;
+        sel.value = isCustom ? "__other__" : (p.name || "");
+        const custom = document.createElement("input"); custom.placeholder = "custom name"; custom.value = isCustom ? p.name : "";
+        custom.style.display = isCustom ? "" : "none";
+        const guide = document.createElement("div"); guide.className = "pguide muted"; guide.textContent = guideFor(p.name);
+        sel.onchange = () => {
+          if (sel.value === "__other__") { custom.style.display = ""; pods[i].name = custom.value; }
+          else { custom.style.display = "none"; custom.value = ""; pods[i].name = sel.value; }
+          guide.textContent = guideFor(pods[i].name);
+        };
+        custom.onchange = () => { pods[i].name = custom.value; };
+        const shapes = document.createElement("div"); shapes.className = "shapes";
+        podShapes.forEach(s => {
+          const b = document.createElement("button"); b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
+          if (p.symbols.includes(s)) b.classList.add("on");
+          b.onclick = () => {
+            const arr = pods[i].symbols;
+            const at = arr.indexOf(s);
+            if (at >= 0) arr.splice(at, 1); else if (arr.length < 5) arr.push(s);
+            b.classList.toggle("on", arr.includes(s));
+          };
+          shapes.appendChild(b);
+        });
+        cell.append(pn, sel, custom, guide, shapes); box.appendChild(cell);
+      });
+    }
+    function savePods() { post("/pods", pods); }
+
+    function renderDays(kind, model, box) {
+      box.innerHTML = "";
+      SCH_DAYS.forEach(day => {
+        const row = document.createElement("div"); row.className = "sched-day";
+        const name = document.createElement("div"); name.className = "dname"; name.textContent = day;
+        const entries = document.createElement("div"); entries.className = "entries";
+        (model[day] || []).forEach((e, i) => {
+          const div = document.createElement("div"); div.className = "entry";
+          if (kind === "light") {
+            div.innerHTML = `On <input type="time" value="${e.onTime}" onchange="lightDays['${day}'][${i}].onTime=this.value">
+              Off <input type="time" value="${e.offTime}" onchange="lightDays['${day}'][${i}].offTime=this.value">
+              <input type="number" min="0" max="100" value="${e.brightness}" style="width:58px" onchange="lightDays['${day}'][${i}].brightness=+this.value"><span class="muted">%</span>
+              <input type="number" min="0" max="120" value="${e.rampMinutes || 0}" style="width:48px" title="sunrise/sunset ramp (minutes)" onchange="lightDays['${day}'][${i}].rampMinutes=+this.value"><span class="muted">↗ min</span>
+              <button class="ghost" onclick="lightDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
+          } else {
+            div.innerHTML = `<input type="time" value="${e.time}" onchange="pumpDays['${day}'][${i}].time=this.value">
+              <input type="number" min="1" max="15" value="${e.duration}" style="width:58px" onchange="pumpDays['${day}'][${i}].duration=clampPumpMin(this)"><span class="muted">min (max 15)</span>
+              <button class="ghost" onclick="pumpDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
+          }
+          entries.appendChild(div);
+        });
+        const add = document.createElement("button"); add.className = "ghost"; add.textContent = "+ Add";
+        add.onclick = () => { model[day].push(kind === "light" ? { onTime: "06:00", offTime: "22:00", brightness: 70, rampMinutes: 0 } : { time: "12:00", duration: 5 }); renderSchedule(); };
+        entries.appendChild(add);
+        row.append(name, entries); box.appendChild(row);
+      });
+    }
+
+    // Copy Monday's entries to every other day.
+    function copyDay(kind) {
+      const model = kind === "light" ? lightDays : pumpDays;
+      const src = JSON.stringify(model.mon || []);
+      SCH_DAYS.forEach(d => { model[d] = JSON.parse(src); });
+      renderSchedule();
+    }
+
+    const mergeDays = days => {
+      const o = emptyDays();
+      if (days) SCH_DAYS.forEach(d => { if (Array.isArray(days[d])) o[d] = days[d].map(x => Object.assign({}, x)); });
+      return o;
+    };
+
+    async function loadSchedule() {
+      try {
+        const s = await get("/schedule"); const l = s.lights || {}, p = s.pump || {};
+        $("sch-lights-en").checked = !!l.enabled;
+        $("sch-pump-en").checked = !!p.enabled;
+        const v = s.vacation || {};
+        $("sch-vacation-en").checked = !!v.enabled;
+        $("sch-vacation-until").value = v.until || "";
+        lightDays = mergeDays(l.days);
+        pumpDays = mergeDays(p.days);
+        renderSchedule();
+      } catch {}
+    }
+    function saveSchedule() {
+      post("/schedule", {
+        lights: { enabled: $("sch-lights-en").checked, days: lightDays },
+        pump: { enabled: $("sch-pump-en").checked, days: pumpDays },
+        vacation: { enabled: $("sch-vacation-en").checked, until: $("sch-vacation-until").value || null },
+      });
+    }
+
+    const resolveTheme = pref => pref === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : pref;
+    function setThemePref(pref) {
+      localStorage.setItem("theme", pref);
+      const eff = resolveTheme(pref);
+      document.documentElement.dataset.theme = eff;
+      $("theme-btn").textContent = eff === "dark" ? "🌙" : "☀️";
+      if ($("set-theme")) $("set-theme").value = pref;
+    }
+    function toggleTheme() { setThemePref(document.documentElement.dataset.theme === "dark" ? "light" : "dark"); }
+    function setCamInterval(ms) {
+      camInterval = ms; localStorage.setItem("camInterval", ms);
+      if ($("cam-auto").checked) { clearInterval(camTimer); camTimer = setInterval(loadCams, camInterval); }
+    }
+    // Wrap each card's content below its <h2> so the header can collapse it.
+    function setupCollapsible() {
+      document.querySelectorAll(".card").forEach((card, i) => {
+        if (card.id === "settings") { card.classList.add("no-collapse"); return; }
+        const h2 = card.querySelector(":scope > h2"); if (!h2) return;
+        const body = document.createElement("div"); body.className = "card-body";
+        while (h2.nextSibling) body.appendChild(h2.nextSibling);
+        card.appendChild(body);
+        const key = "card:" + (h2.textContent.trim().toLowerCase().replace(/\W+/g, "-") || i);
+        if (localStorage.getItem(key) === "1") card.classList.add("collapsed");
+        h2.addEventListener("click", e => {
+          if (e.target.closest("button,input,select,label,a")) return;
+          localStorage.setItem(key, card.classList.toggle("collapsed") ? "1" : "0");
+        });
+      });
+    }
+    function toggleSettings() { $("settings").classList.toggle("open"); $("api-key").value = API_KEY; }
+    function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
+
+    setupCollapsible();
+    $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
+    $("set-theme").value = localStorage.getItem("theme") || "dark";
+    $("set-caminterval").value = camInterval;
+    loadSystem(); refresh(); loadGrow(); loadSchedule(); loadPods(); loadCams(); loadTimelapses(); syncToggles(); ping();
+    setInterval(refresh, 30000);
+    setInterval(ping, 10000);
+  </script>
+</body>
+</html>
