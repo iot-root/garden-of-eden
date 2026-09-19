@@ -57,7 +57,7 @@ function install_packages {
     show_spinner
     wait $!
     log_info "Installing packages"
-    sudo apt install -y i2c-tools fswebcam pigpio python3 python3-pip python3-venv mosquitto mosquitto-clients >> "$LOG_FILE" 2>&1 &
+    sudo apt install -y i2c-tools fswebcam ffmpeg pigpio python3 python3-pip python3-venv mosquitto mosquitto-clients >> "$LOG_FILE" 2>&1 &
     show_spinner
     wait $!
     if [ $? -ne 0 ]; then

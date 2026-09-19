@@ -17,6 +17,7 @@ from app.lib import grow as grow_lib
 from app.lib import state as state_lib
 from app.lib.hardware import get_pin_factory
 from app.lib.water import is_water_low
+from app.sensors.camera import camera as camera_mod
 from app.sensors.distance.distance import MeasurementError
 from app.sensors.distance.routes import distance_control
 from app.sensors.humidity.humidity import humidity_sensor
@@ -434,7 +435,7 @@ def send_discovery_messages(client):
         "name": "Upper Camera",
         "unique_id": IDENTIFIER + "_upper_camera",
         "image_topic": BASE_TOPIC + "/image/upper_camera",
-        "encoding": "b64",
+        "encoding": "",
         "content_type": "image/jpeg",
         "object_id": IDENTIFIER + "_upper_camera",
         "device": device_info,
@@ -447,7 +448,7 @@ def send_discovery_messages(client):
         "name": "Lower Camera",
         "unique_id": IDENTIFIER + "_lower_camera",
         "image_topic": BASE_TOPIC + "/image/lower_camera",
-        "encoding": "b64",
+        "encoding": "",
         "content_type": "image/jpeg",
         "object_id": IDENTIFIER + "_lower_camera",
         "device": device_info,
@@ -713,7 +714,7 @@ def publish_images(client):
                     BASE_TOPIC + "/image/upper_camera",
                     payload=upper_cam_jpeg_data,
                     qos=0,
-                    retain=False,
+                    retain=True,
                 )
                 logger.info("Published image to /image/upper_camera")
 
@@ -724,9 +725,13 @@ def publish_images(client):
                     BASE_TOPIC + "/image/lower_camera",
                     payload=lower_cam_jpeg_data,
                     qos=0,
-                    retain=False,
+                    retain=True,
                 )
                 logger.info("Published image to /image/lower_camera")
+
+            # Archive timestamped frames for timelapse assembly.
+            camera_mod.archive_frame(UPPER_IMAGE_PATH, "upper")
+            camera_mod.archive_frame(LOWER_IMAGE_PATH, "lower")
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Camera capture failed: {e}")
