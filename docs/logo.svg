@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="Garden of Eden logo">
+  <defs>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#40916c"/>
+      <stop offset="1" stop-color="#2d6a4f"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="#edf2ed" stroke="#b4ccb4" stroke-width="4"/>
+  <!-- stem -->
+  <path d="M100 150 C100 120 100 100 100 70" stroke="#2d6a4f" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- leaves -->
+  <path d="M100 95 C70 90 55 70 60 50 C85 52 102 70 100 95 Z" fill="url(#leaf)"/>
+  <path d="M100 110 C130 105 145 85 140 65 C115 67 98 85 100 110 Z" fill="url(#leaf)"/>
+  <!-- water drop -->
+  <path d="M100 40 C108 52 116 60 116 70 a16 16 0 1 1 -32 0 C84 60 92 52 100 40 Z" fill="#40916c" opacity="0.85"/>
+</svg>
