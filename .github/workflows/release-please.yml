@@ -1,0 +1,22 @@
+name: release-please
+
+# Automates versioning and CHANGELOG generation from Conventional Commits
+# (issue #10). On every push to main, release-please maintains a release PR;
+# merging it tags a new version and updates CHANGELOG.md.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          release-type: python
+          package-name: garden-of-eden
