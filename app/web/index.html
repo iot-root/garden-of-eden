@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden of Eden</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #edf2ed; --surface: #fff; --border: #d0e4d0;
+      --accent: #2d6a4f; --accent2: #40916c; --text: #1a3a1a;
+      --muted: #4a7a5a; --red: #c96a6a; --amber: #d8a657;
+    }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 16px; max-width: 820px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+    header h1 { color: var(--accent); font-size: 1.4rem; }
+    .hmeta { font-size: .72rem; color: var(--muted); text-align: right; }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #bbb; margin-right: 4px; }
+    .dot.ok { background: #4caf50; } .dot.bad { background: var(--red); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+    .card h2 { font-size: .95rem; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+    .status { font-size: .8rem; color: var(--muted); margin-left: auto; }
+    button { background: #9bb3a3; color: #fff; border: 2px solid transparent; border-radius: 7px; padding: 8px 14px; font-size: .85rem; cursor: pointer; }
+    button:active { transform: translateY(1px); }
+    button.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
+    button.active { background: var(--accent2); border-color: var(--accent); box-shadow: 0 0 0 2px rgba(45,106,79,.2); }
+    button.active.danger { background: var(--red); border-color: #a04a4a; box-shadow: 0 0 0 2px rgba(201,106,106,.25); }
+    input[type=range] { flex: 1; min-width: 120px; accent-color: var(--accent2); }
+    input[type=time], input[type=number], input[type=password], select { padding: 6px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; background: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+    .stat { background: #f0f5f0; border-radius: 8px; padding: 10px; text-align: center; position: relative; }
+    .stat .v { font-size: 1.25rem; font-weight: 600; color: var(--accent); }
+    .stat .l { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .stat.alert { outline: 2px solid var(--red); }
+    .bar { height: 6px; background: #dde7dd; border-radius: 4px; margin-top: 6px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; background: var(--accent2); }
+    .cams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cams figure { font-size: .7rem; color: var(--muted); text-align: center; }
+    .cams img { width: 100%; border-radius: 8px; background: #dde; min-height: 90px; }
+    label { font-size: .8rem; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; background: #fbf1dd; color: #7a5b1a; border-radius: 20px; padding: 4px 10px; font-size: .75rem; margin: 2px; }
+    .pill button { padding: 2px 8px; font-size: .7rem; margin-left: 6px; }
+    .runs .run { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    #settings { display: none; }
+    #settings.open { display: block; }
+    #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: .8rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    #toast.show { opacity: .96; }
+    #toast.err { background: var(--red); }
+    .muted { color: var(--muted); font-size: .75rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌱 Garden of Eden</h1>
+    <div>
+      <div class="hmeta"><span class="dot" id="conn"></span><span id="meta">connecting…</span></div>
+      <div class="hmeta"><button class="ghost" style="padding:2px 8px;font-size:.7rem" onclick="toggleSettings()">⚙ settings</button></div>
+    </div>
+  </header>
+
+  <div class="card" id="settings">
+    <h2>Settings</h2>
+    <div class="row">
+      <label>API key (for remote/authed access):</label>
+      <input type="password" id="api-key" placeholder="leave blank on the Pi">
+      <button onclick="saveKey()">Save</button>
+    </div>
+    <p class="muted">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
+  </div>
+
+  <div class="card">
+    <h2>Sensors <button class="ghost" onclick="refresh()">↻ refresh</button></h2>
+    <div class="grid">
+      <div class="stat"><div class="v" id="s-temp">—</div><div class="l">Air °C</div></div>
+      <div class="stat"><div class="v" id="s-hum">—</div><div class="l">Humidity %</div></div>
+      <div class="stat"><div class="v" id="s-pcb">—</div><div class="l">PCB °C</div></div>
+      <div class="stat" id="s-water-card"><div class="v" id="s-water">—</div><div class="l">Water cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
+    </div>
+    <div class="grid" style="margin-top:10px">
+      <div class="stat"><div class="v" id="p-volt">—</div><div class="l">Pump V</div></div>
+      <div class="stat"><div class="v" id="p-curr">—</div><div class="l">Pump mA</div></div>
+      <div class="stat"><div class="v" id="p-pow">—</div><div class="l">Pump mW</div></div>
+    </div>
+    <div class="muted" id="updated" style="margin-top:8px">—</div>
+  </div>
+
+  <div class="card">
+    <h2>Light</h2>
+    <div class="row">
+      <button id="light-on" onclick="setLight(true)">On</button>
+      <button id="light-off" onclick="setLight(false)">Off</button>
+      <span class="status" id="light-status">—</span>
+    </div>
+    <div class="row">
+      <label>Brightness</label>
+      <input type="range" min="0" max="100" id="brightness" oninput="lbl('brightness')"
+             onchange="post('/light/brightness', {value:+this.value}); setActive('light', +this.value>0)">
+      <span id="brightness-val">50%</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pump</h2>
+    <div class="row">
+      <button id="pump-on" onclick="setPump(true)">On</button>
+      <button id="pump-off" onclick="setPump(false)">Off</button>
+      <span class="status" id="pump-status">—</span>
+    </div>
+    <div class="row">
+      <label>Speed</label>
+      <input type="range" min="0" max="100" id="speed" oninput="lbl('speed')"
+             onchange="post('/pump/speed', {value:+this.value}); setActive('pump', +this.value>0)">
+      <span id="speed-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Run for</label>
+      <input type="number" id="run-secs" min="1" max="3600" value="300" style="width:80px"> s
+      <button onclick="runPump()">Run</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Cameras
+      <span>
+        <label class="muted"><input type="checkbox" id="cam-auto" onchange="toggleCamAuto()"> auto</label>
+        <button class="ghost" onclick="loadCams()">↻</button>
+      </span>
+    </h2>
+    <div class="cams">
+      <figure><img id="cam-upper" alt="upper"><figcaption>Upper</figcaption></figure>
+      <figure><img id="cam-lower" alt="lower"><figcaption>Lower</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Grow Cycle</h2>
+    <div class="row">
+      <label>Stage</label>
+      <select id="grow-stage" onchange="setStage(this.value)">
+        <option>germination</option><option>thinning</option>
+        <option>root_check</option><option>harvest</option>
+      </select>
+      <span class="muted" id="grow-days">—</span>
+      <button class="ghost" onclick="startGrow()">Start new cycle</button>
+    </div>
+    <div class="row" id="grow-reminders"></div>
+  </div>
+
+  <div class="card">
+    <h2>Schedule</h2>
+    <div class="row">
+      <label><input type="checkbox" id="sch-lights-en"> Lights</label>
+      <label>On <input type="time" id="sch-on" value="08:00"></label>
+      <label>Off <input type="time" id="sch-off" value="22:00"></label>
+      <label>Bright <input type="number" id="sch-bright" min="0" max="100" value="70" style="width:60px"></label>
+    </div>
+    <div class="row"><label><input type="checkbox" id="sch-pump-en"> Pump runs</label>
+      <button class="ghost" onclick="addRun()">+ add run</button></div>
+    <div class="runs" id="sch-runs"></div>
+    <div class="row"><button onclick="saveSchedule()">Save schedule</button>
+      <span class="status" id="sch-status">cron runs on the Pi, surviving reboots</span></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let API_KEY = localStorage.getItem("garden_key") || "";
+    let camTimer = null, pumpRuns = [];
+
+    const $ = id => document.getElementById(id);
+    function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
+    function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : ""); setTimeout(() => t.className = "", 1600); }
+    function conn(ok) { $("conn").className = "dot " + (ok ? "ok" : "bad"); }
+
+    // fetch with a timeout so a hung/unreachable Pi never freezes the UI.
+    async function fetchT(path, opts, ms) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ms || 8000);
+      try { return await fetch(path, Object.assign({ signal: ctrl.signal }, opts)); }
+      finally { clearTimeout(timer); }
+    }
+    async function get(path) {
+      const r = await fetchT(path, { headers: headers() });
+      if (!r.ok) throw new Error(r.status);
+      conn(true); return r.json();
+    }
+    async function post(path, body) {
+      try {
+        const r = await fetchT(path, { method: "POST", headers: headers({ "Content-Type": "application/json" }), body: JSON.stringify(body || {}) });
+        let d = {}; try { d = await r.json(); } catch {}
+        conn(r.ok); toast(d.message || d.error || (r.ok ? "ok" : "error " + r.status), !r.ok); return d;
+      } catch (e) { conn(false); toast(e.name === "AbortError" ? "request timed out" : "error: " + e.message, true); }
+    }
+    // Lightweight reachability probe for the connection dot.
+    async function ping() {
+      try { const r = await fetchT("/health", {}, 4000); conn(r.ok); }
+      catch { conn(false); }
+    }
+
+    function lbl(id) { $(id + "-val").textContent = $(id).value + "%"; }
+    function setActive(device, isOn) {
+      $(device + "-on").classList.toggle("active", isOn);
+      const off = $(device + "-off"); off.classList.toggle("active", !isOn); off.classList.toggle("danger", !isOn);
+      $(device + "-status").textContent = isOn ? "ON" : "OFF";
+    }
+    async function setLight(on) { await post(on ? "/light/on" : "/light/off"); setActive("light", on); }
+    async function setPump(on) { await post(on ? "/pump/on" : "/pump/off"); setActive("pump", on); }
+    async function runPump() { const s = +$("run-secs").value; await post("/pump/run", { seconds: s }); setActive("pump", true); }
+
+    async function refresh() {
+      const sensors = {
+        "/temperature": ["s-temp", "temperature"],
+        "/humidity": ["s-hum", "humidity"],
+        "/pcb-temp": ["s-pcb", "pcb-temp"],
+      };
+      for (const [path, [id, key]] of Object.entries(sensors)) {
+        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "✕"; }
+      }
+      try {
+        const w = await get("/distance"); const cm = w.distance;
+        $("s-water").textContent = cm;
+        // Map ~5cm (full) .. ~20cm (empty) to a 0..100% bar.
+        const pct = Math.max(0, Math.min(100, (1 - (cm - 5) / 15) * 100));
+        $("s-water-bar").style.width = pct + "%";
+      } catch { $("s-water").textContent = "✕"; }
+      try {
+        const p = await get("/pump/stats");
+        if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; }
+        else { $("p-volt").textContent = $("p-curr").textContent = $("p-pow").textContent = "—"; }
+      } catch { /* optional */ }
+      $("updated").textContent = "updated " + new Date().toLocaleTimeString();
+    }
+
+    async function loadSystem() {
+      try { const s = await get("/system"); $("meta").textContent = `${s.model} · v${s.version} · ${s.identifier}`; conn(true); }
+      catch { $("meta").textContent = "offline"; conn(false); }
+    }
+
+    function loadCams() {
+      $("cam-upper").src = "/camera/upper?t=" + Date.now();
+      $("cam-lower").src = "/camera/lower?t=" + Date.now();
+    }
+    function toggleCamAuto() {
+      if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, 15000); }
+      else { clearInterval(camTimer); camTimer = null; }
+    }
+
+    async function syncToggles() {
+      try { setActive("light", ((await get("/light/brightness")).value || 0) > 0); } catch {}
+      try { setActive("pump", ((await get("/pump/speed")).value || 0) > 0); } catch {}
+    }
+
+    async function loadGrow() {
+      try {
+        const g = await get("/grow");
+        $("grow-stage").value = g.stage;
+        if (g.started) { const d = Math.floor((Date.now() - new Date(g.started)) / 86400000); $("grow-days").textContent = `day ${d}`; }
+        const box = $("grow-reminders");
+        box.innerHTML = (g.due || []).length ? "" : "<span class='muted'>no reminders due</span>";
+        (g.due || []).forEach(key => {
+          const span = document.createElement("span"); span.className = "pill"; span.textContent = key;
+          const btn = document.createElement("button"); btn.textContent = "done";
+          btn.onclick = () => post("/grow/acknowledge", { key }).then(loadGrow);
+          span.appendChild(btn); box.appendChild(span);
+        });
+      } catch {}
+    }
+    function setStage(stage) { post("/grow/stage", { stage }); }
+    function startGrow() { post("/grow/start").then(loadGrow); }
+
+    function renderRuns() {
+      const box = $("sch-runs"); box.innerHTML = "";
+      pumpRuns.forEach((run, i) => {
+        const div = document.createElement("div"); div.className = "run";
+        div.innerHTML = `<input type="time" value="${run.time}" onchange="pumpRuns[${i}].time=this.value">
+          <input type="number" min="1" max="60" value="${run.duration}" style="width:60px" onchange="pumpRuns[${i}].duration=+this.value"> min
+          <button class="ghost" onclick="pumpRuns.splice(${i},1);renderRuns()">✕</button>`;
+        box.appendChild(div);
+      });
+    }
+    function addRun() { pumpRuns.push({ time: "12:00", duration: 5 }); renderRuns(); }
+
+    async function loadSchedule() {
+      try {
+        const s = await get("/schedule"); const l = s.lights || {}, p = s.pump || {};
+        $("sch-lights-en").checked = !!l.enabled;
+        if (l.onTime) $("sch-on").value = l.onTime;
+        if (l.offTime) $("sch-off").value = l.offTime;
+        if (l.brightness != null) $("sch-bright").value = l.brightness;
+        $("sch-pump-en").checked = !!p.enabled;
+        pumpRuns = (p.runs || []).map(r => ({ time: r.time, duration: r.duration })); renderRuns();
+      } catch {}
+    }
+    function saveSchedule() {
+      post("/schedule", {
+        lights: { enabled: $("sch-lights-en").checked, onTime: $("sch-on").value, offTime: $("sch-off").value, brightness: +$("sch-bright").value },
+        pump: { enabled: $("sch-pump-en").checked, runs: pumpRuns },
+      });
+    }
+
+    function toggleSettings() { $("settings").classList.toggle("open"); $("api-key").value = API_KEY; }
+    function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
+
+    loadSystem(); refresh(); loadGrow(); loadSchedule(); loadCams(); syncToggles(); ping();
+    setInterval(refresh, 30000);
+    setInterval(ping, 10000);
+  </script>
+</body>
+</html>
