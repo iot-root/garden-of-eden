@@ -1,11 +1,14 @@
 import argparse
 import logging
+import os
+import sys
 import time
 
 import pigpio
 from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 import config
 
 
