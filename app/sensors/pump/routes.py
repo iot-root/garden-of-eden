@@ -28,8 +28,9 @@ except Exception as exc:
 check_sensor = check_sensor_guard(sensor=pump_control, sensor_name="Pump")
 
 # Tracks the pending auto-off timer so repeated calls don't stack and so the
-# pump is *always* armed with a safety shut-off. Whenever the pump is energized
-# (on/run/speed>0) we (re)arm a timer; turning it off cancels it.
+# pump is *always* armed with a shut-off. Whenever the pump is energized
+# (on/run/speed>0) we (re)arm a timer for at most MAX_PUMP_RUN_SECONDS;
+# turning it off cancels it.
 _run_timer = None
 _run_lock = threading.Lock()
 
@@ -63,8 +64,7 @@ def _cancel_auto_off():
 @check_sensor
 def turn_on():
     pump_control.on()
-    # Safety: never leave the pump running longer than the hard cap, even if
-    # nobody calls /off.
+    # Never leave the pump running longer than the cap, even if nobody calls /off.
     _arm_auto_off(config.MAX_PUMP_RUN_SECONDS)
     state_lib.save_state(pump_on=True)
     return jsonify(message="Pump turned on!"), 200
@@ -73,8 +73,8 @@ def turn_on():
 @pump_blueprint.route("/off", methods=["POST"])
 @check_sensor
 def turn_off():
-    _cancel_auto_off()
     pump_control.off()
+    _cancel_auto_off()
     state_lib.save_state(pump_on=False)
     return jsonify(message="Pump turned off!"), 200
 
@@ -85,7 +85,7 @@ def adjust_speed():
     data = request.get_json(silent=True) or {}
     speed_value = parse_level(data, default=config.DEFAULT_PUMP_SPEED)
     pump_control.set_speed(speed_value)
-    # Setting a non-zero speed energizes the pump, so arm the safety shut-off too.
+    # A non-zero speed energizes the pump, so arm the shut-off too.
     if speed_value > 0:
         _arm_auto_off(config.MAX_PUMP_RUN_SECONDS)
     else:
@@ -119,6 +119,7 @@ def run_for():
 
     pump_control.on()
     _arm_auto_off(seconds)
+    state_lib.save_state(pump_on=True)
     return jsonify(message=f"Pump running for {seconds}s"), 200
 
 

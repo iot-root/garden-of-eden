@@ -96,10 +96,10 @@ OVER_TEMP_ALERT_PIN = _get_int("OVER_TEMP_ALERT_PIN", 25)
 DEFAULT_BRIGHTNESS = _get_int("DEFAULT_BRIGHTNESS", 50)
 DEFAULT_PUMP_SPEED = _get_int("DEFAULT_PUMP_SPEED", 100)
 
-# Hard safety cap: the pump may never run longer than this in one go, no matter
-# what a schedule, API call, or CLI invocation requests. Enforced in the pump
-# routes, the schedule cron compiler, and bin/water.sh. 300s = 5 minutes.
-MAX_PUMP_RUN_SECONDS = _get_int("MAX_PUMP_RUN_SECONDS", 300)
+# Longest single pump run, in seconds. 900 (15 minutes) follows the Gardyn and
+# pump-vendor guidance the water CLI was built on. Defined here so the schedule
+# compiler can clamp to it; the REST, MQTT and CLI paths enforce it in the pump PR.
+MAX_PUMP_RUN_SECONDS = _get_int("MAX_PUMP_RUN_SECONDS", 900)
 
 # ---------------------------------------------------------------------------
 # I2C device addresses
@@ -118,16 +118,16 @@ OVER_TEMP_HYSTERESIS = _get_float("OVER_TEMP_HYSTERESIS", 34)
 # ---------------------------------------------------------------------------
 WATER_LOW_CM = _get_float("WATER_LOW_CM", 0) or None
 
-# How often (seconds) the MQTT service re-reads the tank and refreshes the
-# low-water alert. Kept short so a transient false alarm self-clears quickly.
-WATER_CHECK_SECONDS = _get_int("WATER_CHECK_SECONDS", 180)
-
 # Tank geometry for the cm->gallons readout: distance (cm) from the sensor to the
 # water surface when the tank is full vs empty, and the tank capacity in gallons
 # (Gardyn Home ~5 gal, Studio ~4 gal). Calibrate FULL/EMPTY to your unit.
 WATER_FULL_CM = _get_float("WATER_FULL_CM", 5)
 WATER_EMPTY_CM = _get_float("WATER_EMPTY_CM", 20)
 TANK_CAPACITY_GALLONS = _get_float("TANK_CAPACITY_GALLONS", 5)
+
+# How often (seconds) the MQTT service re-reads the tank and refreshes the
+# low-water alert. Kept short so a transient false alarm self-clears quickly.
+WATER_CHECK_SECONDS = _get_int("WATER_CHECK_SECONDS", 180)
 
 # ---------------------------------------------------------------------------
 # Camera

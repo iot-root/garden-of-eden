@@ -313,7 +313,7 @@
       </div>
       <div class="row">
         <label>Run for</label>
-        <input type="number" id="run-secs" min="1" max="300" value="300" style="width:90px"> <span class="muted">seconds (max 300)</span>
+        <input type="number" id="run-secs" min="1" max="900" value="300" style="width:90px"> <span class="muted">seconds (max 900)</span>
         <button class="btn" onclick="runPump()">Run</button>
       </div>
     </div>
@@ -400,7 +400,7 @@
       </div>
       <div class="row" style="margin-top:16px">
         <button class="btn" onclick="saveSchedule()">Save schedule</button>
-        <span class="muted" id="sch-status">pump runs are capped at 5 min for safety</span>
+        <span class="muted" id="sch-status">pump runs are capped at 15 min for safety</span>
       </div>
     </div>
   </div>
@@ -544,8 +544,8 @@
     function setStage(stage) { post("/grow/stage", { stage }); }
     function startGrow() { post("/grow/start").then(loadGrow); }
 
-    // Clamp a pump duration input to the 1..5 minute safety range.
-    function clampPumpMin(input) { let v = Math.round(+input.value || 0); v = Math.min(5, Math.max(1, v)); input.value = v; return v; }
+    // Clamp a pump duration input to the 1..15 minute safety range.
+    function clampPumpMin(input) { let v = Math.round(+input.value || 0); v = Math.min(15, Math.max(1, v)); input.value = v; return v; }
 
     function renderSchedule() {
       renderDays("light", lightDays, $("sch-light-days"));
@@ -702,7 +702,7 @@
               <button class="ghost" onclick="lightDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
           } else {
             div.innerHTML = `<input type="time" value="${e.time}" onchange="pumpDays['${day}'][${i}].time=this.value">
-              <input type="number" min="1" max="5" value="${e.duration}" style="width:58px" onchange="pumpDays['${day}'][${i}].duration=clampPumpMin(this)"><span class="muted">min (max 5)</span>
+              <input type="number" min="1" max="15" value="${e.duration}" style="width:58px" onchange="pumpDays['${day}'][${i}].duration=clampPumpMin(this)"><span class="muted">min (max 15)</span>
               <button class="ghost" onclick="pumpDays['${day}'].splice(${i},1);renderSchedule()">✕</button>`;
           }
           entries.appendChild(div);

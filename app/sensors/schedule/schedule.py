@@ -134,7 +134,7 @@ def _hh_mm(value):
 
 
 def _pump_seconds(duration_minutes):
-    """Minutes -> seconds, clamped to the hard safety cap (never > 5 min)."""
+    """Minutes -> seconds, clamped to the hard safety cap (config.MAX_PUMP_RUN_SECONDS)."""
     seconds = int(duration_minutes) * 60
     if seconds < 1:
         raise ValueError(f"invalid pump duration {duration_minutes!r}")

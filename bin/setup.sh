@@ -418,33 +418,6 @@ EOF
     log_info "Web UI/API service started on http://$(hostname).local:5000"
 }
 
-# Boot heartbeat: pulse the lights on startup so power-on is visibly confirmed.
-function setup_boot_indicator {
-    local service_file="$INSTALL_DIR/services/etc/systemd/system/garden-boot-indicator.service"
-    mkdir -p "$(dirname "$service_file")"
-
-    cat > $service_file <<EOF
-[Unit]
-Description=Garden of Eden boot heartbeat (pulse lights on startup)
-After=network.target pigpiod.service mqtt.service
-Wants=pigpiod.service
-
-[Service]
-Type=oneshot
-User=$USER
-ExecStart=$INSTALL_DIR/bin/boot-indicator.sh
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    chmod +x "$INSTALL_DIR/bin/boot-indicator.sh"
-    sudo cp $service_file /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable garden-boot-indicator.service
-    log_info "Boot heartbeat enabled — lights pulse on power-on."
-}
-
 # Nightly auto-update: a timer that fast-forwards the branch and restarts the
 # services only when something changed (bin/autoupdate.sh does the safe pull).
 function setup_autoupdate {
@@ -531,8 +504,7 @@ function print_plan {
   5. Symlink /usr/local/bin/{light,water,garden-update}
   6. Install camera udev rules -> /etc/udev/rules.d/
   7. Enable SSH; set hostname '${GARDEN_HOSTNAME:-gardyn}' + avahi   [backup: /etc/hosts.garden.bak]
-  8. Install + enable systemd services: mqtt.service, garden-api.service,
-     garden-boot-indicator.service (pulses lights on power-on)
+  8. Install + enable systemd services: mqtt.service, garden-api.service
   9. Enable nightly auto-update timer (garden-autoupdate.timer, ~03:30) +
      a scoped sudoers rule to restart the two services unattended
 Reversible with: bin/uninstall.sh
@@ -582,6 +554,5 @@ setup_mdns_hostname
 
 setup_mqtt_service
 setup_api_service
-setup_boot_indicator
 setup_autoupdate
 verify_api

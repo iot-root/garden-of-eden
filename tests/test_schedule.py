@@ -74,12 +74,12 @@ class BuildCronLinesTestCase(unittest.TestCase):
         self.assertIn("30 6 * * 2 /usr/local/bin/water 180", lines[0])
 
     def test_pump_duration_clamped_to_safety_cap(self):
-        # 10 minutes requested, but the hard cap is 5 minutes (300s).
-        s = {"pump": {"enabled": True, "days": {"wed": [{"time": "12:00", "duration": 10}]}}}
+        # 20 minutes requested, but the hard cap is 15 minutes (900s).
+        s = {"pump": {"enabled": True, "days": {"wed": [{"time": "12:00", "duration": 20}]}}}
         lines = sched.build_cron_lines(s)
         self.assertEqual(len(lines), 1)
         self.assertIn(f"/usr/local/bin/water {sched.config.MAX_PUMP_RUN_SECONDS} ", lines[0])
-        self.assertNotIn("water 600", lines[0])
+        self.assertNotIn("water 1200", lines[0])
 
     def test_disabled_emits_nothing(self):
         self.assertEqual(sched.build_cron_lines(sched.DEFAULT_SCHEDULE), [])

@@ -20,9 +20,9 @@ Work in progress. We should be picking up some steam here to give the DYI commun
 
 ![image](https://github.com/user-attachments/assets/403248f5-b7d4-4cb1-921a-0458f515f387)
 
-## What's new (v2 overhaul)
+## What's new
 
-A broad overhaul closing out the open milestones:
+A set of changes closing out the open milestones:
 
 - **Built-in web UI** — a self-contained control page served by the firmware at
   `http://gardyn.local:5000/` (controls, live sensors + pump power, cameras, grow
@@ -31,9 +31,8 @@ A broad overhaul closing out the open milestones:
 - **Headless-friendly** — `setup.sh` keeps **SSH on** and sets up mDNS so the unit
   is reachable at `gardyn.local` right after flashing.
 
-> Installing on a Pi? Follow [`docs/INSTALL.md`](docs/INSTALL.md) — a step-by-step,
-> brick-safe handoff (dry-run, backups, uninstall). Note the code is on the
-> **`v2-overhaul`** branch.
+> Installing on a Pi? Follow [`docs/INSTALL.md`](docs/INSTALL.md), a step-by-step,
+> brick-safe install (dry-run, backups, uninstall).
 - **Self-sufficient REST API** — camera, scheduling, grow-cycle, and system/model
   endpoints (see below), with optional API-key auth.
 - **Home Assistant** — the physical button is now an HA `event` entity
@@ -100,6 +99,7 @@ See [`docs/simulator.md`](docs/simulator.md).
   - [Usage](#usage)
     - [MQTT with HomeAssistant](#mqtt-with-homeassistant)
     - [Testing](#testing)
+    - [Developing](#developing)
     - [Controlling Individual Sensors](#controlling-individual-sensors)
     - [REST API](#rest-api)
       - [Endpoints](#endpoints)
@@ -129,7 +129,7 @@ See [`docs/simulator.md`](docs/simulator.md).
     - [Recommendations](#recommendations)
       - [Upgrading the Pi Zero 2](#upgrading-the-pi-zero-2)
   - [Design Decisions](#design-decisions)
-    - [Python Version 3.6 \>=](#python-version-36-)
+    - [Python Version 3.9 \>=](#python-version-39-)
     - [Delays in Reading Temp/Humidity data](#delays-in-reading-temphumidity-data)
     - [GPIO](#gpio)
   - [Folder Structure](#folder-structure)
@@ -295,12 +295,61 @@ Test options:
 # REST endpoints
 ./bin/api-test.sh
 
-# unit test
-python -m unittest -v
+# unit tests (the -t . -s tests form is required, see Developing below)
+python -m unittest discover -t . -s tests -p 'test_*.py'
 
-# individual tests
-python tests/test_distance.py
+# one test module
+python -m unittest tests.test_distance
 ```
+
+### Developing
+
+Short version of how to work on this without a Pi in front of you, and how to add something so it fits with the rest.
+
+#### Set up once
+
+```bash
+python -m venv .venv-dev
+.venv-dev/bin/pip install -r requirements-dev.txt
+```
+
+That's the pure-Python dev set. The Pi deps in `requirements.txt` (gpiozero, pigpio, the Adafruit libs) are not needed and won't install cleanly on a laptop anyway.
+
+#### Run the checks
+
+```bash
+.venv-dev/bin/python -m unittest discover -t . -s tests -p 'test_*.py'
+.venv-dev/bin/ruff check .
+.venv-dev/bin/black --check .
+```
+
+CI runs exactly these three on every PR. The `-t . -s tests` part matters: `tests/__init__.py` installs fake hardware modules before anything under `app/` is imported, and plain `python -m unittest` skips that bootstrap and fails on the first `import gpiozero`.
+
+#### How the fake hardware works
+
+`tests/_hwstub.py` drops stand-ins for `board`, `busio`, `gpiozero`, `pigpio`, `smbus` and the `adafruit_*` modules into `sys.modules`, but only if the real ones aren't installed. On a Pi the real libraries win, so the same tests run against hardware. The stubs are deliberately dumb; a test that needs a specific reading patches the driver method it cares about.
+
+#### Where things go
+
+- **Pins, I2C addresses, thresholds, paths:** `config.py`, read from `.env`. Add the key there with a default, document it in `.env-dist`, and if it's a physical pin, add it to the sensor's "Pins" list under [Hardware Overview](#hardware-overview). Never hardcode a pin in a driver.
+- **Drivers:** `app/sensors/<name>/<name>.py`. A class that takes `pin_factory=None` and defaults everything from `config`. Give it a `__main__` block with argparse so it can be run by hand on the Pi.
+- **Routes:** `app/sensors/<name>/routes.py`. A Flask `Blueprint`, the driver built once at import inside `try/except` (so a missing sensor doesn't take the whole API down), and every route wrapped with `check_sensor_guard`. The guard gives you 400 if the driver never initialised, 503 if the hardware throws mid-request, and 400 on a `ValueError`, so raise `ValueError` for bad input and let it handle the response. For 0-100 inputs use `parse_level` from `app/lib/lib.py` instead of validating by hand.
+- **Logging:** `logging.getLogger(__name__)` in modules, never `print`. Any new entry point (a script with a `__main__`, a service) calls `configure_logging()` from `app/lib/logging_config.py` once at startup; level comes from `LOG_LEVEL` in `.env`.
+- **Tests:** `tests/test_<name>.py`. Import the driver or `create_app`, patch what you need, assert on the result.
+
+#### Adding a feature, start to finish
+
+1. Open an issue that says what's wrong or what you want. One issue per change.
+2. Branch from `dev` named after it, e.g. `123-fix-pump-timeout`.
+3. Write the test first if you can. It'll fail. That's the point.
+4. Add the config key, then the driver change, then the route.
+5. Run the three checks above until green.
+6. Commit as `feat(scope): what it does` or `fix(scope): ...` with `Refs: #123` in the footer.
+7. Open the PR against `dev`. Title under 50 characters, starting with `feat`, `fix`, `doc`, `test` or `ci` (the title check rejects anything else). Fill in the template for real.
+8. Merge with a merge commit, not squash, so the history stays readable.
+
+If it touches hardware behavior, say in the PR whether you ran it on a real unit and which model.
+
 
 ### Controlling Individual Sensors
 
@@ -504,9 +553,9 @@ For better performance, the Pi Zero can be replaced with a Pi Zero 2. This will 
 
 ## Design Decisions
 
-### Python Version 3.6 >=
+### Python Version 3.9 >=
 
-Minimum python version of 3.6 to support `printf()`
+Minimum Python version is 3.9: it is what `pyproject.toml` and CI target and what the supported Raspberry Pi OS releases ship. (3.6 was the original floor for f-strings.)
 
 ### Delays in Reading Temp/Humidity data
 

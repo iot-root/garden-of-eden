@@ -1,12 +1,10 @@
-# Installing on a Raspberry Pi (handoff notes)
+# Installing on a Raspberry Pi
 
-These notes are written for the person **and the Claude Code session** doing the
-install on the actual Gardyn Pi. Follow them top to bottom. The install is
+These notes are for whoever is doing the install on the actual Gardyn Pi.
+Follow them top to bottom. The install is
 designed to be brick-safe (dry-run, backups, uninstall) — see "Safety" below.
 
-> **Important:** the work lives on the **`v2-overhaul`** branch of the fork
-> `HeatherFlux/garden-of-eden`. The fork's default branch (`main`) does NOT have
-> these changes — you must `git checkout v2-overhaul`.
+> Check out the branch you intend to run before starting (`git branch --show-current`).
 
 ---
 
@@ -31,7 +29,7 @@ ssh gardyn@gardyn.local      # or use the Pi's IP if .local doesn't resolve
 ```bash
 git clone https://github.com/HeatherFlux/garden-of-eden.git
 cd garden-of-eden
-git checkout v2-overhaul
+git checkout main   # or the branch you intend to run
 ```
 
 ## 2. Configure
@@ -112,14 +110,20 @@ Dashboard example: `docs/homeassistant/lovelace-example.yaml`.
 garden-update        # = bin/update.sh: git pull + pip install + restart services
 ```
 
+A nightly timer (`garden-autoupdate.timer`, ~03:30) does the same pull automatically
+and restarts the services only when the branch actually moved; it fast-forwards only,
+so it never discards local changes. Disable it with
+`sudo systemctl disable --now garden-autoupdate.timer` if you'd rather update by hand.
+
+```bash
+```
+
 ---
 
-## Notes for the Claude doing the install
+## Notes for the install
 
-- **Always run `./bin/setup.sh --dry-run` first**, show the user the 8-line plan,
-  and get an explicit OK before running the real install. Use `--yes` only if the
-  user has agreed to skip the prompt.
-- Confirm you're on the **`v2-overhaul`** branch (`git branch --show-current`).
+- **Always run `./bin/setup.sh --dry-run` first** and read the plan before running
+  the real install. `--yes` skips the confirmation prompt.
 - The **simulator** (`python -m simulator.serve` / `mqtt_sim`) is for *off-Pi*
   testing only — do **not** run it on the Pi; the real services serve the app.
 - Expect a **reboot** between install and verification.

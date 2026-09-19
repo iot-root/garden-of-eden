@@ -15,8 +15,7 @@ PURGE_HOSTNAME=false
 
 echo "Stopping and removing services..."
 sudo systemctl disable --now garden-autoupdate.timer 2>/dev/null
-for svc in garden-api.service mqtt.service garden-boot-indicator.service \
-           garden-autoupdate.service garden-autoupdate.timer; do
+for svc in garden-api.service mqtt.service garden-autoupdate.service garden-autoupdate.timer; do
     sudo systemctl disable --now "$svc" 2>/dev/null
     sudo rm -f "/etc/systemd/system/$svc"
 done
