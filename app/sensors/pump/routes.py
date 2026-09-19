@@ -4,6 +4,7 @@ import threading
 from flask import Blueprint, jsonify, request
 
 import config
+from app.lib import state as state_lib
 from app.lib.hardware import get_pin_factory
 from app.lib.lib import check_sensor_guard, parse_level
 
@@ -31,10 +32,17 @@ _run_timer = None
 _run_lock = threading.Lock()
 
 
+def _safety_off():
+    """Stop the pump and record it off, so persisted state stays accurate."""
+    pump_control.off()
+    state_lib.save_state(pump_on=False)
+
+
 @pump_blueprint.route("/on", methods=["POST"])
 @check_sensor
 def turn_on():
     pump_control.on()
+    state_lib.save_state(pump_on=True)
     return jsonify(message="Pump turned on!"), 200
 
 
@@ -42,6 +50,7 @@ def turn_on():
 @check_sensor
 def turn_off():
     pump_control.off()
+    state_lib.save_state(pump_on=False)
     return jsonify(message="Pump turned off!"), 200
 
 
@@ -51,6 +60,7 @@ def adjust_speed():
     data = request.get_json(silent=True) or {}
     speed_value = parse_level(data, default=config.DEFAULT_PUMP_SPEED)
     pump_control.set_speed(speed_value)
+    state_lib.save_state(pump_on=speed_value > 0, speed=speed_value)
     return jsonify(message=f"Pump adjusted to {speed_value}% speed!"), 200
 
 
@@ -79,7 +89,7 @@ def run_for():
         if _run_timer is not None:
             _run_timer.cancel()  # supersede any in-flight run
         pump_control.on()
-        _run_timer = threading.Timer(seconds, pump_control.off)
+        _run_timer = threading.Timer(seconds, _safety_off)
         _run_timer.daemon = True
         _run_timer.start()
     return jsonify(message=f"Pump running for {seconds}s"), 200
