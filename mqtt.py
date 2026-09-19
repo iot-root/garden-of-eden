@@ -35,6 +35,7 @@ from config import (
     KEEP_ALIVE_INTERVAL,
     LOWER_CAMERA_DEVICE,
     LOWER_IMAGE_PATH,
+    MAX_PUMP_RUN_SECONDS,
     MODEL,
     PASSWORD,
     PORT,
@@ -98,6 +99,44 @@ press_count = 0
 double_press_timer = None
 
 
+# Pump safety: never let the pump run longer than the cap, no matter how it
+# was turned on (HA command, physical button, or restore). Mirrors the REST
+# API watchdog.
+_pump_off_timer = None
+_pump_timer_lock = threading.Lock()
+
+
+def _safety_pump_off():
+    global pump_state
+    logger.warning("Pump run cap (%ss) reached; forcing pump OFF", MAX_PUMP_RUN_SECONDS)
+    try:
+        pump.off()
+        pump_state = False
+        client.publish(BASE_TOPIC + "/pump/state", "OFF")
+        state_lib.save_state(pump_on=False, speed=speed)
+    except Exception as exc:
+        logger.error("Safety pump-off failed: %s", exc)
+
+
+def _arm_pump_safety():
+    """(Re)arm the auto-off timer whenever the pump is energized."""
+    global _pump_off_timer
+    with _pump_timer_lock:
+        if _pump_off_timer is not None:
+            _pump_off_timer.cancel()
+        _pump_off_timer = Timer(MAX_PUMP_RUN_SECONDS, _safety_pump_off)
+        _pump_off_timer.daemon = True
+        _pump_off_timer.start()
+
+
+def _cancel_pump_safety():
+    global _pump_off_timer
+    with _pump_timer_lock:
+        if _pump_off_timer is not None:
+            _pump_off_timer.cancel()
+            _pump_off_timer = None
+
+
 # Button press callbacks
 def toggle_light():
     global light_state
@@ -119,10 +158,12 @@ def toggle_pump():
     if pump_state:
         logger.info("Toggling Pump ON")
         pump.set_speed(speed)
+        _arm_pump_safety()
         client.publish(BASE_TOPIC + "/pump/state", "ON")
     else:
         logger.info("Toggling Pump OFF")
         pump.off()
+        _cancel_pump_safety()
         client.publish(BASE_TOPIC + "/pump/state", "OFF")
     state_lib.save_state(pump_on=pump_state, speed=speed)
 
@@ -494,6 +535,7 @@ def restore_actuator_state(client):
         if saved.get("pump_on"):
             pump_state = True
             pump.set_speed(speed)
+            _arm_pump_safety()
             client.publish(BASE_TOPIC + "/pump/state", "ON")
         logger.info("Restored actuator state: %s", saved)
     except Exception as exc:
@@ -545,16 +587,22 @@ def on_message(client, userdata, msg):
                     else:
                         client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
                 pump.set_speed(speed)
+                _arm_pump_safety()
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
                 state_lib.save_state(pump_on=True, speed=speed)
             elif payload.upper() == "OFF":
                 pump.off()
+                _cancel_pump_safety()
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
                 state_lib.save_state(pump_on=False, speed=speed)
 
         elif topic_suffix == "pump/speed/set" and payload.isdigit():
             speed = int(payload)
             pump.set_speed(speed)
+            if speed > 0:
+                _arm_pump_safety()
+            else:
+                _cancel_pump_safety()
             client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
             state_lib.save_state(pump_on=speed > 0, speed=speed)
 
