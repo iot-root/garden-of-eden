@@ -364,11 +364,12 @@
     <div class="card">
       <h2>Schedule</h2>
       <div class="modes">
-        <button class="mode" onclick="applyPreset('germinate')">🌱 Germinate</button>
-        <button class="mode" onclick="applyPreset('seedling')">🌿 Seedling</button>
-        <button class="mode" onclick="applyPreset('vegetative')">🍃 Vegetative</button>
-        <button class="mode" onclick="applyPreset('flower')">🌸 Flower</button>
-        <button class="mode" onclick="applyPreset('vacation')">✈️ Vacation</button>
+        <button class="mode" onclick="applyPreset('germinate')">Germinate</button>
+        <button class="mode" onclick="applyPreset('seedling')">Seedling</button>
+        <button class="mode" onclick="applyPreset('vegetative')">Vegetative</button>
+        <button class="mode" onclick="applyPreset('flower')">Flower</button>
+        <button class="mode" onclick="applyPreset('night')">Night (while you sleep)</button>
+        <button class="mode" onclick="applyPreset('vacation')">Vacation</button>
       </div>
 
       <div class="heatmap" id="heatmap"></div>
@@ -584,6 +585,9 @@
       seedling:   { light: { onTime: "06:00", offTime: "22:00", brightness: 50, rampMinutes: 15 }, pump: [{ time: "08:00", duration: 4 }, { time: "16:00", duration: 4 }, { time: "00:00", duration: 4 }] },
       vegetative: { light: { onTime: "06:00", offTime: "22:00", brightness: 80, rampMinutes: 20 }, pump: [{ time: "08:00", duration: 5 }, { time: "16:00", duration: 5 }, { time: "00:00", duration: 5 }] },
       flower:     { light: { onTime: "07:00", offTime: "19:00", brightness: 100, rampMinutes: 20 }, pump: [{ time: "08:00", duration: 5 }, { time: "14:00", duration: 5 }, { time: "20:00", duration: 5 }] },
+      // Run the garden overnight: lights on 11pm–7am (daytime sun does the rest),
+      // watering while you sleep. Window crosses midnight (the heatmap handles it).
+      night:      { light: { onTime: "23:00", offTime: "07:00", brightness: 80, rampMinutes: 20 }, pump: [{ time: "23:15", duration: 5 }, { time: "02:00", duration: 5 }, { time: "05:00", duration: 5 }] },
     };
     function applyPreset(name) {
       if (name === "vacation") {
@@ -605,10 +609,10 @@
 
     // ---- Reminder alert banners ----
     const REMINDER_LABELS = {
-      thinning: "🌱 Time to thin your plants",
-      root_check: "🔍 Check the roots",
-      harvest: "✂️ Ready to harvest / trim",
-      nutrient: "🧪 Add plant food (nutrients)",
+      thinning: "Time to thin your plants",
+      root_check: "Check the roots",
+      harvest: "Ready to harvest / trim",
+      nutrient: "Add plant food (nutrients)",
     };
     function renderAlerts(due) {
       const box = $("alerts"); box.innerHTML = "";

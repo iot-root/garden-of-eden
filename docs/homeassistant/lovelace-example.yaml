@@ -1,0 +1,97 @@
+# Example Home Assistant Lovelace dashboard for a Gardyn (issue #63).
+#
+# All entities are created automatically via MQTT discovery by mqtt.py, so
+# entity_ids follow the pattern below using your MQTT_IDENTIFIER (default
+# "gardyn_03"). Adjust the suffixes if you changed the identifier.
+#
+# Paste into a dashboard via: Settings → Dashboards → (⋮) → Edit → Raw config.
+
+title: Garden of Eden
+views:
+  - title: Garden
+    cards:
+      - type: entities
+        title: Controls
+        entities:
+          - entity: light.gardyn_03_light
+            name: Grow Light
+          - entity: light.gardyn_03_pump
+            name: Pump
+          - entity: number.gardyn_03_water_low_cm
+            name: Low-water threshold (cm)
+
+      - type: glance
+        title: Sensors
+        entities:
+          - entity: sensor.gardyn_03_temperature
+            name: Air Temp
+          - entity: sensor.gardyn_03_humidity
+            name: Humidity
+          - entity: sensor.gardyn_03_pcb_temp
+            name: PCB Temp
+          - entity: sensor.gardyn_03_water_level
+            name: Water Level
+          - entity: binary_sensor.gardyn_03_water_low
+            name: Water Low
+
+      - type: entities
+        title: Grow Cycle
+        entities:
+          - entity: select.gardyn_03_grow_stage
+            name: Stage
+          - entity: sensor.gardyn_03_grow_day
+            name: Day
+          - entity: sensor.gardyn_03_grow_reminder
+            name: Reminder
+          - entity: binary_sensor.gardyn_03_food
+            name: Add plant food
+          - entity: button.gardyn_03_grow_start
+            name: Start new cycle
+
+      - type: entities
+        title: Schedule
+        # Set one daily schedule from HA: the times/brightness below are applied to
+        # all 7 days. For different windows per day (or multiple windows/runs a day)
+        # use the built-in web UI heatmap (http://gardyn.local:5000/).
+        entities:
+          - entity: switch.gardyn_03_sched_lights
+            name: Lights schedule
+          - entity: time.gardyn_03_sched_lights_on
+            name: Lights on
+          - entity: time.gardyn_03_sched_lights_off
+            name: Lights off
+          - entity: number.gardyn_03_sched_lights_brightness
+            name: Brightness
+          - entity: switch.gardyn_03_sched_pump
+            name: Pump schedule
+          - entity: time.gardyn_03_sched_pump_time
+            name: Pump run at
+          - entity: number.gardyn_03_sched_pump_duration
+            name: Pump minutes
+          - entity: switch.gardyn_03_vacation
+            name: Vacation mode
+
+      - type: picture-entity
+        title: Upper Camera
+        entity: image.gardyn_03_upper_camera
+        camera_view: auto
+
+      - type: picture-entity
+        title: Lower Camera
+        entity: image.gardyn_03_lower_camera
+        camera_view: auto
+
+# Example automation: flash a notification when the physical button is held.
+# (The button is exposed as event.gardyn_03_button with types single/double/long.)
+#
+# automation:
+#   - alias: Gardyn button long-press notify
+#     trigger:
+#       - platform: state
+#         entity_id: event.gardyn_03_button
+#         attribute: event_type
+#         to: "long"
+#     action:
+#       - service: notify.notify
+#         data:
+#           message: "Gardyn button held"
