@@ -680,7 +680,7 @@ def send_discovery_messages(client):
             "Pump Run Duration",
             "schedule/pump/duration",
             "mdi:timer-sand",
-            {"min": 1, "max": 5, "step": 1, "unit_of_measurement": "min"},
+            {"min": 1, "max": MAX_PUMP_RUN_SECONDS // 60, "step": 1, "unit_of_measurement": "min"},
         ),
     ]
     for component, obj, name, topic, icon, extra in everyday:
@@ -955,7 +955,9 @@ def on_message(client, userdata, msg):
             _set_everyday_pump(client, time=_time_from_ha(payload))
 
         elif topic_suffix == "schedule/pump/duration/set" and payload.isdigit():
-            _set_everyday_pump(client, duration=max(1, min(5, int(payload))))
+            _set_everyday_pump(
+                client, duration=max(1, min(MAX_PUMP_RUN_SECONDS // 60, int(payload)))
+            )
 
     except ValueError as e:
         logger.warning(f"Rejected message on topic {msg.topic}: {e}")

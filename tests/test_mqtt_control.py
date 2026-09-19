@@ -110,9 +110,9 @@ class MqttControlTestCase(unittest.TestCase):
             self.assertEqual(days[day][0]["duration"], 4)
 
     def test_pump_duration_clamped_to_safety_cap(self):
-        self.send("schedule/pump/duration/set", "99")  # above the 5-min cap
+        self.send("schedule/pump/duration/set", "99")  # above the 15-min cap
         run = self.mqtt.sched_lib.load_schedule()["pump"]["days"]["mon"][0]
-        self.assertEqual(run["duration"], 5)
+        self.assertEqual(run["duration"], 15)
 
     def test_setting_one_light_field_preserves_others(self):
         self.send("schedule/lights/on/set", "23:00:00")
