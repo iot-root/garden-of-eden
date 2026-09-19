@@ -1,6 +1,8 @@
 import json
 import logging
+import signal
 import subprocess
+import sys
 import threading
 from threading import Timer
 
@@ -12,6 +14,7 @@ import paho.mqtt.client as mqtt
 from gpiozero import Button  # Import gpiozero Button
 from gpiozero.pins.pigpio import PiGPIOFactory
 
+from app.lib import state as state_lib
 from app.sensors.distance.distance import Distance, MeasurementError
 from app.sensors.humidity.humidity import humidity_sensor
 from app.sensors.light.light import Light
@@ -99,6 +102,7 @@ def toggle_light():
         logger.info("Toggling Light OFF")
         light.off()
         client.publish(BASE_TOPIC + "/light/state", "OFF")
+    state_lib.save_state(light_on=light_state, brightness=brightness)
 
 
 def toggle_pump():
@@ -112,6 +116,7 @@ def toggle_pump():
         logger.info("Toggling Pump OFF")
         pump.off()
         client.publish(BASE_TOPIC + "/pump/state", "OFF")
+    state_lib.save_state(pump_on=pump_state, speed=speed)
 
 
 def handle_button_press():
@@ -388,6 +393,39 @@ def on_connect(client, userdata, flags, rc, properties=None):
     # client.subscribe(BASE_TOPIC + "/light/brightness/set")
     send_discovery_messages(client)
     publish_water_low_mode(client)
+    restore_actuator_state(client)
+
+
+def restore_actuator_state(client):
+    """Restore light/pump to their last persisted state after a restart (#3)."""
+    global light_state, pump_state, brightness, speed
+    saved = state_lib.load_state()
+    brightness = saved.get("brightness", brightness)
+    speed = saved.get("speed", speed)
+    try:
+        if saved.get("light_on"):
+            light_state = True
+            light.set_duty_cycle(brightness)
+            client.publish(BASE_TOPIC + "/light/state", "ON")
+        if saved.get("pump_on"):
+            pump_state = True
+            pump.set_speed(speed)
+            client.publish(BASE_TOPIC + "/pump/state", "ON")
+        logger.info("Restored actuator state: %s", saved)
+    except Exception as exc:
+        logger.error("Failed to restore actuator state: %s", exc)
+
+
+def graceful_shutdown(signum, frame):
+    """Turn the pump off and release pigpio cleanly on SIGTERM/SIGINT (#3)."""
+    logger.info("Received signal %s; shutting down gracefully", signum)
+    try:
+        pump.off()
+        pump.close()
+        light.close()
+    except Exception as exc:
+        logger.error("Error during graceful shutdown: %s", exc)
+    sys.exit(0)
 
 
 def on_message(client, userdata, msg):
@@ -424,28 +462,34 @@ def on_message(client, userdata, msg):
                         client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
                 pump.set_speed(speed)
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
+                state_lib.save_state(pump_on=True, speed=speed)
             elif payload.upper() == "OFF":
                 pump.off()
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
+                state_lib.save_state(pump_on=False, speed=speed)
 
         elif topic_suffix == "pump/speed/set" and payload.isdigit():
             speed = int(payload)
             pump.set_speed(speed)
             client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
+            state_lib.save_state(pump_on=speed > 0, speed=speed)
 
         # === Light Logic ===
         elif topic_suffix == "light/command":
             if payload.upper() == "ON":
                 light.set_duty_cycle(brightness)
                 client.publish(BASE_TOPIC + "/light/state", "ON")
+                state_lib.save_state(light_on=True, brightness=brightness)
             elif payload.upper() == "OFF":
                 light.off()
                 client.publish(BASE_TOPIC + "/light/state", "OFF")
+                state_lib.save_state(light_on=False, brightness=brightness)
 
         elif topic_suffix == "light/brightness/set" and payload.isdigit():
             brightness = int(payload)
             light.set_duty_cycle(brightness)
             client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
+            state_lib.save_state(light_on=brightness > 0, brightness=brightness)
 
         # === Water Level ===
         elif topic_suffix == "water/level/get":
@@ -591,6 +635,9 @@ def publish_images(client):
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, graceful_shutdown)
+    signal.signal(signal.SIGINT, graceful_shutdown)
+
     logger.info(f"Connecting to {BROKER} on port {PORT} with keep alive {KEEP_ALIVE_INTERVAL}")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
