@@ -13,6 +13,7 @@ from time import sleep
 import paho.mqtt.client as mqtt
 from gpiozero import Button  # Import gpiozero Button
 
+from app.lib import grow as grow_lib
 from app.lib import state as state_lib
 from app.lib.hardware import get_pin_factory
 from app.lib.water import is_water_low
@@ -652,6 +653,20 @@ def publish_water_level(client):
         sleep(WATER_CHECK_SECONDS)
 
 
+def publish_grow_reminders(client):
+    """Publish grow stage and any due reminders (thinning/root/harvest/nutrient)."""
+    while True:
+        try:
+            grow_state = grow_lib.load_state()
+            client.publish(BASE_TOPIC + "/grow/stage", grow_state.get("stage", ""), retain=True)
+            for reminder in grow_lib.due_reminders(grow_state):
+                client.publish(BASE_TOPIC + "/grow/reminder", reminder)
+                logger.info("Published grow reminder: %s", reminder)
+        except Exception:
+            logger.exception("Error publishing grow reminders")
+        sleep(int(publish_frequency))
+
+
 def publish_images(client):
     while True:
         try:
@@ -751,5 +766,9 @@ if __name__ == "__main__":
     publish_images_thread = threading.Thread(target=publish_images, args=(client,))
     publish_images_thread.daemon = True
     publish_images_thread.start()
+
+    grow_thread = threading.Thread(target=publish_grow_reminders, args=(client,))
+    grow_thread.daemon = True
+    grow_thread.start()
 
     client.loop_forever()
