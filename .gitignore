@@ -7,3 +7,5 @@ venv/
 *.class
 .env
 timelapse/
+simulator/.sim/
+*.log
