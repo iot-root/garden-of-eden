@@ -202,6 +202,7 @@ function  restart_system() {
 function ensure_env_file {
     if [ ! -f .env ]; then
         cp .env-dist .env
+        ENV_CREATED=true
         log_info ".env file created from .env-dist. Please update the mqtt env variables, etc."
     else
         log_info ".env file already exists."
@@ -319,19 +320,74 @@ function enable_ssh {
     log_pass "SSH enabled."
 }
 
+# Resolve the unit's hostname. Precedence: GARDEN_HOSTNAME in the shell
+# environment, then GARDEN_HOSTNAME in .env, then the default "gardyn".
+function resolve_hostname {
+    if [ -z "${GARDEN_HOSTNAME:-}" ] && [ -f "$INSTALL_DIR/.env" ]; then
+        GARDEN_HOSTNAME=$(sed -n 's/^[[:space:]]*GARDEN_HOSTNAME[[:space:]]*=[[:space:]]*//p' "$INSTALL_DIR/.env" \
+            | tail -n 1 | tr -d "\"' \r")
+    fi
+    GARDEN_HOSTNAME="${GARDEN_HOSTNAME:-gardyn}"
+    # RFC 1123 label: letters, digits, hyphens; no leading/trailing hyphen.
+    if ! [[ "$GARDEN_HOSTNAME" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$ ]]; then
+        log_error "Invalid GARDEN_HOSTNAME '$GARDEN_HOSTNAME' (use letters, digits and hyphens)."
+        exit 1
+    fi
+}
+
+# Set a key in .env only if it is not already present. Never overwrites.
+function _env_default {
+    local key="$1" value="$2" env="$INSTALL_DIR/.env"
+    if ! grep -q "^[[:space:]]*${key}[[:space:]]*=" "$env"; then
+        echo "${key}=${value}" >> "$env"
+        log_info "Set ${key}=${value} in .env"
+    fi
+}
+
+# Give each unit its own MQTT identity, derived from its hostname, so two
+# Gardyns on the same broker don't answer each other's commands or merge into
+# one Home Assistant device. Only fills in missing keys; existing values are
+# kept so re-running setup never renames entities in Home Assistant.
+function ensure_mqtt_identity {
+    local env="$INSTALL_DIR/.env"
+    local id="${GARDEN_HOSTNAME//-/_}"
+    if [ "$ENV_CREATED" = "true" ]; then
+        # Fresh .env from the template: replace the template identity.
+        sed -i -e "s/^MQTT_IDENTIFIER=.*/MQTT_IDENTIFIER=${id}/" \
+               -e "s/^MQTT_BASETOPIC=.*/MQTT_BASETOPIC=${id}/" "$env"
+        log_info "MQTT identity set to '${id}' in new .env"
+    fi
+    _env_default GARDEN_HOSTNAME "$GARDEN_HOSTNAME"
+    _env_default MQTT_IDENTIFIER "$id"
+    _env_default MQTT_BASETOPIC "$id"
+    if grep -q "^MQTT_BASETOPIC=gardyn[[:space:]]*$" "$env" && [ "$GARDEN_HOSTNAME" != "gardyn" ]; then
+        log_info "Note: MQTT_BASETOPIC is still 'gardyn'. If you run more than one unit, give each a unique MQTT_BASETOPIC and MQTT_IDENTIFIER in .env."
+    fi
+}
+
 # Set a stable hostname + mDNS so the unit is reachable at <hostname>.local
-# (e.g. gardyn.local) without knowing its IP. Honors GARDEN_HOSTNAME (default gardyn).
+# (e.g. gardyn.local) without knowing its IP. Uses GARDEN_HOSTNAME (see
+# resolve_hostname; default gardyn).
 function setup_mdns_hostname {
-    local desired="${GARDEN_HOSTNAME:-gardyn}"
+    local desired="$GARDEN_HOSTNAME"
     local current
     current=$(hostname)
     if [ "$current" != "$desired" ]; then
         log_info "Setting hostname to '$desired' (was '$current')"
-        sudo hostnamectl set-hostname "$desired" 2>/dev/null || true
-        # Keep /etc/hosts in sync so sudo doesn't complain.
-        if ! grep -q "127.0.1.1.*$desired" /etc/hosts; then
-            _backup_file /etc/hosts
-            echo "127.0.1.1 $desired" | sudo tee -a /etc/hosts > /dev/null
+        _backup_file /etc/hostname
+        if ! sudo hostnamectl set-hostname "$desired"; then
+            log_error "hostnamectl failed; hostname is still '$current'."
+            return 1
+        fi
+    fi
+    # Keep /etc/hosts in sync so sudo doesn't complain: replace the existing
+    # 127.0.1.1 line rather than appending a second one.
+    if ! grep -qE "^127\.0\.1\.1[[:space:]]+${desired}([[:space:]]|$)" /etc/hosts; then
+        _backup_file /etc/hosts
+        if grep -q "^127\.0\.1\.1" /etc/hosts; then
+            sudo sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t${desired}/" /etc/hosts
+        else
+            printf '127.0.1.1\t%s\n' "$desired" | sudo tee -a /etc/hosts > /dev/null
         fi
     fi
     sudo systemctl enable --now avahi-daemon 2>/dev/null || true
@@ -503,7 +559,7 @@ function print_plan {
   4. Add user '$(whoami)' to groups: i2c, gpio, dialout
   5. Symlink /usr/local/bin/{light,water,garden-update}
   6. Install camera udev rules -> /etc/udev/rules.d/
-  7. Enable SSH; set hostname '${GARDEN_HOSTNAME:-gardyn}' + avahi   [backup: /etc/hosts.garden.bak]
+  7. Enable SSH; set hostname '${GARDEN_HOSTNAME}' + avahi   [backups: /etc/hostname, /etc/hosts]
   8. Install + enable systemd services: mqtt.service, garden-api.service
   9. Enable nightly auto-update timer (garden-autoupdate.timer, ~03:30) +
      a scoped sudoers rule to restart the two services unattended
@@ -516,6 +572,8 @@ PLAN
 # Main script execution
 cd $INSTALL_DIR
 
+ENV_CREATED=false
+resolve_hostname
 print_plan
 
 if [ "$DRY_RUN" = "true" ]; then
@@ -540,6 +598,7 @@ enable_i2c_config_txt
 load_i2c_module
 check_i2c_detection
 ensure_env_file
+ensure_mqtt_identity
 add_user_to_groups
 check_i2c_sensors
 add_sensor_type_to_env
