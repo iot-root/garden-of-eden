@@ -21,6 +21,9 @@ IT=$(echo -e '\033[3m')
 
 # Get Garden of Eden path from script location
 GOE_PATH=$(realpath "$(dirname "$(readlink -e "${0}")")/..")
+# Put the repo root on PYTHONPATH so the driver scripts can `import config`
+# regardless of the caller's working directory (cron, systemd, etc.).
+export PYTHONPATH="${GOE_PATH}${PYTHONPATH:+:${PYTHONPATH}}"
 
 # Turn off water pump
 turn_off_water() {

@@ -96,6 +96,11 @@ OVER_TEMP_ALERT_PIN = _get_int("OVER_TEMP_ALERT_PIN", 25)
 DEFAULT_BRIGHTNESS = _get_int("DEFAULT_BRIGHTNESS", 50)
 DEFAULT_PUMP_SPEED = _get_int("DEFAULT_PUMP_SPEED", 100)
 
+# Longest single pump run, in seconds. 900 (15 minutes) follows the Gardyn and
+# pump-vendor guidance the water CLI was built on. Defined here so the schedule
+# compiler can clamp to it; the REST, MQTT and CLI paths enforce it in the pump PR.
+MAX_PUMP_RUN_SECONDS = _get_int("MAX_PUMP_RUN_SECONDS", 900)
+
 # ---------------------------------------------------------------------------
 # I2C device addresses
 # ---------------------------------------------------------------------------

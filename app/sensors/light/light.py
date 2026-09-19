@@ -1,5 +1,6 @@
 import argparse
 import logging
+import time
 
 import pigpio
 from gpiozero import PWMLED
@@ -109,6 +110,25 @@ class Light:
         self.led.close()
 
 
+def ramp_to(light, target, minutes):
+    """Gradually move brightness from its current level to ``target`` over
+    ``minutes`` (sunrise/sunset). ``target`` of 0 ends with the light off."""
+    target = max(0, min(100, int(target)))
+    start = light.get_brightness()
+    total = max(0, int(minutes)) * 60
+    if total <= 0:
+        light.set_brightness(target)
+        return
+    steps = max(1, min(int(total), 60))  # at most ~1 update/sec, capped at 60
+    delay = total / steps
+    for i in range(1, steps + 1):
+        value = start + (target - start) * i / steps
+        light.set_brightness(int(round(value)))
+        if i < steps:
+            time.sleep(delay)
+    light.set_brightness(target)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Control an IoT light.")
     parser.add_argument("--on", action="store_true", help="Turn the light on.")
@@ -116,12 +136,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--brightness", type=int, default=None, help="Set the brightness level (0-100)."
     )
+    parser.add_argument(
+        "--ramp-minutes",
+        type=int,
+        default=0,
+        help="Gradually ramp to --brightness over this many minutes (sunrise/sunset).",
+    )
 
     args = parser.parse_args()
 
     light = Light()  # pins/frequency from config
 
-    if args.on:
+    if args.ramp_minutes and args.brightness is not None:
+        ramp_to(light, args.brightness, args.ramp_minutes)
+    elif args.on:
         light.on()
         if args.brightness is not None:
             light.set_brightness(args.brightness)
