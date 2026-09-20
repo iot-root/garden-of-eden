@@ -16,10 +16,16 @@ import config
 logger = logging.getLogger(__name__)
 
 
+class CameraError(RuntimeError):
+    """A capture that fswebcam reported as successful but produced no image."""
+
+
 def capture(device, output_path, resolution=None):
     """Capture a single frame from ``device`` to ``output_path``.
 
     Returns the output path on success, or raises CalledProcessError/OSError.
+    ``fswebcam`` exits 0 when the device is missing and writes nothing, so the
+    image itself is what says whether the capture worked.
     """
     resolution = resolution or config.CAMERA_RESOLUTION
     cmd = [
@@ -34,7 +40,18 @@ def capture(device, output_path, resolution=None):
         output_path,
     ]
     logger.info("Capturing image from %s -> %s", device, output_path)
-    subprocess.run(cmd, capture_output=True, check=True)
+    # Drop any earlier capture first: fswebcam leaves the old file in place
+    # when it fails, which would otherwise pass for a fresh frame.
+    try:
+        os.unlink(output_path)
+    except FileNotFoundError:
+        pass
+    result = subprocess.run(cmd, capture_output=True, check=True)
+    if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+        raise CameraError(
+            f"fswebcam wrote no image from {device} (is the camera connected?): "
+            f"{result.stderr.decode(errors='replace').strip()}"
+        )
     return output_path
 
 
