@@ -6,6 +6,7 @@ This directory is a compact working knowledge base for contributors and coding a
 
 - [Project context](project-context.md): architecture, important paths, and validation commands.
 - [Pi operations](pi-operations.md): how to connect to the device and run repository scripts there.
+- [Known issues](known-issues.md): confirmed limitations and operational risks.
 
 ## Documentation rules
 
