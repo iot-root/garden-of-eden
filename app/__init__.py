@@ -58,7 +58,8 @@ def _register_auth(app):
     own cron jobs) and CORS preflight bypass the check so automation keeps
     working without a key.
     """
-    if not config.GARDEN_API_KEY:
+    api_key = (config.GARDEN_API_KEY or "").strip()
+    if not api_key:
         return
 
     # The UI shell and static assets load without a key so the page can prompt
@@ -71,6 +72,6 @@ def _register_auth(app):
             return None
         if request.path in ("/", "/health") or request.path.startswith("/static"):
             return None
-        if request.headers.get("X-API-Key") != config.GARDEN_API_KEY:
+        if request.headers.get("X-API-Key", "").strip() != api_key:
             return jsonify(error="Unauthorized"), 401
         return None

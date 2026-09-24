@@ -34,6 +34,16 @@ class AuthEnabledTestCase(unittest.TestCase):
         r = _client().get("/system", headers={"X-API-Key": "nope"}, environ_base=REMOTE)
         self.assertEqual(r.status_code, 401)
 
+    @patch.object(config, "GARDEN_API_KEY", " s3cret ")
+    def test_remote_with_trimmed_key_ok(self):
+        r = _client().get("/system", headers={"X-API-Key": "s3cret"}, environ_base=REMOTE)
+        self.assertEqual(r.status_code, 200)
+
+    @patch.object(config, "GARDEN_API_KEY", " s3cret ")
+    def test_remote_with_whitespace_in_header_is_accepted(self):
+        r = _client().get("/system", headers={"X-API-Key": "  s3cret  "}, environ_base=REMOTE)
+        self.assertEqual(r.status_code, 200)
+
     @patch.object(config, "GARDEN_API_KEY", "s3cret")
     def test_remote_with_correct_key_ok(self):
         r = _client().get("/system", headers={"X-API-Key": "s3cret"}, environ_base=REMOTE)

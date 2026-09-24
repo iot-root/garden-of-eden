@@ -150,8 +150,10 @@ TIMELAPSE_FPS = _get_int("TIMELAPSE_FPS", 12)
 # ---------------------------------------------------------------------------
 # REST API auth (optional). When GARDEN_API_KEY is set, non-localhost
 # requests must send it via the X-API-Key header. Localhost (cron) bypasses.
+# We trim surrounding whitespace so values stored in .env or copied by hand do
+# not fail unexpectedly.
 # ---------------------------------------------------------------------------
-GARDEN_API_KEY = os.getenv("GARDEN_API_KEY", "")
+GARDEN_API_KEY = os.getenv("GARDEN_API_KEY", "").strip()
 
 # ---------------------------------------------------------------------------
 # State persistence (actuator + grow-cycle state, for power-loss recovery)
