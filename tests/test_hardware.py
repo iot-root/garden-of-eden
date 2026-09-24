@@ -35,13 +35,16 @@ class SystemRouteTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         body = resp.get_json()
         self.assertEqual(body["model"], "gardyn 3.0")
-        self.assertEqual(body["profile"], config.MODELS["gardyn 3.0"])
+        self.assertEqual(body["profile"]["temp_humidity"], "DHT20")
+        self.assertEqual(body["profile"]["lower_camera"], config.LOWER_CAMERA_ENABLED)
+        self.assertEqual(body["profile"]["cameras"], 2 if config.LOWER_CAMERA_ENABLED else 1)
 
     @patch("app.sensors.system.routes.detect_model", return_value="gardyn 3.0 (simulated)")
     def test_profile_resolves_for_suffixed_model(self, _model):
         # Custom/suffixed model strings still resolve to the closest profile.
         body = self.client.get("/system").get_json()
-        self.assertEqual(body["profile"], config.MODELS["gardyn 3.0"])
+        self.assertEqual(body["profile"]["temp_humidity"], "DHT20")
+        self.assertEqual(body["profile"]["lower_camera"], config.LOWER_CAMERA_ENABLED)
 
 
 if __name__ == "__main__":

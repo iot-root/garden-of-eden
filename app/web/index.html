@@ -259,9 +259,9 @@
     <div class="card">
       <h2>Sensors <button class="ghost" onclick="refresh()">Refresh</button></h2>
       <div class="tiles">
-        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°F</small></div></div>
         <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
-        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°F</small></div></div>
         <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water-gal">—</span><small>gal</small></div><div class="muted" style="font-size:.68rem"><span id="s-water">—</span> cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
       </div>
       <div class="tiles" style="margin-top:12px">
@@ -421,6 +421,10 @@
     function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
     function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : ""); setTimeout(() => t.className = "", 1600); }
     function conn(ok) { $("conn").className = "dot " + (ok ? "ok" : "bad"); }
+    function celsiusToFahrenheit(value) {
+      const celsius = Number(value);
+      return Number.isFinite(celsius) ? ((celsius * 9 / 5) + 32).toFixed(1) : "n/a";
+    }
 
     // fetch with a timeout so a hung/unreachable Pi never freezes the UI.
     async function fetchT(path, opts, ms) {
@@ -464,7 +468,10 @@
         "/pcb-temp": ["s-pcb", "pcb-temp"],
       };
       for (const [path, [id, key]] of Object.entries(sensors)) {
-        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "n/a"; }
+        try {
+          const value = (await get(path))[key];
+          $(id).textContent = id === "s-temp" || id === "s-pcb" ? celsiusToFahrenheit(value) : value;
+        } catch { $(id).textContent = "n/a"; }
       }
       try {
         const w = await get("/distance"); const cm = w.distance;

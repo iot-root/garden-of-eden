@@ -46,6 +46,9 @@ Set at least:
 - Optionally `GARDEN_API_KEY` to require a key for remote API access.
 
 `SENSOR_TYPE` is **auto-detected** by setup (AM2320 vs DHT20) — leave it unset.
+If automatic detection is unavailable, set `SENSOR_TYPE` explicitly and use
+`GARDYN_MODEL` to select a known hardware profile (`gardyn 1.0`, `gardyn 2.0`,
+`gardyn 3.0`, or `gardyn studio`).
 
 ## 3. Install (safe)
 

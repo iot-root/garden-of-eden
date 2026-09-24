@@ -64,6 +64,69 @@ If `gardyn.local` doesn't resolve (some Android/Windows setups), use the Pi's IP
 (`hostname -I` over SSH, or check your router). To lock down the API over the
 network, set `GARDEN_API_KEY` in `.env` and enter it in the web UI's ⚙ settings.
 
+## Public HTTPS access with Cloudflare Tunnel
+
+The Compose file includes an opt-in `cloudflared` service. It creates an
+outbound tunnel, so the router does not need port forwarding and port 5000 does
+not need to be exposed publicly. Cloudflare provides HTTPS for the hostname.
+
+Before starting it:
+
+1. Create a Cloudflare Tunnel and configure its public hostname to forward to
+  `http://host.docker.internal:5000`.
+2. Copy the tunnel token into the Pi-local `.env` as
+  `CLOUDFLARE_TUNNEL_TOKEN=...`. Never commit the token.
+3. Generate a long random `GARDEN_API_KEY` and set it in the same `.env`.
+4. Start the public profile:
+
+```bash
+docker compose --profile public up -d cloudflared
+```
+
+Open the Cloudflare hostname over HTTPS and enter the API key in the web UI
+settings. The UI shell and `/health` remain public, while sensor and actuator
+endpoints require `X-API-Key`.
+
+Check and stop the tunnel with:
+
+```bash
+docker compose logs -f cloudflared
+docker compose --profile public stop cloudflared
+```
+
+Treat the Cloudflare token and API key as credentials. The tunnel is optional;
+the local systemd service remains the normal Pi deployment path.
+
+## Private HTTPS access with Tailscale
+
+Tailscale is the recommended no-domain option for private remote access. It
+creates an encrypted tailnet connection and exposes the local Garden of Eden API
+over HTTPS without opening a router port.
+
+On the Pi, enable Serve for the systemd API:
+
+```bash
+sudo tailscale serve --bg http://127.0.0.1:5000
+tailscale serve status
+```
+
+Install Tailscale and sign in with the same account on the phone or computer
+that will view the UI. Open the HTTPS URL printed by `tailscale serve status`.
+It normally has this form:
+
+```text
+https://<device>.<tailnet>.ts.net/
+```
+
+This address is tailnet-only. Stop the proxy with:
+
+```bash
+sudo tailscale serve --https=443 off
+```
+
+The generated Tailscale hostname is account/device configuration and should not
+be hard-coded into the repository.
+
 ## Services
 
 ```bash

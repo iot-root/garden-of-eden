@@ -26,4 +26,4 @@ EXPOSE 5000
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 # Default to the REST API; docker-compose overrides the command for the MQTT service.
-CMD ["python", "run.py"]
+CMD ["waitress-serve", "--listen=0.0.0.0:5000", "run:app"]

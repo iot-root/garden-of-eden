@@ -30,6 +30,7 @@ pipdeptree==2.16.1
 pyftdi==0.55.0
 pyserial==3.5
 python-dotenv==1.0.1
+waitress==3.0.2
 pyusb==1.2.1
 rpi-ws281x==5.0.0
 RPi.GPIO==0.7.1

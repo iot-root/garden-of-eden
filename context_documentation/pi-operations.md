@@ -112,6 +112,30 @@ LOWER_CAMERA_ENABLED=false
 
 The API then reports one camera, the lower-camera route returns `404`, MQTT skips lower-camera discovery and publishing, and the web UI hides the lower-camera controls. The default remains enabled for two-camera models.
 
+## Private HTTPS with Tailscale
+
+Tailscale Serve proxies the private HTTPS endpoint to the local API on port 5000.
+This does not require a purchased domain, router port forwarding, or a public
+internet listener.
+
+Install and sign in to Tailscale on each client device, then open the device
+hostname shown by `tailscale serve status`:
+
+```bash
+sudo tailscale serve --bg http://127.0.0.1:5000
+tailscale serve status
+```
+
+The URL has the form `https://<device>.<tailnet>.ts.net/` and is available only
+to devices signed in to the same tailnet. Disable the proxy with:
+
+```bash
+sudo tailscale serve --https=443 off
+```
+
+Keep generated Tailscale hostnames and tailnet names in local configuration or
+the Tailscale admin console, not in committed repository files.
+
 ## Safety notes
 
 - Confirm the current host before running pump, light, water, update, or uninstall scripts.

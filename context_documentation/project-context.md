@@ -40,6 +40,14 @@ Run lint and formatting checks:
 
 The project uses Python 3.9 or newer. Hardware dependencies are stubbed by the tests where possible; hardware-only behavior should be validated on the Pi or with the simulator when appropriate.
 
+## Hardware model selection
+
+The `/system` endpoint reports the selected model and its hardware profile. Set `GARDYN_MODEL` in the Pi-local `.env` to explicitly choose one of the supported profiles: `gardyn 1.0`, `gardyn 2.0`, `gardyn 3.0`, or `gardyn studio`.
+
+Without an override, the application infers the model family from the temperature/humidity sensor when possible. `DHT20` implies the Gardyn 3.0 family and `AM2320` implies the Gardyn 1.0/2.0 family; this is a best-effort hardware inference, not a definitive serial-number identification.
+
+The API reports temperatures in Celsius for integrations. The web UI converts air and PCB temperatures to Fahrenheit for display.
+
 ## Commit style
 
 Use Conventional Commit subjects with lowercase types and an optional scope, for example:
