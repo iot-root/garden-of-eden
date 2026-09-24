@@ -3,6 +3,7 @@ localhost and the public UI/health paths always bypass it.
 """
 
 import unittest
+import warnings
 from unittest.mock import patch
 
 import config
@@ -59,6 +60,12 @@ class AuthEnabledTestCase(unittest.TestCase):
         c = _client()
         self.assertEqual(c.get("/", environ_base=REMOTE).status_code, 200)
         self.assertEqual(c.get("/health", environ_base=REMOTE).status_code, 200)
+
+    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    def test_root_page_does_not_leak_file_handles(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ResourceWarning)
+            self.assertEqual(_client().get("/", environ_base=REMOTE).status_code, 200)
 
 
 if __name__ == "__main__":
