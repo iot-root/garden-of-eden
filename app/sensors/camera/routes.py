@@ -30,6 +30,8 @@ def upper():
 
 @camera_blueprint.route("/lower", methods=["GET"])
 def lower():
+    if not config.LOWER_CAMERA_ENABLED:
+        return jsonify(error="lower camera is disabled"), 404
     return _serve(camera.capture_lower, config.LOWER_IMAGE_PATH)
 
 

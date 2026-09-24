@@ -22,12 +22,15 @@ def _profile_for(model):
 def get_system():
     """Report identity, version, and the detected hardware model/profile."""
     model = detect_model()
+    profile = dict(_profile_for(model))
+    profile["cameras"] = 2 if config.LOWER_CAMERA_ENABLED else 1
+    profile["lower_camera"] = config.LOWER_CAMERA_ENABLED
     return jsonify(
         {
             "identifier": config.IDENTIFIER,
             "version": config.VERSION,
             "model": model,
-            "profile": _profile_for(model),
+            "profile": profile,
             "sensor_type": config.SENSOR_TYPE,
             "water_low_cm": config.WATER_LOW_CM,
             "pump_max_run_seconds": config.MAX_PUMP_RUN_SECONDS,

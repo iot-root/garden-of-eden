@@ -36,6 +36,7 @@ from config import (
     IDENTIFIER,
     IMAGE_INTERVAL_SECONDS,
     KEEP_ALIVE_INTERVAL,
+    LOWER_CAMERA_ENABLED,
     LOWER_CAMERA_DEVICE,
     LOWER_IMAGE_PATH,
     MAX_PUMP_RUN_SECONDS,
@@ -507,18 +508,19 @@ def send_discovery_messages(client):
     # mishandles it here) — they just show the last retained frame.
     pub(TEMP_CONFIG_TOPIC, temp_config_payload, availability=False)
 
-    # Discovery configuration for Camera B (image entity)
-    TEMP_CONFIG_TOPIC = "homeassistant/image/gardyn/" + IDENTIFIER + "_lower_camera/config"
-    temp_config_payload = {
-        "name": "Lower Camera",
-        "unique_id": IDENTIFIER + "_lower_camera",
-        "image_topic": BASE_TOPIC + "/image/lower_camera",
-        "encoding": "",
-        "content_type": "image/jpeg",
-        "object_id": IDENTIFIER + "_lower_camera",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload, availability=False)
+    if LOWER_CAMERA_ENABLED:
+        # Discovery configuration for Camera B (image entity)
+        TEMP_CONFIG_TOPIC = "homeassistant/image/gardyn/" + IDENTIFIER + "_lower_camera/config"
+        temp_config_payload = {
+            "name": "Lower Camera",
+            "unique_id": IDENTIFIER + "_lower_camera",
+            "image_topic": BASE_TOPIC + "/image/lower_camera",
+            "encoding": "",
+            "content_type": "image/jpeg",
+            "object_id": IDENTIFIER + "_lower_camera",
+            "device": device_info,
+        }
+        pub(TEMP_CONFIG_TOPIC, temp_config_payload, availability=False)
 
     # Config for the physical button as a Home Assistant event entity (#78).
     # Fires "single"/"double"/"long" so HA automations can react to presses.
@@ -1033,27 +1035,29 @@ def publish_images(client):
             )
             logger.info(f"Captured image from upper camera ({UPPER_CAMERA_DEVICE})")
 
-            # Capture lower camera image
-            subprocess.check_call(
-                [
-                    "fswebcam",
-                    "-d",
-                    LOWER_CAMERA_DEVICE,
-                    "-r",
-                    CAMERA_RESOLUTION,
-                    "-S",
-                    "2",
-                    "-F",
-                    "2",
-                    "--no-banner",
-                    LOWER_IMAGE_PATH,
-                ]
-            )
-            logger.info(f"Captured image from lower camera ({LOWER_CAMERA_DEVICE})")
+            if LOWER_CAMERA_ENABLED:
+                # Capture lower camera image
+                subprocess.check_call(
+                    [
+                        "fswebcam",
+                        "-d",
+                        LOWER_CAMERA_DEVICE,
+                        "-r",
+                        CAMERA_RESOLUTION,
+                        "-S",
+                        "2",
+                        "-F",
+                        "2",
+                        "--no-banner",
+                        LOWER_IMAGE_PATH,
+                    ]
+                )
+                logger.info(f"Captured image from lower camera ({LOWER_CAMERA_DEVICE})")
 
             # Archive timestamped frames for timelapse assembly.
             camera_mod.archive_frame(UPPER_IMAGE_PATH, "upper")
-            camera_mod.archive_frame(LOWER_IMAGE_PATH, "lower")
+            if LOWER_CAMERA_ENABLED:
+                camera_mod.archive_frame(LOWER_IMAGE_PATH, "lower")
 
             # Publish upper camera image
             with open(UPPER_IMAGE_PATH, "rb") as f:
@@ -1066,16 +1070,17 @@ def publish_images(client):
                 )
                 logger.info("Published image to /image/upper_camera")
 
-            # Publish lower camera image
-            with open(LOWER_IMAGE_PATH, "rb") as f:
-                lower_cam_jpeg_data = f.read()  # Read as raw binary
-                client.publish(
-                    BASE_TOPIC + "/image/lower_camera",
-                    payload=lower_cam_jpeg_data,
-                    qos=0,
-                    retain=True,
-                )
-                logger.info("Published image to /image/lower_camera")
+            if LOWER_CAMERA_ENABLED:
+                # Publish lower camera image
+                with open(LOWER_IMAGE_PATH, "rb") as f:
+                    lower_cam_jpeg_data = f.read()  # Read as raw binary
+                    client.publish(
+                        BASE_TOPIC + "/image/lower_camera",
+                        payload=lower_cam_jpeg_data,
+                        qos=0,
+                        retain=True,
+                    )
+                    logger.info("Published image to /image/lower_camera")
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Camera capture failed: {e}")

@@ -327,17 +327,17 @@
       </h2>
       <div class="cams">
         <figure class="cam"><img id="cam-upper" alt="upper camera"><figcaption>Upper</figcaption></figure>
-        <figure class="cam"><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
+        <figure class="cam" data-lower-camera><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
       </div>
       <h2 style="margin-top:18px">Timelapse
         <span style="display:flex; gap:8px">
           <button class="ghost" onclick="makeTimelapse('upper')">Build upper</button>
-          <button class="ghost" onclick="makeTimelapse('lower')">Build lower</button>
+          <button class="ghost" data-lower-camera onclick="makeTimelapse('lower')">Build lower</button>
         </span>
       </h2>
       <div class="cams">
         <figure class="cam"><video id="tl-upper" controls preload="none" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
-        <figure class="cam"><video id="tl-lower" controls preload="none" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
+        <figure class="cam" data-lower-camera><video id="tl-lower" controls preload="none" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
       </div>
     </div>
 
@@ -411,6 +411,7 @@
     let API_KEY = localStorage.getItem("garden_key") || "";
     let camTimer = null;
     let camInterval = +localStorage.getItem("camInterval") || 6000;
+    let lowerCameraEnabled = true;
     let waterLowCm = null;  // tank-low threshold (cm) from /system; null = disabled
     const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
@@ -499,22 +500,26 @@
         waterLowCm = (s.water_low_cm != null && s.water_low_cm !== 0) ? s.water_low_cm : null;
         $("d-waterlow").textContent = waterLowCm != null ? `> ${waterLowCm} cm` : "off";
         $("d-pumpcap").textContent = s.pump_max_run_seconds != null ? `${Math.round(s.pump_max_run_seconds / 60)} min` : "—";
+        lowerCameraEnabled = !(s.profile && s.profile.lower_camera === false);
+        document.querySelectorAll("[data-lower-camera]").forEach(el => { el.hidden = !lowerCameraEnabled; });
         conn(true);
       } catch { $("meta").textContent = "offline"; conn(false); }
     }
 
     function loadCams() {
       $("cam-upper").src = "/camera/upper?t=" + Date.now();
-      $("cam-lower").src = "/camera/lower?t=" + Date.now();
+      if (lowerCameraEnabled) $("cam-lower").src = "/camera/lower?t=" + Date.now();
     }
     function toggleCamAuto() {
       if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, camInterval); }
       else { clearInterval(camTimer); camTimer = null; }
     }
     function loadTimelapses() {
-      ["upper", "lower"].forEach(c => { $("tl-" + c).src = "/camera/timelapse/" + c + "?t=" + Date.now(); });
+      const cameras = lowerCameraEnabled ? ["upper", "lower"] : ["upper"];
+      cameras.forEach(c => { $("tl-" + c).src = "/camera/timelapse/" + c + "?t=" + Date.now(); });
     }
     async function makeTimelapse(cam) {
+      if (cam === "lower" && !lowerCameraEnabled) return;
       toast("Building " + cam + " timelapse… (can take a minute)");
       const r = await post("/camera/timelapse/" + cam);
       if (r && !r.error) { const v = $("tl-" + cam); v.src = "/camera/timelapse/" + cam + "?t=" + Date.now(); v.load(); }

@@ -48,7 +48,7 @@ def capture_lower():
 
 # --- Timelapse: archive frames over time, assemble into mp4 with ffmpeg --------
 
-CAMERAS = ("upper", "lower")
+CAMERAS = ("upper", "lower") if config.LOWER_CAMERA_ENABLED else ("upper",)
 
 
 def _frames_dir(cam):

@@ -132,6 +132,7 @@ WATER_CHECK_SECONDS = _get_int("WATER_CHECK_SECONDS", 180)
 # ---------------------------------------------------------------------------
 # Camera
 # ---------------------------------------------------------------------------
+LOWER_CAMERA_ENABLED = _get_bool("LOWER_CAMERA_ENABLED", True)
 UPPER_CAMERA_DEVICE = os.getenv("UPPER_CAMERA_DEVICE", "/dev/video0")
 LOWER_CAMERA_DEVICE = os.getenv("LOWER_CAMERA_DEVICE", "/dev/video2")
 UPPER_IMAGE_PATH = os.getenv("UPPER_IMAGE_PATH", "/tmp/upper_camera.jpg")
