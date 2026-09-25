@@ -492,8 +492,12 @@
       } catch { $("s-water").textContent = "n/a"; $("s-water-gal").textContent = "n/a"; $("s-water-status").textContent = ""; }
       try {
         const p = await get("/pump/stats");
-        if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; $("p-shunt").textContent = p.ShuntVoltage ?? "—"; }
-        else { $("p-volt").textContent = $("p-curr").textContent = $("p-pow").textContent = $("p-shunt").textContent = "—"; }
+        // INA219 returns raw floats; round for display (fmt -> "—" on null/NaN).
+        const fmt = (v, d) => (v != null && Number.isFinite(+v)) ? (+v).toFixed(d) : "—";
+        $("p-volt").textContent = fmt(p.BusVoltage, 1);    // V
+        $("p-curr").textContent = fmt(p.BusCurrent, 2);    // mA
+        $("p-pow").textContent = fmt(p.Power, 2);          // mW
+        $("p-shunt").textContent = fmt(p.ShuntVoltage, 1); // mV
       } catch { /* optional */ }
       $("updated").textContent = "updated " + new Date().toLocaleTimeString();
     }
