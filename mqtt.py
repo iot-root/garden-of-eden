@@ -43,6 +43,7 @@ from config import (
     PASSWORD,
     PORT,
     UPPER_CAMERA_DEVICE,
+    UPPER_CAMERA_ROTATE,
     UPPER_IMAGE_PATH,
     USERNAME,
     VERSION,
@@ -1021,21 +1022,22 @@ def publish_images(client):
     while True:
         try:
             # Capture upper camera image
-            subprocess.check_call(
-                [
-                    "fswebcam",
-                    "-d",
-                    UPPER_CAMERA_DEVICE,
-                    "-r",
-                    CAMERA_RESOLUTION,
-                    "-S",
-                    "2",
-                    "-F",
-                    "2",
-                    "--no-banner",
-                    UPPER_IMAGE_PATH,
-                ]
-            )
+            upper_cmd = [
+                "fswebcam",
+                "-d",
+                UPPER_CAMERA_DEVICE,
+                "-r",
+                CAMERA_RESOLUTION,
+                "-S",
+                "2",
+                "-F",
+                "2",
+                "--no-banner",
+            ]
+            if UPPER_CAMERA_ROTATE:
+                upper_cmd += ["--rotate", str(UPPER_CAMERA_ROTATE)]
+            upper_cmd.append(UPPER_IMAGE_PATH)
+            subprocess.check_call(upper_cmd)
             logger.info(f"Captured image from upper camera ({UPPER_CAMERA_DEVICE})")
 
             if LOWER_CAMERA_ENABLED:

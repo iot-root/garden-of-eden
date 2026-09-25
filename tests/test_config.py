@@ -36,6 +36,14 @@ class ConfigParsingTestCase(unittest.TestCase):
         cfg = self._reload(WATER_LOW_CM="0")
         self.assertIsNone(cfg.WATER_LOW_CM)
 
+    def test_upper_camera_rotate_parsing(self):
+        """The upper module sits sideways, so the default is 90 (clockwise)."""
+        try:
+            self.assertEqual(self._reload(UPPER_CAMERA_ROTATE="").UPPER_CAMERA_ROTATE, 90)
+            self.assertEqual(self._reload(UPPER_CAMERA_ROTATE="270").UPPER_CAMERA_ROTATE, 270)
+        finally:
+            self._reload()  # restore the ambient configuration
+
     def test_lower_camera_enabled_defaults_to_auto(self):
         """Unset means "follow the model profile"; an explicit value wins."""
         try:

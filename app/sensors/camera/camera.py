@@ -17,8 +17,13 @@ from app.lib.hardware import lower_camera_enabled
 logger = logging.getLogger(__name__)
 
 
-def capture(device, output_path, resolution=None):
+def capture(device, output_path, resolution=None, rotate=None):
     """Capture a single frame from ``device`` to ``output_path``.
+
+    ``rotate`` is passed to fswebcam as ``--rotate`` (right angles only). It is
+    applied at capture time so every consumer of the JPEG -- the REST endpoints,
+    the MQTT image publisher, and the timelapse frames -- sees the same
+    orientation.
 
     Returns the output path on success, or raises CalledProcessError/OSError.
     """
@@ -32,15 +37,21 @@ def capture(device, output_path, resolution=None):
         resolution,
         "-S",
         "2",  # skip initial frames so exposure settles
-        output_path,
     ]
+    if rotate:
+        cmd += ["--rotate", str(rotate)]
+    cmd.append(output_path)
     logger.info("Capturing image from %s -> %s", device, output_path)
     subprocess.run(cmd, capture_output=True, check=True)
     return output_path
 
 
 def capture_upper():
-    return capture(config.UPPER_CAMERA_DEVICE, config.UPPER_IMAGE_PATH)
+    return capture(
+        config.UPPER_CAMERA_DEVICE,
+        config.UPPER_IMAGE_PATH,
+        rotate=config.UPPER_CAMERA_ROTATE,
+    )
 
 
 def capture_lower():

@@ -515,6 +515,12 @@ its profile.
 #### Method
 
 - image capture with fswebcam
+- the upper module sits sideways in the enclosure, so `UPPER_CAMERA_ROTATE` (in
+  `.env`) rotates it at capture time with `fswebcam --rotate`. Right angles only
+  (`0`, `90`, `180`, `270`). `90` is the default and rotates the image clockwise;
+  `270` rotates counter-clockwise and `0` disables it. Because the rotation is
+  baked into the JPEG, the web UI, MQTT image entity, and timelapse frames all
+  stay consistently oriented.
 
 #### Devices
 

@@ -159,6 +159,12 @@ LOWER_CAMERA_DEVICE = os.getenv("LOWER_CAMERA_DEVICE", "/dev/video2")
 UPPER_IMAGE_PATH = os.getenv("UPPER_IMAGE_PATH", "/tmp/upper_camera.jpg")
 LOWER_IMAGE_PATH = os.getenv("LOWER_IMAGE_PATH", "/tmp/lower_camera.jpg")
 CAMERA_RESOLUTION = os.getenv("CAMERA_RESOLUTION", "640x480")
+# Rotate the upper camera at capture time (right angles: 0, 90, 180, 270). The
+# module is mounted sideways in the enclosure, so the default is 90, which
+# fswebcam applies clockwise; use 270 for counter-clockwise and 0 to disable.
+# Rotating in fswebcam keeps the web UI, MQTT image entity, and timelapse frames
+# consistently oriented.
+UPPER_CAMERA_ROTATE = _get_int("UPPER_CAMERA_ROTATE", 90)
 IMAGE_INTERVAL_SECONDS = _get_int("IMAGE_INTERVAL_SECONDS", 3600)
 
 # Timelapse: archive a timestamped frame on each capture, capped at MAX_FRAMES,
