@@ -60,30 +60,28 @@ cd ~/garden-of-eden
 
 Use the script's `--help` output or its source for command-specific options. Check `docs/INSTALL.md` and `docs/maintenance.md` before changing services or hardware configuration.
 
-## Run all tests on the Pi
+## Run the test suite
 
-Run the test suite from the Pi checkout using the development environment:
+Prefer running the suite **off the Pi**, on the development workstation or with the simulator. The stubs in `tests/_hwstub.py` install themselves only when the Blinka `board` package is *not* importable. On the Pi it is importable, so `install()` returns early and **no stubs are installed at all** — the suite then constructs real `Light`/`Pump` objects, opens real pigpiod connections, and reads real I2C devices. Treat a test run on the Pi as a live hardware exercise, not a unit test run.
+
+From a checkout with `.venv-dev` (see `README.md`), run:
+
+```bash
+.venv-dev/bin/python -m pytest
+.venv-dev/bin/ruff check .
+.venv-dev/bin/black --check .
+```
+
+`requirements-dev.txt` deliberately lists only pure-Python packages, so a development environment created from it has no `board` and the stubs install normally. Never run the suite with the runtime `venv` on the Pi.
+
+If a focused check must run on the Pi, prefer a module that does not touch GPIO or I2C, and confirm the hardware is in a safe state first:
 
 ```bash
 ssh "${GARDEN_PI_USER}@${GARDEN_PI_HOST}" \
-	'cd ~/garden-of-eden && .venv-dev/bin/python -m pytest'
+	'cd ~/garden-of-eden && .venv-dev/bin/python -m pytest tests/test_models.py'
 ```
 
-Create the environment and install the development dependencies once if `.venv-dev` does not exist:
-
-```bash
-ssh "${GARDEN_PI_USER}@${GARDEN_PI_HOST}" \
-	'cd ~/garden-of-eden && python3 -m venv .venv-dev && .venv-dev/bin/pip install -r requirements-dev.txt'
-```
-
-For a focused run, append a test path or expression, for example:
-
-```bash
-ssh "${GARDEN_PI_USER}@${GARDEN_PI_HOST}" \
-	'cd ~/garden-of-eden && .venv-dev/bin/python -m pytest tests/test_api.py'
-```
-
-The suite uses hardware stubs and the simulator, so passing tests do not replace live checks of GPIO, I2C sensors, cameras, pigpiod, systemd, or MQTT discovery on the connected hardware.
+Regardless of where it runs, a passing suite does not replace live acceptance checks of GPIO, I2C sensors, cameras, pigpiod, systemd, and MQTT discovery on the connected hardware.
 
 ## Run the web UI as a service
 

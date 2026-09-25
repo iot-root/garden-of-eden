@@ -28,3 +28,24 @@ Alexa and ThingsBoard support are documented scaffolds. Alexa currently expects 
 ## Hardware acceptance
 
 The test suite and simulator cover substantial application behavior, but real Pi acceptance checks are still required for sensor reads, camera capture, GPIO control, pigpiod availability, systemd startup, and Home Assistant MQTT discovery.
+
+## Hardware stubs disable themselves on the Pi
+
+`tests/_hwstub.py` installs fake `board`, `gpiozero`, `pigpio`, `smbus`, and
+`ina219` modules, but only when the real Blinka `board` package is *not*
+importable. On the Pi that import succeeds, so `install()` returns early and no
+stubs are installed. The suite then runs against live hardware: it constructs
+real `Light` and `Pump` objects, opens real pigpiod connections, and reads real
+I2C devices.
+
+The practical consequence is that running the suite on the Pi with the runtime
+`venv` is a live hardware exercise, not a unit test run, and it is not
+hermetic. A developer environment built from `requirements-dev.txt` does not
+install `board`, so stubs apply there as intended. Run the suite off the Pi, or
+in such an environment, and reserve on-Pi runs for deliberate hardware checks.
+
+A related operational hazard: a stale `.venv` directory in the checkout can
+survive from another machine. Its interpreter and console scripts are built for
+a foreign architecture and fail with `bad interpreter` or `Exec format error`.
+Nothing in the repository references `.venv`; the runtime uses `venv` and
+development uses `.venv-dev`, so an unusable `.venv` is safe to delete.
