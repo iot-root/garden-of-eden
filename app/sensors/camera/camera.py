@@ -12,6 +12,7 @@ import shutil
 import subprocess
 
 import config
+from app.lib.hardware import lower_camera_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,8 @@ def capture_lower():
 
 # --- Timelapse: archive frames over time, assemble into mp4 with ffmpeg --------
 
-CAMERAS = ("upper", "lower") if config.LOWER_CAMERA_ENABLED else ("upper",)
+# Timelapse cameras available on this unit (Gardyn 3.0 has no lower camera).
+CAMERAS = ("upper", "lower") if lower_camera_enabled() else ("upper",)
 
 
 def _frames_dir(cam):

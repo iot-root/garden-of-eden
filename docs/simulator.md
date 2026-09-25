@@ -48,8 +48,11 @@ Point Home Assistant's MQTT integration at the same broker. The simulated device
 (`gardyn_sim`) auto-discovers with every entity: light, pump, temperature,
 humidity, PCB temp, water level, water-low binary sensor + threshold number,
 upper/lower camera images, and the button **event** entity (single/double/long).
-The simulator keeps both cameras enabled by default; physical models with only
-an upper camera should set `LOWER_CAMERA_ENABLED=false` in `.env`.
+The simulator sets `LOWER_CAMERA_ENABLED=true` so both cameras show up, even
+though it impersonates a Gardyn 3.0 (whose profile has no lower camera). On
+physical hardware no flag is needed: the model profile reports one camera for
+the 3.0 and two for 1.0/2.0/Studio, and `LOWER_CAMERA_ENABLED` in `.env` only
+overrides that when a unit differs from its profile.
 
 Inspect discovery without HA using any MQTT client:
 

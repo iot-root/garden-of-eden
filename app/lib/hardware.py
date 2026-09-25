@@ -86,3 +86,30 @@ def detect_model():
     if config.SENSOR_TYPE == "AM2320":
         return "gardyn 2.0"
     return config.MODEL
+
+
+def profile_for(model):
+    """Resolve a hardware profile for a model string. Falls back to a prefix
+    match so custom/suffixed names (e.g. 'gardyn 3.0 (simulated)') still map to
+    the closest known profile instead of returning empty."""
+    if not model:
+        return {}
+    if model in config.MODELS:
+        return config.MODELS[model]
+    for key, profile in config.MODELS.items():
+        if model.startswith(key) or key in model:
+            return profile
+    return {}
+
+
+def lower_camera_enabled(model=None):
+    """Return True when this unit has a lower camera.
+
+    An explicit ``LOWER_CAMERA_ENABLED`` in the environment always wins; when it
+    is unset the model profile decides, so a Gardyn 3.0 reports the upper camera
+    only without any manual configuration. Unknown models keep both cameras.
+    """
+    if config.LOWER_CAMERA_ENABLED is not None:
+        return config.LOWER_CAMERA_ENABLED
+    profile = profile_for(model if model is not None else detect_model())
+    return bool(profile.get("lower_camera", True))

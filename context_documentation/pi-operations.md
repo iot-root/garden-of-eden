@@ -104,13 +104,15 @@ The UI is available at `http://${GARDEN_PI_HOST}:5000/`, and the health endpoint
 
 The API can still start when `.env` is absent because configuration defaults are available, but sensor endpoints may report unavailable hardware. In particular, verify I2C configuration and sensor wiring when the service logs report that no hardware I2C bus is available.
 
-For a Pi model with only an upper camera, set this in the Pi-local `.env`:
+The camera count follows the detected model: a Gardyn 3.0 reports one camera,
+the lower-camera route returns `404`, MQTT skips lower-camera discovery and
+publishing, and the web UI hides the lower-camera controls. Models with both
+cameras (1.0/2.0/Studio) report two. For a unit that differs from its profile,
+override it in the Pi-local `.env`:
 
 ```env
 LOWER_CAMERA_ENABLED=false
 ```
-
-The API then reports one camera, the lower-camera route returns `404`, MQTT skips lower-camera discovery and publishing, and the web UI hides the lower-camera controls. The default remains enabled for two-camera models.
 
 ## Private HTTPS with Tailscale
 

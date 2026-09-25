@@ -4,6 +4,7 @@ import os
 from flask import Blueprint, jsonify, send_file
 
 import config
+from app.lib.hardware import lower_camera_enabled
 
 from . import camera
 
@@ -30,7 +31,7 @@ def upper():
 
 @camera_blueprint.route("/lower", methods=["GET"])
 def lower():
-    if not config.LOWER_CAMERA_ENABLED:
+    if not lower_camera_enabled():
         return jsonify(error="lower camera is disabled"), 404
     return _serve(camera.capture_lower, config.LOWER_IMAGE_PATH)
 

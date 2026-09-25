@@ -38,6 +38,7 @@ curl localhost:5000/temperature      # 503 means the sensor is unreachable
 | Light flickers | software PWM / wrong factory | ensure pigpio is used (it is by default) |
 | Camera 503 | `fswebcam` missing or wrong device | `sudo apt install fswebcam`; check `UPPER_CAMERA_DEVICE` |
 | Cameras swap after reboot | unstable `/dev/videoN` | install udev rules (`bin/setup.sh`), use `/dev/gardyn-*` |
+| Lower camera missing / wrongly listed | model profile differs from the unit | camera count follows the detected model; `LOWER_CAMERA_ENABLED` in `.env` overrides it |
 | Water-low never triggers | `WATER_LOW_CM` unset/0 | set a threshold in `.env` |
 
 ## Resetting state

@@ -11,6 +11,19 @@ def _get_bool(name, default=False):
     return os.getenv(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _get_bool_auto(name):
+    """Parse a truthy/falsy env var, returning None when it is unset.
+
+    None means "unspecified" so callers can fall back to a value derived from
+    hardware instead of forcing an explicit choice (e.g. the camera count
+    implied by the detected Gardyn model).
+    """
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return None
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 def _get_int(name, default):
     """Parse an int env var, accepting decimal ("72") or hex ("0x48")."""
     raw = os.getenv(name)
@@ -69,12 +82,15 @@ MODEL_OVERRIDE = os.getenv("GARDYN_MODEL") or None
 # Per-model hardware profiles (issues #72, #84). Differences between Gardyn
 # generations are captured here so detection/UX can adapt. Pin defaults still
 # come from the env vars above; this table documents expected sensors and any
-# known per-model deviations (extend as hardware is characterized).
+# known per-model deviations (extend as hardware is characterized). The 3.0
+# generation ships the upper camera only; other models have both. An explicit
+# LOWER_CAMERA_ENABLED env var overrides the profile (see
+# app/lib/hardware.lower_camera_enabled).
 MODELS = {
-    "gardyn 1.0": {"temp_humidity": "AM2320", "cameras": 2},
-    "gardyn 2.0": {"temp_humidity": "AM2320", "cameras": 2},
-    "gardyn 3.0": {"temp_humidity": "DHT20", "cameras": 2},
-    "gardyn studio": {"temp_humidity": "DHT20", "cameras": 2},
+    "gardyn 1.0": {"temp_humidity": "AM2320", "cameras": 2, "lower_camera": True},
+    "gardyn 2.0": {"temp_humidity": "AM2320", "cameras": 2, "lower_camera": True},
+    "gardyn 3.0": {"temp_humidity": "DHT20", "cameras": 1, "lower_camera": False},
+    "gardyn studio": {"temp_humidity": "DHT20", "cameras": 2, "lower_camera": True},
 }
 
 # ---------------------------------------------------------------------------
@@ -132,7 +148,12 @@ WATER_CHECK_SECONDS = _get_int("WATER_CHECK_SECONDS", 180)
 # ---------------------------------------------------------------------------
 # Camera
 # ---------------------------------------------------------------------------
-LOWER_CAMERA_ENABLED = _get_bool("LOWER_CAMERA_ENABLED", True)
+# Whether this unit has a lower camera. Unset means "follow the detected model
+# profile": the Gardyn 3.0 ships with the upper camera only. Set
+# LOWER_CAMERA_ENABLED=true/false in .env for units that differ from their
+# profile (the simulator sets it true to keep both cameras). Resolve it through
+# app/lib/hardware.lower_camera_enabled().
+LOWER_CAMERA_ENABLED = _get_bool_auto("LOWER_CAMERA_ENABLED")
 UPPER_CAMERA_DEVICE = os.getenv("UPPER_CAMERA_DEVICE", "/dev/video0")
 LOWER_CAMERA_DEVICE = os.getenv("LOWER_CAMERA_DEVICE", "/dev/video2")
 UPPER_IMAGE_PATH = os.getenv("UPPER_IMAGE_PATH", "/tmp/upper_camera.jpg")

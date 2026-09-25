@@ -16,7 +16,7 @@ from gpiozero import Button  # Import gpiozero Button
 
 from app.lib import grow as grow_lib
 from app.lib import state as state_lib
-from app.lib.hardware import detect_model, get_pin_factory
+from app.lib.hardware import detect_model, get_pin_factory, lower_camera_enabled
 from app.lib.logging_config import configure_logging
 from app.lib.water import is_water_low
 from app.sensors.camera import camera as camera_mod
@@ -36,7 +36,6 @@ from config import (
     IDENTIFIER,
     IMAGE_INTERVAL_SECONDS,
     KEEP_ALIVE_INTERVAL,
-    LOWER_CAMERA_ENABLED,
     LOWER_CAMERA_DEVICE,
     LOWER_IMAGE_PATH,
     MAX_PUMP_RUN_SECONDS,
@@ -55,6 +54,10 @@ from config import (
 # file so the MQTT service and the REST API don't write the same log.
 configure_logging(log_file="mqtt.log")
 logger = logging.getLogger(__name__)
+
+# Whether this unit has a lower camera. An explicit LOWER_CAMERA_ENABLED wins;
+# otherwise the detected model profile decides (the Gardyn 3.0 has one camera).
+LOWER_CAMERA_ENABLED = lower_camera_enabled()
 
 
 class MqttLogHandler(logging.Handler):

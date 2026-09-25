@@ -36,6 +36,15 @@ class ConfigParsingTestCase(unittest.TestCase):
         cfg = self._reload(WATER_LOW_CM="0")
         self.assertIsNone(cfg.WATER_LOW_CM)
 
+    def test_lower_camera_enabled_defaults_to_auto(self):
+        """Unset means "follow the model profile"; an explicit value wins."""
+        try:
+            self.assertIsNone(self._reload(LOWER_CAMERA_ENABLED="").LOWER_CAMERA_ENABLED)
+            self.assertIs(self._reload(LOWER_CAMERA_ENABLED="false").LOWER_CAMERA_ENABLED, False)
+            self.assertIs(self._reload(LOWER_CAMERA_ENABLED="true").LOWER_CAMERA_ENABLED, True)
+        finally:
+            self._reload()  # restore the ambient configuration
+
 
 if __name__ == "__main__":
     unittest.main()
