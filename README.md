@@ -77,8 +77,8 @@ sudo pigpiod -p 8888       # pigpiod on the Pi host
 docker compose up -d       # api (:5000) + mqtt + optional broker
 ```
 
-For optional public HTTPS access, use the Cloudflare Tunnel profile described
-in [`docs/access.md`](docs/access.md). Do not expose port 5000 directly to the
+For private remote access over HTTPS, use Tailscale Serve described in
+[`docs/access.md`](docs/access.md). Do not expose port 5000 directly to the
 internet.
 
 See [`docs/integrations/`](docs/integrations/README.md) for Telegraf, ThingsBoard,
