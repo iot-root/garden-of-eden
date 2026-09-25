@@ -7,27 +7,7 @@ from gpiozero import PWMLED
 from gpiozero.pins.pigpio import PiGPIOFactory
 
 import config
-
-
-class GPIOController:
-    def __init__(self, pin, pin_factory=None):
-        self.pin = pin
-        self.factory = pin_factory
-        if config.PIGPIO_HOST:
-            self.pi = pigpio.pi(config.PIGPIO_HOST, config.PIGPIO_PORT)
-        else:
-            self.pi = pigpio.pi()
-
-        if not self.pi.connected:
-            raise RuntimeError(
-                "Failed to connect to pigpiod daemon. Ensure it's running and accessible."
-            )
-
-    def set_frequency(self, frequency):
-        if self.pi:
-            self.pi.set_PWM_frequency(self.pin, frequency)
-        else:
-            raise RuntimeError("pigpio.pi client is not initialized.")
+from app.lib.hardware import GPIOController
 
 
 class Light:
@@ -37,7 +17,7 @@ class Light:
         self.pin = pin
         self.pin_factory = pin_factory if pin_factory else PiGPIOFactory()
         self.led = PWMLED(self.pin, pin_factory=self.pin_factory)
-        self.gpio = GPIOController(pin, pin_factory)
+        self.gpio = GPIOController(pin, pin_factory, pigpio.pi)
         self.set_frequency(frequency)
 
     def on(self):

@@ -79,19 +79,11 @@ PIGPIO_PORT = _get_int("PIGPIO_PORT", 8888)
 SENSOR_TYPE = os.getenv("SENSOR_TYPE")
 MODEL_OVERRIDE = os.getenv("GARDYN_MODEL") or None
 
-# Per-model hardware profiles (issues #72, #84). Differences between Gardyn
-# generations are captured here so detection/UX can adapt. Pin defaults still
-# come from the env vars above; this table documents expected sensors and any
-# known per-model deviations (extend as hardware is characterized). The 3.0
-# generation ships the upper camera only; other models have both. An explicit
-# LOWER_CAMERA_ENABLED env var overrides the profile (see
-# app/lib/hardware.lower_camera_enabled).
-MODELS = {
-    "gardyn 1.0": {"temp_humidity": "AM2320", "cameras": 2, "lower_camera": True},
-    "gardyn 2.0": {"temp_humidity": "AM2320", "cameras": 2, "lower_camera": True},
-    "gardyn 3.0": {"temp_humidity": "DHT20", "cameras": 1, "lower_camera": False},
-    "gardyn studio": {"temp_humidity": "DHT20", "cameras": 2, "lower_camera": True},
-}
+# Per-model hardware profiles (issues #72, #84) live in app/lib/models.py as
+# Gardyn model classes with shared defaults on a base Gardyn. The env vars
+# above still take precedence at runtime: SENSOR_TYPE picks the temp/humidity
+# driver, an explicit LOWER_CAMERA_ENABLED overrides the model's camera
+# layout, and GARDYN_MODEL forces the model instead of auto-detecting it.
 
 # ---------------------------------------------------------------------------
 # GPIO pin assignments (BCM numbering)

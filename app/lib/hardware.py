@@ -9,6 +9,7 @@ of opening its own (see issue #67).
 import logging
 
 import config
+from app.lib.models import profile_for  # re-exported for the /system route
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,40 @@ def get_pin_factory():
     return _pin_factory
 
 
+class GPIOController:
+    """Thin pigpiod client for PWM frequency control on a single pin.
+
+    Shared by the light and pump drivers, which previously each carried a
+    copy-pasted copy of this class — the same single-connection goal as the
+    shared pin factory above (issue #67). ``pi_factory`` is injectable so
+    tests can substitute ``pigpio.pi``; when omitted the real client is
+    imported lazily.
+    """
+
+    def __init__(self, pin, pin_factory=None, pi_factory=None):
+        if pi_factory is None:
+            import pigpio
+
+            pi_factory = pigpio.pi
+        self.pin = pin
+        self.pin_factory = pin_factory
+        if config.PIGPIO_HOST:
+            self.pi = pi_factory(config.PIGPIO_HOST, config.PIGPIO_PORT)
+        else:
+            self.pi = pi_factory()
+
+        if not self.pi.connected:
+            raise RuntimeError(
+                "Failed to connect to pigpiod daemon. Ensure it's running and accessible."
+            )
+
+    def set_frequency(self, frequency):
+        if self.pi:
+            self.pi.set_PWM_frequency(self.pin, frequency)
+        else:
+            raise RuntimeError("pigpio.pi client is not initialized.")
+
+
 def i2c_device_present(address):
     """Return True if an I2C device ACKs at ``address`` on bus 1."""
     try:
@@ -86,20 +121,6 @@ def detect_model():
     if config.SENSOR_TYPE == "AM2320":
         return "gardyn 2.0"
     return config.MODEL
-
-
-def profile_for(model):
-    """Resolve a hardware profile for a model string. Falls back to a prefix
-    match so custom/suffixed names (e.g. 'gardyn 3.0 (simulated)') still map to
-    the closest known profile instead of returning empty."""
-    if not model:
-        return {}
-    if model in config.MODELS:
-        return config.MODELS[model]
-    for key, profile in config.MODELS.items():
-        if model.startswith(key) or key in model:
-            return profile
-    return {}
 
 
 def lower_camera_enabled(model=None):
