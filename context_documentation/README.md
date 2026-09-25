@@ -8,6 +8,11 @@ This directory is a compact working knowledge base for contributors and coding a
 - [Pi operations](pi-operations.md): how to connect to the device and run repository scripts there.
 - [Known issues](known-issues.md): confirmed limitations and operational risks.
 
+Tool pointers into this bank:
+- [Copilot instructions](../.github/copilot-instructions.md)
+- [Claude instructions](../CLAUDE.md)
+- [Gemini instructions](../GEMINI.md)
+
 ## Documentation rules
 
 - Record stable repository facts, decisions, and operational procedures.
