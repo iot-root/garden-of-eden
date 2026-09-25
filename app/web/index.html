@@ -123,7 +123,9 @@
     .switch input:checked + .track::after { transform:translateX(17px); }
 
     /* Cameras */
-    .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    /* align-items:start keeps each figure's own aspect-ratio height instead
+       of stretching both to the tallest (which would re-introduce cropping). */
+    .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
     .cam { position:relative; border-radius:14px; overflow:hidden; background:#dde7e0; aspect-ratio:4/3; border:1px solid var(--line); }
     .cam img, .cam video { width:100%; height:100%; object-fit:cover; display:block; background:#000; }
     .cam figcaption { position:absolute; left:10px; bottom:8px; color:#fff; font-size:.72rem; font-weight:600;
@@ -326,8 +328,8 @@
         </span>
       </h2>
       <div class="cams">
-        <figure class="cam"><img id="cam-upper" alt="upper camera"><figcaption>Upper</figcaption></figure>
-        <figure class="cam" data-lower-camera><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
+        <figure class="cam"><img id="cam-upper" alt="upper camera" onload="fitCam(this)"><figcaption>Upper</figcaption></figure>
+        <figure class="cam" data-lower-camera><img id="cam-lower" alt="lower camera" onload="fitCam(this)"><figcaption>Lower</figcaption></figure>
       </div>
       <h2 style="margin-top:18px">Timelapse
         <span style="display:flex; gap:8px">
@@ -336,8 +338,8 @@
         </span>
       </h2>
       <div class="cams">
-        <figure class="cam"><video id="tl-upper" controls preload="none" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
-        <figure class="cam" data-lower-camera><video id="tl-lower" controls preload="none" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
+        <figure class="cam"><video id="tl-upper" controls preload="metadata" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
+        <figure class="cam" data-lower-camera><video id="tl-lower" controls preload="metadata" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
       </div>
     </div>
 
@@ -509,6 +511,8 @@
         $("d-pumpcap").textContent = s.pump_max_run_seconds != null ? `${Math.round(s.pump_max_run_seconds / 60)} min` : "—";
         lowerCameraEnabled = !(s.profile && s.profile.lower_camera === false);
         document.querySelectorAll("[data-lower-camera]").forEach(el => { el.hidden = !lowerCameraEnabled; });
+        // Single-camera units (e.g. Gardyn 3.0): collapse to one full-width column.
+        document.querySelectorAll(".cams").forEach(el => { el.style.gridTemplateColumns = lowerCameraEnabled ? "" : "1fr"; });
         conn(true);
       } catch { $("meta").textContent = "offline"; conn(false); }
     }
@@ -517,6 +521,19 @@
       $("cam-upper").src = "/camera/upper?t=" + Date.now();
       if (lowerCameraEnabled) $("cam-lower").src = "/camera/lower?t=" + Date.now();
     }
+    // Match the figure's aspect ratio to the actual media so object-fit:cover
+    // never crops (the rotated upper feed is portrait 3:4, not 4:3).
+    function fitCam(media) {
+      const fig = media.closest(".cam");
+      const w = media.naturalWidth || media.videoWidth;
+      const h = media.naturalHeight || media.videoHeight;
+      if (fig && w && h) fig.style.aspectRatio = w + " / " + h;
+    }
+    // The videos use preload="metadata" (not "none") so loadedmetadata fires
+    // as soon as a src is set and fitCam can measure them without waiting
+    // for playback.
+    document.querySelectorAll(".cam video").forEach(v =>
+      v.addEventListener("loadedmetadata", () => fitCam(v)));
     function toggleCamAuto() {
       if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, camInterval); }
       else { clearInterval(camTimer); camTimer = null; }
