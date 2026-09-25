@@ -363,292 +363,295 @@ def send_discovery_messages(client):
         body = {**payload, **avail} if availability else dict(payload)
         client.publish(topic, json.dumps(body), retain=True)
 
+    def ent(component, obj, payload, availability=True):
+        """Publish a discovery config for ``<component>/<obj>`` with the shared
+        envelope (config topic, unique id, device block) filled in."""
+        pub(
+            f"homeassistant/{component}/gardyn/{IDENTIFIER}_{obj}/config",
+            {"unique_id": IDENTIFIER + "_" + obj, "device": device_info, **payload},
+            availability,
+        )
+
     # Config for Light
-    TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/" + IDENTIFIER + "_light/config"
-    temp_config_payload = {
-        "name": "Light",
-        "unique_id": IDENTIFIER + "_light",
-        "platform": "mqtt",
-        "state_topic": BASE_TOPIC + "/light/state",
-        "command_topic": BASE_TOPIC + "/light/command",
-        "brightness_state_topic": BASE_TOPIC + "/light/brightness/state",
-        "brightness_command_topic": BASE_TOPIC + "/light/brightness/set",
-        "brightness_scale": 100,
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "light",
+        "light",
+        {
+            "name": "Light",
+            "platform": "mqtt",
+            "state_topic": BASE_TOPIC + "/light/state",
+            "command_topic": BASE_TOPIC + "/light/command",
+            "brightness_state_topic": BASE_TOPIC + "/light/brightness/state",
+            "brightness_command_topic": BASE_TOPIC + "/light/brightness/set",
+            "brightness_scale": 100,
+        },
+    )
 
     # Config for Pump (as a light with speed control, for example)
     # todo: maybe use fan instead....
-    TEMP_CONFIG_TOPIC = "homeassistant/light/gardyn/" + IDENTIFIER + "_pump/config"
-    temp_config_payload = {
-        "name": "Pump",
-        "unique_id": IDENTIFIER + "_pump",
-        "platform": "mqtt",
-        "device_class": "fan",
-        "state_topic": BASE_TOPIC + "/pump/state",
-        "command_topic": BASE_TOPIC + "/pump/command",
-        "brightness_state_topic": BASE_TOPIC + "/pump/speed/state",
-        "brightness_command_topic": BASE_TOPIC + "/pump/speed/set",
-        "brightness_scale": 100,
-        # if using fan....
-        # "percentage_state_topic": BASE_TOPIC + "/pump/speed/state",
-        # "percentage_command_topic": BASE_TOPIC + "/pump/speed/set",
-        # "speed_range_min": 1,
-        # "speed_range_max": 100,
-        "icon": "mdi:water-pump",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "light",
+        "pump",
+        {
+            "name": "Pump",
+            "platform": "mqtt",
+            "device_class": "fan",
+            "state_topic": BASE_TOPIC + "/pump/state",
+            "command_topic": BASE_TOPIC + "/pump/command",
+            "brightness_state_topic": BASE_TOPIC + "/pump/speed/state",
+            "brightness_command_topic": BASE_TOPIC + "/pump/speed/set",
+            "brightness_scale": 100,
+            # if using fan....
+            # "percentage_state_topic": BASE_TOPIC + "/pump/speed/state",
+            # "percentage_command_topic": BASE_TOPIC + "/pump/speed/set",
+            # "speed_range_min": 1,
+            # "speed_range_max": 100,
+            "icon": "mdi:water-pump",
+        },
+    )
 
     # Config for Temperature from PCB
-    TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/" + IDENTIFIER + "_pcb_temp/config"
-    temp_config_payload = {
-        "name": "PCB Temperature",
-        "unique_id": IDENTIFIER + "_pcb_temp",
-        "state_topic": BASE_TOPIC + "/pcb/temperature",
-        "unit_of_measurement": "°C",
-        "device_class": "temperature",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "sensor",
+        "pcb_temp",
+        {
+            "name": "PCB Temperature",
+            "state_topic": BASE_TOPIC + "/pcb/temperature",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+        },
+    )
 
     # Config for Temperature Sensor
-    TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/" + IDENTIFIER + "_temperature/config"
-    temp_config_payload = {
-        "name": "Temperature",
-        "unique_id": IDENTIFIER + "_temperature",
-        "state_topic": BASE_TOPIC + "/temperature",
-        "command_topic": BASE_TOPIC + "/temperature/get",
-        "unit_of_measurement": "°C",
-        "device_class": "temperature",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "sensor",
+        "temperature",
+        {
+            "name": "Temperature",
+            "state_topic": BASE_TOPIC + "/temperature",
+            "command_topic": BASE_TOPIC + "/temperature/get",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+        },
+    )
 
     # Config for Humidity Sensor
-    TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/" + IDENTIFIER + "_humidity/config"
-    temp_config_payload = {
-        "name": "Humidity",
-        "unique_id": IDENTIFIER + "_humidity",
-        "state_topic": BASE_TOPIC + "/humidity",
-        "command_topic": BASE_TOPIC + "/humidity/get",
-        "unit_of_measurement": "%",
-        "device_class": "humidity",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "sensor",
+        "humidity",
+        {
+            "name": "Humidity",
+            "state_topic": BASE_TOPIC + "/humidity",
+            "command_topic": BASE_TOPIC + "/humidity/get",
+            "unit_of_measurement": "%",
+            "device_class": "humidity",
+        },
+    )
 
     # Config for Water Level Sensor
-    TEMP_CONFIG_TOPIC = "homeassistant/sensor/gardyn/" + IDENTIFIER + "_water_level/config"
-
-    temp_config_payload = {
-        "name": "Water Level",
-        "unique_id": IDENTIFIER + "_water_level",
-        "state_topic": BASE_TOPIC + "/water/level",
-        "command_topic": BASE_TOPIC + "/water/level/get",
-        "unit_of_measurement": "cm",
-        "device_class": "distance",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "sensor",
+        "water_level",
+        {
+            "name": "Water Level",
+            "state_topic": BASE_TOPIC + "/water/level",
+            "command_topic": BASE_TOPIC + "/water/level/get",
+            "unit_of_measurement": "cm",
+            "device_class": "distance",
+        },
+    )
 
     # Config for Water Low Binary Sensor
-    TEMP_CONFIG_TOPIC = f"homeassistant/binary_sensor/gardyn/{IDENTIFIER}_water_low/config"
-    temp_config_payload = {
-        "name": "Water Low",
-        "unique_id": IDENTIFIER + "_water_low",
-        "platform": "mqtt",
-        "state_topic": BASE_TOPIC + "/water/low/state",
-        "device_class": "problem",
-        "payload_on": "ON",
-        "payload_off": "OFF",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "binary_sensor",
+        "water_low",
+        {
+            "name": "Water Low",
+            "platform": "mqtt",
+            "state_topic": BASE_TOPIC + "/water/low/state",
+            "device_class": "problem",
+            "payload_on": "ON",
+            "payload_off": "OFF",
+        },
+    )
 
     # Config for Water Low Threshold (current value)
     # Config for Water Low CM Set Number
-    TEMP_CONFIG_TOPIC = f"homeassistant/number/gardyn/{IDENTIFIER}_water_low_cm/config"
-    temp_config_payload = {
-        "name": "Set Water Low Threshold",
-        "unique_id": IDENTIFIER + "_water_low_cm",
-        "platform": "mqtt",
-        "state_topic": BASE_TOPIC + "/water/low/cm",
-        "command_topic": BASE_TOPIC + "/water/low/cm/set",
-        "min": 0,
-        "max": 15,
-        "step": 0.5,
-        "unit_of_measurement": "cm",
-        "device_class": "distance",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "number",
+        "water_low_cm",
+        {
+            "name": "Set Water Low Threshold",
+            "platform": "mqtt",
+            "state_topic": BASE_TOPIC + "/water/low/cm",
+            "command_topic": BASE_TOPIC + "/water/low/cm/set",
+            "min": 0,
+            "max": 15,
+            "step": 0.5,
+            "unit_of_measurement": "cm",
+            "device_class": "distance",
+        },
+    )
 
     # Config for Water Low Mode (Enabled/Disabled)
-    TEMP_CONFIG_TOPIC = f"homeassistant/sensor/gardyn/{IDENTIFIER}_water_low_mode/config"
-    temp_config_payload = {
-        "name": "Water Low Mode",
-        "unique_id": IDENTIFIER + "_water_low_mode",
-        "platform": "mqtt",
-        "state_topic": BASE_TOPIC + "/water/low/mode",
-        "icon": "mdi:toggle-switch",  # Optional: or use mdi:alert for dramatic effect
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "sensor",
+        "water_low_mode",
+        {
+            "name": "Water Low Mode",
+            "platform": "mqtt",
+            "state_topic": BASE_TOPIC + "/water/low/mode",
+            "icon": "mdi:toggle-switch",  # Optional: or use mdi:alert for dramatic effect
+        },
+    )
 
     # Discovery configuration for Camera A (image entity)
-    TEMP_CONFIG_TOPIC = "homeassistant/image/gardyn/" + IDENTIFIER + "_upper_camera/config"
-    temp_config_payload = {
-        "name": "Upper Camera",
-        "unique_id": IDENTIFIER + "_upper_camera",
-        "image_topic": BASE_TOPIC + "/image/upper_camera",
-        "encoding": "",
-        "content_type": "image/jpeg",
-        "object_id": IDENTIFIER + "_upper_camera",
-        "device": device_info,
-    }
     # Image entities aren't gated on availability (the MQTT image platform
     # mishandles it here) — they just show the last retained frame.
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload, availability=False)
+    ent(
+        "image",
+        "upper_camera",
+        {
+            "name": "Upper Camera",
+            "image_topic": BASE_TOPIC + "/image/upper_camera",
+            "encoding": "",
+            "content_type": "image/jpeg",
+            "object_id": IDENTIFIER + "_upper_camera",
+        },
+        availability=False,
+    )
 
     if LOWER_CAMERA_ENABLED:
         # Discovery configuration for Camera B (image entity)
-        TEMP_CONFIG_TOPIC = "homeassistant/image/gardyn/" + IDENTIFIER + "_lower_camera/config"
-        temp_config_payload = {
-            "name": "Lower Camera",
-            "unique_id": IDENTIFIER + "_lower_camera",
-            "image_topic": BASE_TOPIC + "/image/lower_camera",
-            "encoding": "",
-            "content_type": "image/jpeg",
-            "object_id": IDENTIFIER + "_lower_camera",
-            "device": device_info,
-        }
-        pub(TEMP_CONFIG_TOPIC, temp_config_payload, availability=False)
+        ent(
+            "image",
+            "lower_camera",
+            {
+                "name": "Lower Camera",
+                "image_topic": BASE_TOPIC + "/image/lower_camera",
+                "encoding": "",
+                "content_type": "image/jpeg",
+                "object_id": IDENTIFIER + "_lower_camera",
+            },
+            availability=False,
+        )
 
     # Config for the physical button as a Home Assistant event entity (#78).
     # Fires "single"/"double"/"long" so HA automations can react to presses.
-    TEMP_CONFIG_TOPIC = f"homeassistant/event/gardyn/{IDENTIFIER}_button/config"
-    temp_config_payload = {
-        "name": "Button",
-        "unique_id": IDENTIFIER + "_button",
-        "state_topic": BASE_TOPIC + "/button/event",
-        "event_types": ["single", "double", "long"],
-        "device_class": "button",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "event",
+        "button",
+        {
+            "name": "Button",
+            "state_topic": BASE_TOPIC + "/button/event",
+            "event_types": ["single", "double", "long"],
+            "device_class": "button",
+        },
+    )
 
     # Diagnostic 'Last Log' sensor: most recent WARNING/ERROR published by the
     # MQTT log handler, for at-a-glance debugging from Home Assistant.
-    TEMP_CONFIG_TOPIC = f"homeassistant/sensor/gardyn/{IDENTIFIER}_log/config"
-    temp_config_payload = {
-        "name": "Last Log",
-        "unique_id": IDENTIFIER + "_log",
-        "state_topic": LOG_TOPIC,
-        "icon": "mdi:text-box-outline",
-        "entity_category": "diagnostic",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "sensor",
+        "log",
+        {
+            "name": "Last Log",
+            "state_topic": LOG_TOPIC,
+            "icon": "mdi:text-box-outline",
+            "entity_category": "diagnostic",
+        },
+    )
 
     # "Add Plant Food" alarm — ON when the recurring nutrient reminder is due.
-    TEMP_CONFIG_TOPIC = f"homeassistant/binary_sensor/gardyn/{IDENTIFIER}_food/config"
-    temp_config_payload = {
-        "name": "Add Plant Food",
-        "unique_id": IDENTIFIER + "_food",
-        "state_topic": BASE_TOPIC + "/grow/food",
-        "device_class": "problem",
-        "payload_on": "ON",
-        "payload_off": "OFF",
-        "icon": "mdi:bottle-tonic-plus",
-        "device": device_info,
-    }
-    pub(TEMP_CONFIG_TOPIC, temp_config_payload)
+    ent(
+        "binary_sensor",
+        "food",
+        {
+            "name": "Add Plant Food",
+            "state_topic": BASE_TOPIC + "/grow/food",
+            "device_class": "problem",
+            "payload_on": "ON",
+            "payload_off": "OFF",
+            "icon": "mdi:bottle-tonic-plus",
+        },
+    )
 
     # --- Grow cycle: manage the same things the web UI exposes, from HA ---
-    pub(
-        f"homeassistant/select/gardyn/{IDENTIFIER}_grow_stage/config",
+    ent(
+        "select",
+        "grow_stage",
         {
             "name": "Grow Stage",
-            "unique_id": IDENTIFIER + "_grow_stage",
             "state_topic": BASE_TOPIC + "/grow/stage",
             "command_topic": BASE_TOPIC + "/grow/stage/set",
             "options": grow_lib.STAGES,
             "icon": "mdi:sprout",
-            "device": device_info,
         },
     )
-    pub(
-        f"homeassistant/sensor/gardyn/{IDENTIFIER}_grow_day/config",
+    ent(
+        "sensor",
+        "grow_day",
         {
             "name": "Grow Day",
-            "unique_id": IDENTIFIER + "_grow_day",
             "state_topic": BASE_TOPIC + "/grow/day",
             "unit_of_measurement": "d",
             "icon": "mdi:calendar-clock",
-            "device": device_info,
         },
     )
-    pub(
-        f"homeassistant/sensor/gardyn/{IDENTIFIER}_grow_reminder/config",
+    ent(
+        "sensor",
+        "grow_reminder",
         {
             "name": "Grow Reminder",
-            "unique_id": IDENTIFIER + "_grow_reminder",
             "state_topic": BASE_TOPIC + "/grow/reminder",
             "icon": "mdi:bell-alert",
-            "device": device_info,
         },
     )
-    pub(
-        f"homeassistant/button/gardyn/{IDENTIFIER}_grow_start/config",
+    ent(
+        "button",
+        "grow_start",
         {
             "name": "Start New Grow Cycle",
-            "unique_id": IDENTIFIER + "_grow_start",
             "command_topic": BASE_TOPIC + "/grow/start/set",
             "icon": "mdi:restart",
-            "device": device_info,
         },
     )
 
     # --- Schedule: top-level toggles (per-day windows stay in the web UI) ---
-    pub(
-        f"homeassistant/switch/gardyn/{IDENTIFIER}_sched_lights/config",
+    ent(
+        "switch",
+        "sched_lights",
         {
             "name": "Lights Schedule",
-            "unique_id": IDENTIFIER + "_sched_lights",
             "state_topic": BASE_TOPIC + "/schedule/lights/enabled",
             "command_topic": BASE_TOPIC + "/schedule/lights/enabled/set",
             "payload_on": "ON",
             "payload_off": "OFF",
             "icon": "mdi:calendar-check",
-            "device": device_info,
         },
     )
-    pub(
-        f"homeassistant/switch/gardyn/{IDENTIFIER}_sched_pump/config",
+    ent(
+        "switch",
+        "sched_pump",
         {
             "name": "Pump Schedule",
-            "unique_id": IDENTIFIER + "_sched_pump",
             "state_topic": BASE_TOPIC + "/schedule/pump/enabled",
             "command_topic": BASE_TOPIC + "/schedule/pump/enabled/set",
             "payload_on": "ON",
             "payload_off": "OFF",
             "icon": "mdi:calendar-check",
-            "device": device_info,
         },
     )
-    pub(
-        f"homeassistant/switch/gardyn/{IDENTIFIER}_vacation/config",
+    ent(
+        "switch",
+        "vacation",
         {
             "name": "Vacation Mode",
-            "unique_id": IDENTIFIER + "_vacation",
             "state_topic": BASE_TOPIC + "/schedule/vacation/enabled",
             "command_topic": BASE_TOPIC + "/schedule/vacation/enabled/set",
             "payload_on": "ON",
             "payload_off": "OFF",
             "icon": "mdi:airplane",
-            "device": device_info,
         },
     )
 
@@ -692,14 +695,12 @@ def send_discovery_messages(client):
     for component, obj, name, topic, icon, extra in everyday:
         payload = {
             "name": name,
-            "unique_id": IDENTIFIER + "_" + obj,
             "state_topic": BASE_TOPIC + "/" + topic,
             "command_topic": BASE_TOPIC + "/" + topic + "/set",
             "icon": icon,
-            "device": device_info,
         }
         payload.update(extra)
-        pub(f"homeassistant/{component}/gardyn/{IDENTIFIER}_{obj}/config", payload)
+        ent(component, obj, payload)
 
 
 def publish_grow_state(client):
@@ -971,37 +972,42 @@ def on_message(client, userdata, msg):
         logger.exception(f"Error handling message on topic {msg.topic}: {e}")
 
 
-def publish_pcb_temperature(client):
+def _publish_periodically(client, read, topic, info_label, err_label, unit, interval=30 * 60):
+    """Read a sensor and publish its value on a fixed interval.
+
+    Loops forever (one thread per sensor): an error is logged and retried on
+    the next tick instead of killing the publisher thread. The broker retains
+    the last value on the other end.
+    """
     while True:
         try:
-            pcb_temp = get_pcb_temperature()
-            logger.info(f"Publishing PCB Temperature: {pcb_temp:.2f}°C")
-            client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
+            value = read()
+            logger.info(f"Publishing {info_label}: {value:.2f}{unit}")
+            client.publish(BASE_TOPIC + topic, f"{value:.2f}")
         except Exception as e:
-            logger.error(f"Failed to read or publish PCB temperature: {e}")
-        sleep(30 * 60)  # Publish frequency, every x seconds
+            logger.error(f"Failed to read or publish {err_label}: {e}")
+        sleep(interval)  # Publish frequency, every x seconds
+
+
+def publish_pcb_temperature(client):
+    """Thread target: PCB temperature every 30 minutes."""
+    _publish_periodically(
+        client, get_pcb_temperature, "/pcb/temperature", "PCB Temperature", "PCB temperature", "°C"
+    )
 
 
 def publish_temperature(client):
-    while True:
-        try:
-            temperature = temperature_sensor.read()
-            logger.info(f"Publishing Temperature: {temperature:.2f}°C")
-            client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
-        except Exception as e:
-            logger.error(f"Failed to read or publish ambient temperature: {e}")
-        sleep(30 * 60)  # Publish frequency, every x seconds
+    """Thread target: ambient air temperature every 30 minutes."""
+    _publish_periodically(
+        client, temperature_sensor.read, "/temperature", "Temperature", "ambient temperature", "°C"
+    )
 
 
 def publish_humidity(client):
-    while True:
-        try:
-            humidity = humidity_sensor.read()
-            logger.info(f"Publishing Humidity: {humidity:.2f}%")
-            client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
-        except Exception as e:
-            logger.error(f"Failed to read or publish ambient humidity: {e}")
-        sleep(30 * 60)  # Publish frequency, every x seconds
+    """Thread target: ambient humidity every 30 minutes."""
+    _publish_periodically(
+        client, humidity_sensor.read, "/humidity", "Humidity", "ambient humidity", "%"
+    )
 
 
 def publish_water_level(client):
