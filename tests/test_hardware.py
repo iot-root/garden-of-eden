@@ -28,11 +28,12 @@ class LowerCameraEnabledTestCase(unittest.TestCase):
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", None)
     def test_model_profile_decides(self):
-        # The 3.0 generation has no lower camera; other models do.
+        # The 3.0 and the Studio have no lower camera; earlier models do.
         self.assertFalse(hardware.lower_camera_enabled("gardyn 3.0"))
         self.assertFalse(hardware.lower_camera_enabled("gardyn 3.0 (simulated)"))
+        self.assertFalse(hardware.lower_camera_enabled("gardyn studio"))
         self.assertTrue(hardware.lower_camera_enabled("gardyn 1.0"))
-        self.assertTrue(hardware.lower_camera_enabled("gardyn studio"))
+        self.assertTrue(hardware.lower_camera_enabled("gardyn 2.0"))
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", None)
     def test_unknown_model_keeps_both_cameras(self):
@@ -67,10 +68,11 @@ class SystemRouteTestCase(unittest.TestCase):
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", None)
     @patch("app.sensors.system.routes.detect_model", return_value="gardyn studio")
-    def test_system_reports_two_cameras_for_studio(self, _model):
+    def test_system_reports_one_camera_for_studio(self, _model):
+        # The Studio has only the upper camera.
         body = self.client.get("/system").get_json()
-        self.assertIs(body["profile"]["lower_camera"], True)
-        self.assertEqual(body["profile"]["cameras"], 2)
+        self.assertIs(body["profile"]["lower_camera"], False)
+        self.assertEqual(body["profile"]["cameras"], 1)
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", True)
     @patch("app.sensors.system.routes.detect_model", return_value="gardyn 3.0")

@@ -506,9 +506,9 @@ Notes:
 
 ### Camera
 
-One or two USB cameras, depending on the model: the Gardyn 3.0 ships with the
-upper camera only, while 1.0/2.0/Studio have both. The count comes from the
-detected model profile, so no configuration is needed. Set
+One or two USB cameras, depending on the model: the Gardyn 3.0 and the Studio
+ship with the upper camera only, while 1.0/2.0 have both. The count comes from
+the detected model profile, so no configuration is needed. Set
 `LOWER_CAMERA_ENABLED=true|false` in `.env` only for a unit that differs from
 its profile.
 

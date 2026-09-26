@@ -68,10 +68,16 @@ class Gardyn3(Gardyn):
 
 
 class GardynStudio(Gardyn):
-    """Studio: DHT20 sensor, both cameras."""
+    """Studio: DHT20 sensor, upper camera only.
+
+    Like the 3.0, the Studio has no lower camera. Confirmed on the hardware:
+    a single USB capture node (``/dev/video0``, with ``/dev/video1`` as its
+    companion metadata node) and no second camera present.
+    """
 
     name = "gardyn studio"
     temp_humidity = "DHT20"
+    lower_camera = False
 
 
 # Known models keyed by their reported name.

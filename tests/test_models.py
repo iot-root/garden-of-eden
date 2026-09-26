@@ -22,11 +22,18 @@ class ModelDefaultsTestCase(unittest.TestCase):
         self.assertFalse(models.Gardyn3.lower_camera)
         self.assertEqual(models.Gardyn3.profile()["cameras"], 1)
 
-    def test_studio_overrides_sensor_only(self):
+    def test_studio_overrides_sensor_and_camera(self):
+        # The Studio is upper-camera-only, same as the 3.0 -- confirmed on the
+        # hardware, which exposes a single USB capture node.
         self.assertEqual(models.GardynStudio.temp_humidity, "DHT20")
-        self.assertTrue(models.GardynStudio.lower_camera)
-        # Unchanged fields are inherited from the base class.
-        self.assertIs(models.GardynStudio.lower_camera, models.Gardyn.lower_camera)
+        self.assertFalse(models.GardynStudio.lower_camera)
+        self.assertEqual(models.GardynStudio.profile()["cameras"], 1)
+
+    def test_dht20_generations_share_a_profile(self):
+        # 3.0 and Studio are the same generation in hardware terms: both DHT20,
+        # both upper camera only. Selecting between them changes the reported
+        # name, not the feature set.
+        self.assertEqual(models.Gardyn3.profile(), models.GardynStudio.profile())
 
     def test_registry_covers_every_generation(self):
         self.assertEqual(
@@ -67,7 +74,7 @@ class ProfileForTestCase(unittest.TestCase):
         # Callers (e.g. the /system route) add env overrides on top.
         first = models.profile_for("gardyn studio")
         first["cameras"] = 99
-        self.assertEqual(models.profile_for("gardyn studio")["cameras"], 2)
+        self.assertEqual(models.profile_for("gardyn studio")["cameras"], 1)
 
 
 if __name__ == "__main__":

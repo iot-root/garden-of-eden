@@ -51,8 +51,8 @@ upper/lower camera images, and the button **event** entity (single/double/long).
 The simulator sets `LOWER_CAMERA_ENABLED=true` so both cameras show up, even
 though it impersonates a Gardyn 3.0 (whose profile has no lower camera). On
 physical hardware no flag is needed: the model profile reports one camera for
-the 3.0 and two for 1.0/2.0/Studio, and `LOWER_CAMERA_ENABLED` in `.env` only
-overrides that when a unit differs from its profile.
+the 3.0 and the Studio, and two for 1.0/2.0, and `LOWER_CAMERA_ENABLED` in
+`.env` only overrides that when a unit differs from its profile.
 
 Inspect discovery without HA using any MQTT client:
 
