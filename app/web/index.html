@@ -113,6 +113,21 @@
     input:focus,select:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
     .muted { color:var(--faint); font-size:.76rem; }
 
+    /* Ask Claude (advice endpoint) */
+    textarea{ font:inherit; font-size:.85rem; padding:9px 11px; border:1px solid var(--line-2);
+      border-radius:10px; background:#fff; color:var(--ink); width:100%; min-height:60px; resize:vertical; }
+    textarea:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
+    .presets { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .presets button{ background:var(--surface-2); color:var(--muted); border:1px solid var(--line);
+      border-radius:999px; padding:6px 13px; font-size:.78rem; font-weight:600; cursor:pointer; transition:.15s; }
+    .presets button:hover{ border-color:var(--green); color:var(--green-ink); }
+    .advice-out{ margin-top:12px; padding:14px 16px; border-radius:14px; background:var(--surface-2);
+      border:1px solid var(--line); font-size:.86rem; line-height:1.55; white-space:pre-wrap; }
+    .advice-out:empty{ display:none; }
+    .advice-out.err{ border-color:var(--red); color:var(--red); }
+    .advice-meta{ margin-top:8px; }
+    button.btn[disabled]{ opacity:.55; cursor:default; }
+
     /* Toggle switch */
     .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-size:.82rem; color:var(--muted); }
     .switch input { position:absolute; opacity:0; width:0; height:0; }
@@ -243,6 +258,12 @@
       </div>
       <p class="muted" style="margin-top:10px">Grants full control of the pump, light and camera. Stored in this browser only. Needed when the firmware sets <code>GARDEN_ADMIN_PASSWORD</code> and you connect from another machine.</p>
       <div class="row" style="margin-top:14px">
+        <label>Claude API key</label>
+        <input type="password" id="claude-key" placeholder="sk-ant-..." style="flex:1; min-width:160px">
+        <button class="btn" onclick="saveClaudeKey()">Save</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Your Anthropic key from console.anthropic.com. Stored in this browser only and sent with each Ask Claude request — the Pi does not keep it. Required to use the Ask Claude card.</p>
+      <div class="row" style="margin-top:14px">
         <label>Theme</label>
         <select id="set-theme" onchange="setThemePref(this.value)">
           <option value="auto">Auto (system)</option>
@@ -290,6 +311,25 @@
         <div><span class="k">Water-low at</span><span class="v" id="d-waterlow">—</span></div>
         <div><span class="k">Pump max run</span><span class="v" id="d-pumpcap">—</span></div>
       </div>
+    </div>
+
+    <div class="card" id="advice">
+      <h2>Ask Claude</h2>
+      <div class="row">
+        <textarea id="advice-q" placeholder="e.g. Are my plants ok? Anything I should change today? (Ctrl+Enter to send)"></textarea>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="advice-send" onclick="askClaude()">Ask</button>
+        <span class="muted" id="advice-status"></span>
+      </div>
+      <div class="presets" id="advice-presets">
+        <button data-q="How are my plants doing, and is anything wrong right now?">How are they doing?</button>
+        <button data-q="Is the water level a problem, and what should I do about it?">Water level</button>
+        <button data-q="What should I change today to get the best growth?">What to change today</button>
+      </div>
+      <div class="muted" id="advice-gate" style="margin-top:12px"></div>
+      <div class="advice-out" id="advice-out"></div>
+      <div class="muted advice-meta" id="advice-usage"></div>
     </div>
 
     <div class="card">
@@ -416,6 +456,9 @@
 
   <script>
     let API_KEY = localStorage.getItem("garden_key") || "";
+    // The Claude/Anthropic key is held the same way as the admin password:
+    // browser-only, sent per request, never stored on the Pi.
+    let CLAUDE_KEY = localStorage.getItem("claude_key") || "";
     let camTimer = null;
     let camInterval = +localStorage.getItem("camInterval") || 6000;
     // Temperature display unit; default °C (sensors/API are Celsius).
@@ -428,6 +471,11 @@
 
     const $ = id => document.getElementById(id);
     function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
+    // Advice calls additionally carry the Claude key. Scoped to /advice so the
+    // third-party credential is never attached to unrelated endpoints.
+    function adviceHeaders(extra) {
+      return headers(Object.assign(CLAUDE_KEY ? { "X-Claude-Key": CLAUDE_KEY } : {}, extra || {}));
+    }
     function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : ""); setTimeout(() => t.className = "", 1600); }
     function conn(ok) { $("conn").className = "dot " + (ok ? "ok" : "bad"); }
     // API values are °C; format for display in the selected unit (default °C).
@@ -472,6 +520,91 @@
     async function setLight(on) { await post(on ? "/light/on" : "/light/off"); setActive("light", on); }
     async function setPump(on) { await post(on ? "/pump/on" : "/pump/off"); setActive("pump", on); }
     async function runPump() { const s = +$("run-secs").value; await post("/pump/run", { seconds: s }); setActive("pump", true); }
+
+    // Ask Claude is gated on BOTH credentials being present in this browser:
+    // the admin password (the endpoint is 401 without it) and a Claude key
+    // (the endpoint is 503 without one). Disabling the controls up front makes
+    // the requirement obvious instead of surfacing it as a failed request.
+    function syncAdviceGate() {
+      const need = [];
+      if (!API_KEY) need.push("your admin password");
+      if (!CLAUDE_KEY) need.push("a Claude API key");
+      const ready = need.length === 0;
+      $("advice-send").disabled = !ready;
+      $("advice-presets").querySelectorAll("button[data-q]").forEach(b => { b.disabled = !ready; });
+      $("advice-gate").textContent = ready ? "" :
+        "Set " + need.join(" and ") + " in Settings to use this.";
+      $("advice-gate").style.display = ready ? "none" : "";
+      $("advice-q").disabled = !ready;
+    }
+
+    // Ask Claude for advice. Deliberately does not reuse post(): that helper
+    // toasts and drops the status code, but here we need to distinguish
+    // "not configured" (503) from an upstream failure (502), and a Claude
+    // round trip takes seconds rather than milliseconds.
+    async function askClaude(question) {
+      const q = (question || $("advice-q").value || "").trim();
+      const out = $("advice-out"), status = $("advice-status"), send = $("advice-send");
+      if (!API_KEY || !CLAUDE_KEY) { syncAdviceGate(); return; }
+      if (!q) { toast("type a question first", true); return; }
+      send.disabled = true;
+      status.textContent = "asking…";
+      out.className = "advice-out";
+      out.textContent = "";
+      $("advice-usage").textContent = "";
+      try {
+        const r = await fetchT("/advice", {
+          method: "POST",
+          headers: adviceHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ question: q }),
+        }, 90000);
+        let d = {}; try { d = await r.json(); } catch {}
+        conn(r.ok);
+        if (r.status === 503) {
+          out.className = "advice-out err";
+          out.textContent = d.error || "Claude rejected the API key, or none was supplied.";
+        } else if (r.status === 401) {
+          out.className = "advice-out err";
+          out.textContent = "Unauthorized — your admin password is wrong or missing.";
+        } else if (!r.ok) {
+          out.className = "advice-out err";
+          out.textContent = d.error || "request failed (HTTP " + r.status + ")";
+        } else {
+          out.className = "advice-out";
+          out.textContent = d.advice || "(empty response)";
+          const u = d.usage || {};
+          $("advice-usage").textContent = d.model +
+            (u.input_tokens != null ? " · " + u.input_tokens + " in / " + u.output_tokens + " out tokens" : "");
+        }
+      } catch (e) {
+        conn(false);
+        out.className = "advice-out err";
+        out.textContent = e.name === "AbortError" ? "Claude took too long to respond." : "error: " + e.message;
+      } finally {
+        send.disabled = false;
+        status.textContent = "";
+      }
+    }
+
+    function setupAdvice() {
+      $("advice-presets").querySelectorAll("button[data-q]").forEach(b => {
+        b.addEventListener("click", () => {
+          $("advice-q").value = b.dataset.q;
+          askClaude(b.dataset.q);
+        });
+      });
+      $("advice-q").addEventListener("keydown", e => {
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); askClaude(); }
+      });
+      syncAdviceGate();
+    }
+
+    function saveClaudeKey() {
+      CLAUDE_KEY = $("claude-key").value.trim();
+      localStorage.setItem("claude_key", CLAUDE_KEY);
+      syncAdviceGate();
+      toast(CLAUDE_KEY ? "claude key saved" : "claude key cleared");
+    }
 
     async function refresh() {
       const sensors = {
@@ -834,10 +967,12 @@
     function toggleSettings() {
       $("settings").classList.toggle("open");
       $("api-key").value = API_KEY;
+      $("claude-key").value = CLAUDE_KEY;
     }
-    function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
+    function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); syncAdviceGate(); loadSystem(); refresh(); }
 
     setupCollapsible();
+    setupAdvice();
     $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
     $("set-theme").value = localStorage.getItem("theme") || "dark";
     $("set-caminterval").value = camInterval;

@@ -214,3 +214,17 @@ THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "")
 THINGSBOARD_TOKEN = os.getenv("THINGSBOARD_TOKEN", "")
 
 TELEGRAF_ENABLED = _get_bool("TELEGRAF_ENABLED", False)
+
+# Claude (Anthropic) advice integration -- see app/integrations/claude.py.
+# This is an OUTBOUND credential and is unrelated to GARDEN_ADMIN_PASSWORD,
+# which authenticates inbound REST calls. Never reuse one for the other.
+# The integration stays inert (is_enabled() -> False) until a key is set.
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
+# Haiku 4.5 is the cheapest and fastest current model and handles both text and
+# image input, which is all this integration needs. Override to step up, e.g.
+# claude-sonnet-5, at roughly 2x the input / 2x the output cost.
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+ANTHROPIC_MAX_TOKENS = _get_int("ANTHROPIC_MAX_TOKENS", 1024)
+# A Claude round trip normally takes a few seconds; fail fast rather than let a
+# request hang against Waitress's worker threads.
+ANTHROPIC_TIMEOUT = _get_int("ANTHROPIC_TIMEOUT", 30)

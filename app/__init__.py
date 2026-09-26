@@ -6,6 +6,7 @@ from flask_cors import CORS
 
 import config
 
+from .sensors.advice.routes import advice_blueprint
 from .sensors.camera.routes import camera_blueprint
 from .sensors.distance.routes import distance_blueprint
 from .sensors.grow.routes import grow_blueprint
@@ -43,6 +44,7 @@ def create_app(config_name=None):
     app.register_blueprint(grow_blueprint, url_prefix="/grow")
     app.register_blueprint(pods_blueprint, url_prefix="/pods")
     app.register_blueprint(system_blueprint, url_prefix="/system")
+    app.register_blueprint(advice_blueprint, url_prefix="/advice")
     app.register_blueprint(web_blueprint)
 
     @app.route("/health")
