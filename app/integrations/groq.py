@@ -37,7 +37,9 @@ import config
 from app.lib import grow as grow_lib
 from app.lib import state as state_lib
 from app.lib.hardware import detect_model, lower_camera_enabled, profile_for
+from app.lib.logging_config import recent_warnings
 from app.lib.water import gallons_remaining, is_water_low
+from app.sensors.schedule.schedule import DAYS, is_vacation_active, load_schedule
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,14 @@ SYSTEM_PROMPT = (
     "hydroponic garden controller. You are given a JSON snapshot of the "
     "current machine state and, when available, a photo from the upper "
     "camera.\n\n"
+    "The snapshot includes the saved schedule, so check your advice against "
+    "what the machine is already programmed to do before suggesting a change. "
+    "It also includes recent_warnings: the most recent faults and sensor "
+    "failures logged by the machine. Treat a reading whose sensor appears in "
+    "those warnings as untrustworthy and say so rather than acting on it -- "
+    "for example a water level derived from a distance sensor that has "
+    "stopped getting an echo means the sensor needs attention, not that the "
+    "tank is empty.\n\n"
     "Answer with specific, actionable steps the operator can take on the "
     "machine: light level and duration, pump schedule and speed, water top-ups, "
     "nutrient timing, and what (if anything) needs attention right now. "
@@ -83,6 +93,94 @@ def _client(api_key=None):
         api_key=(api_key or "").strip() or config.GROQ_API_KEY,
         timeout=config.GROQ_TIMEOUT,
     )
+
+
+def _day_label(names):
+    """Render a set of weekdays compactly ('daily' or 'mon/wed/fri')."""
+    if len(names) == 7:
+        return "daily"
+    return "/".join(names)
+
+
+def _group_days(days):
+    """Group weekdays that share an identical entry list.
+
+    Most schedules repeat the same window every day, so collapsing matching
+    weekdays turns a seven-line summary into one line and saves tokens.
+    """
+    groups = []
+    for day in DAYS:
+        entries = days.get(day) or []
+        key = json.dumps(entries, sort_keys=True)
+        for group in groups:
+            if group["key"] == key:
+                group["days"].append(day)
+                break
+        else:
+            groups.append({"key": key, "days": [day], "entries": entries})
+    return groups
+
+
+def _light_summary(lights):
+    if not lights.get("enabled"):
+        return "disabled"
+    parts = []
+    for group in _group_days(lights.get("days") or {}):
+        for window in group["entries"]:
+            parts.append(
+                "{}->{} at {}% ({})".format(
+                    window.get("onTime"),
+                    window.get("offTime"),
+                    window.get("brightness"),
+                    _day_label(group["days"]),
+                )
+            )
+    return "; ".join(parts) or "enabled but no windows set"
+
+
+def _pump_summary(pump):
+    if not pump.get("enabled"):
+        return "disabled"
+    parts = []
+    for group in _group_days(pump.get("days") or {}):
+        for run in group["entries"]:
+            parts.append(
+                "{} for {}m ({})".format(
+                    run.get("time"),
+                    run.get("duration"),
+                    _day_label(group["days"]),
+                )
+            )
+    return "; ".join(parts) or "enabled but no runs set"
+
+
+def schedule_summary():
+    """A compact, readable rendering of the saved schedule.
+
+    Far cheaper in tokens than the raw nested day map, and far easier for a
+    model to check advice against than nested JSON -- it can see that the
+    lights already run 07:00->19:00 rather than having to infer it.
+    """
+    schedule = load_schedule()
+    vacation = "active" if is_vacation_active(schedule) else "off"
+    return "lights: {} | pump: {} | vacation mode: {}".format(
+        _light_summary(schedule.get("lights") or {}),
+        _pump_summary(schedule.get("pump") or {}),
+        vacation,
+    )
+
+
+def _warning_lines(limit=8):
+    """Recent warnings as one compact line each, for the prompt.
+
+    This is what lets the model tell a genuine fault from a bad reading: a
+    water level derived from a distance sensor that is no longer getting an
+    echo is not a tank that needs filling.
+    """
+    return [
+        "{} {} {}: {}".format(w["time"], w["level"], w["logger"], w["message"])
+        for w in recent_warnings(limit)
+    ]
 
 
 def _read(label, read_fn):
@@ -146,6 +244,12 @@ def snapshot():
         ),
         "water_low": is_water_low(distance_cm, config.WATER_LOW_CM),
         "actuators": _read("actuator state", state_lib.load_state),
+        # What the machine is already programmed to do, so the model can check
+        # its advice against the real schedule instead of guessing.
+        "schedule": _read("schedule", schedule_summary),
+        # Recent faults, so the model can separate a genuine problem from a
+        # reading produced by a broken sensor.
+        "recent_warnings": _read("recent warnings", _warning_lines),
         "grow": {
             "stage": grow.get("stage"),
             "days_elapsed": _days_since(grow.get("started")),

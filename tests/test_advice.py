@@ -17,6 +17,7 @@ from unittest.mock import MagicMock, patch
 import config
 from app import create_app
 from app.integrations import groq
+from app.sensors.schedule.schedule import DAYS
 
 DEFAULT_MODEL = "qwen/qwen3.8-27b"
 
@@ -105,6 +106,8 @@ class SnapshotTestCase(unittest.TestCase):
             "water_distance_cm",
             "water_low",
             "actuators",
+            "schedule",
+            "recent_warnings",
             "grow",
         ):
             self.assertIn(key, state)
@@ -149,6 +152,92 @@ class BuildContentTestCase(unittest.TestCase):
             content = groq.build_content("hello", include_image=False)
         mock_img.assert_not_called()
         self.assertEqual([b["type"] for b in content], ["text"])
+
+
+class ScheduleSummaryTestCase(unittest.TestCase):
+    """The model can only check advice against the schedule if it is told it."""
+
+    def _summary(self, schedule, vacation=False):
+        with (
+            patch.object(groq, "load_schedule", return_value=schedule),
+            patch.object(groq, "is_vacation_active", return_value=vacation),
+        ):
+            return groq.schedule_summary()
+
+    def test_disabled_schedule(self):
+        summary = self._summary(
+            {
+                "lights": {"enabled": False, "days": {}},
+                "pump": {"enabled": False, "days": {}},
+                "vacation": {"enabled": False, "until": None},
+            }
+        )
+        self.assertEqual(summary, "lights: disabled | pump: disabled | vacation mode: off")
+
+    def test_identical_daily_windows_collapse_to_one_line(self):
+        # Seven identical days must not cost seven lines of prompt.
+        days = {d: [{"onTime": "07:00", "offTime": "19:00", "brightness": 80}] for d in DAYS}
+        summary = self._summary(
+            {
+                "lights": {"enabled": True, "days": days},
+                "pump": {"enabled": False, "days": {}},
+                "vacation": {"enabled": False, "until": None},
+            }
+        )
+        self.assertIn("07:00->19:00 at 80% (daily)", summary)
+
+    def test_differing_days_are_grouped_and_named(self):
+        days = {d: [] for d in DAYS}
+        for day in ("mon", "wed", "fri"):
+            days[day] = [{"time": "08:00", "duration": 5}]
+        summary = self._summary(
+            {
+                "lights": {"enabled": False, "days": {}},
+                "pump": {"enabled": True, "days": days},
+                "vacation": {"enabled": False, "until": None},
+            }
+        )
+        self.assertIn("08:00 for 5m (mon/wed/fri)", summary)
+
+    def test_vacation_mode_is_reported(self):
+        summary = self._summary({}, vacation=True)
+        self.assertIn("vacation mode: active", summary)
+
+    def test_enabled_but_empty_is_not_silent(self):
+        summary = self._summary(
+            {
+                "lights": {"enabled": True, "days": {d: [] for d in DAYS}},
+                "pump": {"enabled": True, "days": {d: [] for d in DAYS}},
+                "vacation": {"enabled": False, "until": None},
+            }
+        )
+        self.assertIn("no windows set", summary)
+        self.assertIn("no runs set", summary)
+
+
+class WarningLinesTestCase(unittest.TestCase):
+    def test_entries_render_as_one_line_each(self):
+        with patch.object(
+            groq,
+            "recent_warnings",
+            return_value=[
+                {
+                    "time": "19:04:58",
+                    "level": "WARNING",
+                    "logger": "gpiozero",
+                    "message": "DistanceSensorNoEcho: no echo received",
+                }
+            ],
+        ):
+            lines = groq._warning_lines()
+        self.assertEqual(
+            lines,
+            ["19:04:58 WARNING gpiozero: DistanceSensorNoEcho: no echo received"],
+        )
+
+    def test_no_warnings_is_an_empty_list(self):
+        with patch.object(groq, "recent_warnings", return_value=[]):
+            self.assertEqual(groq._warning_lines(), [])
 
 
 class AdviseTestCase(unittest.TestCase):
