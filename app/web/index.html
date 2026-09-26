@@ -275,6 +275,12 @@
       </div>
       <p class="muted" style="margin-top:10px">Your Groq key from console.groq.com. Stored in this browser only and sent with each Ask Groq request — the Pi does not keep it. Required to use the Ask Groq card.</p>
       <div class="row" style="margin-top:14px">
+        <label>Hardware model</label>
+        <select id="set-model" onchange="setModel(this.value)" title="Which Gardyn this unit is"></select>
+        <span class="muted" id="set-model-note"></span>
+      </div>
+      <p class="muted" style="margin:-6px 0 12px">Sets the profile used for camera count, pod layout and light bars. Applies immediately — no restart. Saved on the Pi outside <code>.env</code>; "Auto" falls back to the sensor, then <code>GARDYN_MODEL</code>.</p>
+      <div class="row">
         <label>Theme</label>
         <select id="set-theme" onchange="setThemePref(this.value)">
           <option value="auto">Auto (system)</option>
@@ -672,6 +678,33 @@
       $("updated").textContent = "updated " + new Date().toLocaleTimeString();
     }
 
+    // Populate the model dropdown and show where the active model came from, so
+    // a stale GARDYN_MODEL in .env cannot silently disagree with what the UI shows.
+    function renderModelOptions(s) {
+      const sel = $("set-model");
+      if (!sel) return;
+      const models = (s && s.available_models) || ["auto"];
+      const current = (s && s.model_override) || "auto";
+      if (sel.dataset.filled !== models.join("|")) {
+        sel.innerHTML = models.map(m =>
+          `<option value="${m}">${m === "auto" ? "Auto (detect)" : m}</option>`).join("");
+        sel.dataset.filled = models.join("|");
+      }
+      sel.value = models.indexOf(current) === -1 ? "auto" : current;
+      const src = s && s.model_source;
+      const note = { settings: "chosen here", environment: "from GARDYN_MODEL in .env", auto: "detected from the sensor" };
+      $("set-model-note").textContent = src && note[src] ? note[src] : "";
+    }
+    async function setModel(value) {
+      try {
+        const s = await post("/system/model", { model: value });
+        if (s && s.error) toast(s.error, true);
+        renderModelOptions(s);
+        toast(value === "auto" ? "model: auto-detect" : "model: " + value);
+        await loadSystem();
+        loadPods();
+      } catch (e) { toast("could not set model: " + e.message, true); }
+    }
     async function loadSystem() {
       try {
         const s = await get("/system");
@@ -684,6 +717,7 @@
         $("d-waterlow").textContent = waterLowCm != null ? `> ${waterLowCm} cm` : "off";
         $("d-pumpcap").textContent = s.pump_max_run_seconds != null ? `${Math.round(s.pump_max_run_seconds / 60)} min` : "—";
         lowerCameraEnabled = !(s.profile && s.profile.lower_camera === false);
+        renderModelOptions(s);
         document.querySelectorAll("[data-lower-camera]").forEach(el => { el.hidden = !lowerCameraEnabled; });
         // Single-camera units (e.g. Gardyn 3.0): collapse to one full-width column.
         document.querySelectorAll(".cams").forEach(el => { el.style.gridTemplateColumns = lowerCameraEnabled ? "" : "1fr"; });

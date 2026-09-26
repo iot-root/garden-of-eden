@@ -189,18 +189,30 @@ GARDEN_ADMIN_PASSWORD = (
 STATE_FILE = os.path.expanduser(os.getenv("STATE_FILE", "~/.garden_state.json"))
 SCHEDULE_FILE = os.path.expanduser(os.getenv("SCHEDULE_FILE", "~/.garden_schedule.json"))
 
-# Per-pod plant tracking (name + shape code). POD_COUNT pods (Gardyn Home = 30).
-POD_COUNT = _get_int("POD_COUNT", 30)
+# Per-pod plant tracking (name + shape code).
 # Tower geometry, so the UI can organise pods the way the unit is actually
-# built rather than as a flat 1..N list. POD_COLUMNS is how many vertical pod
-# columns the unit has; pods fill down the first column, then the second, and
-# so on. POD_SIDE_PATTERN lists the side each pod sticks out on, ordered from
-# the highest pod down ("l" or "r"), and every column shares that pattern.
-# Leaving POD_COLUMNS at 1 renders a single flat column, which is what a unit
-# with no known geometry gets.
-POD_COLUMNS = _get_int("POD_COLUMNS", 1)
+# built rather than as a flat 1..N list. Both default to 0, meaning "unset" --
+# the detected model profile then decides (see hardware.pod_capacity and
+# hardware.tower_count), so a fresh install needs no pod configuration. Set
+# either only for a unit that differs from its profile.
+#
+# POD_SIDE_PATTERN lists the side each pod sticks out on, ordered from the
+# highest pod down ("l" or "r"), and every tower shares that pattern. It is
+# geometry the software cannot infer, so it has no per-model default.
+POD_COUNT = _get_int("POD_COUNT", 0)
+POD_COLUMNS = _get_int("POD_COLUMNS", 0)
 POD_SIDE_PATTERN = os.getenv("POD_SIDE_PATTERN", "").strip().lower()
 PODS_FILE = os.path.expanduser(os.getenv("PODS_FILE", "~/.garden_pods.json"))
+
+# ---------------------------------------------------------------------------
+# Hardware profile chosen from the web UI
+# ---------------------------------------------------------------------------
+
+# Stores the model picked in Settings. Deliberately a separate file from .env:
+# .env holds credentials and is written by bin/setup.sh, so rewriting it from a
+# web request would risk corrupting the service config. Read on every call, so a
+# change applies without restarting the service.
+HARDWARE_FILE = os.path.expanduser(os.getenv("HARDWARE_FILE", "~/.garden_hardware.json"))
 
 # ---------------------------------------------------------------------------
 # Grow-cycle & notifications

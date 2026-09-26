@@ -88,6 +88,17 @@ class WebUITestCase(unittest.TestCase):
         # The preset hover effect must not survive the disabled state.
         self.assertIn(".presets button[disabled]:hover", html)
 
+    def test_model_picker_is_in_settings(self):
+        html = self.client.get("/").data.decode()
+        for needle in (
+            'id="set-model"',
+            "function setModel(",
+            "renderModelOptions",
+            "/system/model",
+        ):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, html)
+
     def test_pods_grid_is_two_up_and_interleaved(self):
         html = self.client.get("/").data.decode()
         # One row per tower level, two pods across: max 2 panes per row.
