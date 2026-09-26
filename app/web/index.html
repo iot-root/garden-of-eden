@@ -237,11 +237,11 @@
     <div class="card" id="settings">
       <h2>Settings</h2>
       <div class="row">
-        <label>API key</label>
+        <label>Admin password</label>
         <input type="password" id="api-key" placeholder="leave blank on the Pi" style="flex:1; min-width:160px">
         <button class="btn" onclick="saveKey()">Save</button>
       </div>
-      <p class="muted" style="margin-top:10px">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
+      <p class="muted" style="margin-top:10px">Grants full control of the pump, light and camera. Stored in this browser only. Needed when the firmware sets <code>GARDEN_ADMIN_PASSWORD</code> and you connect from another machine.</p>
       <div class="row" style="margin-top:14px">
         <label>Theme</label>
         <select id="set-theme" onchange="setThemePref(this.value)">
@@ -831,7 +831,10 @@
         });
       });
     }
-    function toggleSettings() { $("settings").classList.toggle("open"); $("api-key").value = API_KEY; }
+    function toggleSettings() {
+      $("settings").classList.toggle("open");
+      $("api-key").value = API_KEY;
+    }
     function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
 
     setupCollapsible();

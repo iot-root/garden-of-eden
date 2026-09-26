@@ -168,12 +168,20 @@ TIMELAPSE_MAX_FRAMES = _get_int("TIMELAPSE_MAX_FRAMES", 720)
 TIMELAPSE_FPS = _get_int("TIMELAPSE_FPS", 12)
 
 # ---------------------------------------------------------------------------
-# REST API auth (optional). When GARDEN_API_KEY is set, non-localhost
+# REST API auth (optional). When GARDEN_ADMIN_PASSWORD is set, non-localhost
 # requests must send it via the X-API-Key header. Localhost (cron) bypasses.
 # We trim surrounding whitespace so values stored in .env or copied by hand do
 # not fail unexpectedly.
+#
+# GARDEN_API_KEY is the deprecated name for this same value. It is still
+# honoured as a fallback on purpose: an empty password disables the auth hook
+# entirely (see app/__init__.py), so a rename that missed a .env file would
+# silently reopen the API on the network instead of erroring. The fallback
+# keeps that failure loud (app logs a deprecation warning) rather than quiet.
 # ---------------------------------------------------------------------------
-GARDEN_API_KEY = os.getenv("GARDEN_API_KEY", "").strip()
+GARDEN_ADMIN_PASSWORD = (
+    os.getenv("GARDEN_ADMIN_PASSWORD") or os.getenv("GARDEN_API_KEY") or ""
+).strip()
 
 # ---------------------------------------------------------------------------
 # State persistence (actuator + grow-cycle state, for power-loss recovery)

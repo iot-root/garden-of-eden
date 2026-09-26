@@ -62,7 +62,7 @@ restore `config.txt` from `config.txt.garden.bak` on the boot partition.
 
 If `gardyn.local` doesn't resolve (some Android/Windows setups), use the Pi's IP
 (`hostname -I` over SSH, or check your router). To lock down the API over the
-network, set `GARDEN_API_KEY` in `.env` and enter it in the web UI's ⚙ settings.
+network, set `GARDEN_ADMIN_PASSWORD` in `.env` and enter it in the web UI's ⚙ settings.
 
 ## Private HTTPS access with Tailscale
 

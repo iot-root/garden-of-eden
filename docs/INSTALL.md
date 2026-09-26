@@ -43,7 +43,7 @@ Set at least:
 - `MQTT_USERNAME` / `MQTT_PASSWORD` (your mosquitto creds)
 - `MQTT_IDENTIFIER` (unique per unit, e.g. `gardyn_03`)
 - `WATER_LOW_CM` (low-water threshold; `0` disables)
-- Optionally `GARDEN_API_KEY` to require a key for remote API access.
+- Optionally `GARDEN_ADMIN_PASSWORD` to require a key for remote API access.
 
 `SENSOR_TYPE` is **auto-detected** by setup (AM2320 vs DHT20) — leave it unset.
 If automatic detection is unavailable, set `SENSOR_TYPE` explicitly and use

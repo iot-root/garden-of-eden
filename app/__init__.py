@@ -1,4 +1,5 @@
 import logging
+import os
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -52,15 +53,19 @@ def create_app(config_name=None):
 
 
 def _register_auth(app):
-    """Optional API-key auth (issue #7).
+    """Optional admin-password auth (issue #7).
 
-    Enabled only when GARDEN_API_KEY is set. Localhost requests (e.g. the Pi's
-    own cron jobs) and CORS preflight bypass the check so automation keeps
-    working without a key.
+    Enabled only when GARDEN_ADMIN_PASSWORD (or its deprecated alias
+    GARDEN_API_KEY) is set. Localhost requests (e.g. the Pi's own cron jobs)
+    and CORS preflight bypass the check so automation keeps working without a
+    password.
     """
-    api_key = (config.GARDEN_API_KEY or "").strip()
+    api_key = (config.GARDEN_ADMIN_PASSWORD or "").strip()
     if not api_key:
         return
+
+    if not os.getenv("GARDEN_ADMIN_PASSWORD") and os.getenv("GARDEN_API_KEY"):
+        logger.warning("GARDEN_API_KEY is deprecated; rename it to GARDEN_ADMIN_PASSWORD")
 
     # The UI shell and static assets load without a key so the page can prompt
     # for one; API calls it makes still carry the key.
