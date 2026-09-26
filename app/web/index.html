@@ -113,6 +113,31 @@
     input:focus,select:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
     .muted { color:var(--faint); font-size:.76rem; }
 
+    /* Ask Groq (advice endpoint) */
+    textarea{ font:inherit; font-size:.85rem; padding:9px 11px; border:1px solid var(--line-2);
+      border-radius:10px; background:#fff; color:var(--ink); width:100%; min-height:60px; resize:vertical; }
+    textarea:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
+    .presets { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .presets button{ background:var(--surface-2); color:var(--muted); border:1px solid var(--line);
+      border-radius:999px; padding:6px 13px; font-size:.78rem; font-weight:600; cursor:pointer; transition:.15s; }
+    .presets button:hover{ border-color:var(--green); color:var(--green-ink); }
+    .advice-out{ margin-top:12px; padding:14px 16px; border-radius:14px; background:var(--surface-2);
+      border:1px solid var(--line); font-size:.86rem; line-height:1.55; white-space:pre-wrap; }
+    .advice-out:empty{ display:none; }
+    .advice-out.err{ border-color:var(--red); color:var(--red); }
+    .advice-meta{ margin-top:8px; }
+    /* Every disabled control must LOOK disabled. This used to target only
+       button.btn, so the Ask Groq presets kept their full colour and pointer
+       cursor while being unclickable: a dead control that looked alive, and
+       clicking it did nothing at all. */
+    button[disabled]{ opacity:.5; cursor:not-allowed; }
+    .presets button[disabled]:hover{ border-color:var(--line); color:var(--muted); }
+    /* The gate hint is an instruction, not fine print: it must be readable at a
+       glance next to the controls it explains. */
+    #advice-gate:not(:empty){ padding:10px 12px; border-radius:12px;
+      background:var(--surface-2); border:1px dashed var(--line-2);
+      color:var(--muted); font-size:.78rem; }
+
     /* Toggle switch */
     .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-size:.82rem; color:var(--muted); }
     .switch input { position:absolute; opacity:0; width:0; height:0; }
@@ -123,7 +148,9 @@
     .switch input:checked + .track::after { transform:translateX(17px); }
 
     /* Cameras */
-    .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    /* align-items:start keeps each figure's own aspect-ratio height instead
+       of stretching both to the tallest (which would re-introduce cropping). */
+    .cams { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
     .cam { position:relative; border-radius:14px; overflow:hidden; background:#dde7e0; aspect-ratio:4/3; border:1px solid var(--line); }
     .cam img, .cam video { width:100%; height:100%; object-fit:cover; display:block; background:#000; }
     .cam figcaption { position:absolute; left:10px; bottom:8px; color:#fff; font-size:.72rem; font-weight:600;
@@ -168,9 +195,10 @@
     .alert-banner { display:flex; align-items:center; gap:10px; background:var(--amber-bg); border:1px solid var(--amber);
       color:var(--amber); border-radius:14px; padding:12px 16px; font-size:.88rem; font-weight:600; box-shadow:var(--shadow); }
     .alert-banner button { margin-left:auto; }
-    /* Per-pod plant tracking */
-    .pods { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    @media (max-width:640px){ .pods { grid-template-columns:1fr 1fr; } }
+    /* Per-pod plant tracking. One row per tower level: left pod then right
+       pod, so the grid reads across the tower rather than down one column. */
+    .pods { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+    @media (max-width:640px){ .pods { grid-template-columns:1fr; } }
     .pod { border:1px solid var(--line); background:var(--surface-2); border-radius:10px; padding:8px; }
     .pod .pn { font-size:.6rem; color:var(--faint); font-weight:700; letter-spacing:.05em; }
     .pod input { width:100%; margin:4px 0; font-size:.8rem; padding:4px 6px; border-radius:7px; }
@@ -235,17 +263,34 @@
     <div class="card" id="settings">
       <h2>Settings</h2>
       <div class="row">
-        <label>API key</label>
+        <label>Admin password</label>
         <input type="password" id="api-key" placeholder="leave blank on the Pi" style="flex:1; min-width:160px">
         <button class="btn" onclick="saveKey()">Save</button>
       </div>
-      <p class="muted" style="margin-top:10px">Stored in this browser only. Needed when the firmware sets <code>GARDEN_API_KEY</code> and you connect from another machine.</p>
+      <p class="muted" style="margin-top:10px">Grants full control of the pump, light and camera. Stored in this browser only. Needed when the firmware sets <code>GARDEN_ADMIN_PASSWORD</code> and you connect from another machine.</p>
       <div class="row" style="margin-top:14px">
+        <label>Groq API key</label>
+        <input type="password" id="groq-key" placeholder="gsk_..." style="flex:1; min-width:160px">
+        <button class="btn" onclick="saveGroqKey()">Save</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Your Groq key from console.groq.com. Stored in this browser only and sent with each Ask Groq request — the Pi does not keep it. Required to use the Ask Groq card.</p>
+      <div class="row" style="margin-top:14px">
+        <label>Hardware model</label>
+        <select id="set-model" onchange="setModel(this.value)" title="Which Gardyn this unit is"></select>
+        <span class="muted" id="set-model-note"></span>
+      </div>
+      <p class="muted" style="margin:-6px 0 12px">Sets the profile used for camera count, pod layout and light bars. Applies immediately — no restart. Saved on the Pi outside <code>.env</code>; "Auto" falls back to the sensor, then <code>GARDYN_MODEL</code>.</p>
+      <div class="row">
         <label>Theme</label>
         <select id="set-theme" onchange="setThemePref(this.value)">
           <option value="auto">Auto (system)</option>
           <option value="dark">Dark</option>
           <option value="light">Light</option>
+        </select>
+        <label>Units</label>
+        <select id="set-tempunit" onchange="setTempUnit(this.value)" title="Temperature display unit">
+          <option value="C">°C Celsius</option>
+          <option value="F">°F Fahrenheit</option>
         </select>
         <label>Live refresh</label>
         <select id="set-caminterval" onchange="setCamInterval(+this.value)">
@@ -259,9 +304,9 @@
     <div class="card">
       <h2>Sensors <button class="ghost" onclick="refresh()">Refresh</button></h2>
       <div class="tiles">
-        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">Air Temp</div><div class="val"><span id="s-temp">—</span><small class="tempunit">°C</small></div></div>
         <div class="tile"><div class="top">Humidity</div><div class="val"><span id="s-hum">—</span><small>%</small></div></div>
-        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small>°C</small></div></div>
+        <div class="tile"><div class="top">PCB Temp</div><div class="val"><span id="s-pcb">—</span><small class="tempunit">°C</small></div></div>
         <div class="tile" id="s-water-card"><div class="top">Water <span class="statuschip" id="s-water-status"></span></div><div class="val"><span id="s-water-gal">—</span><small>gal</small></div><div class="muted" style="font-size:.68rem"><span id="s-water">—</span> cm</div><div class="bar"><i id="s-water-bar" style="width:0"></i></div></div>
       </div>
       <div class="tiles" style="margin-top:12px">
@@ -283,6 +328,25 @@
         <div><span class="k">Water-low at</span><span class="v" id="d-waterlow">—</span></div>
         <div><span class="k">Pump max run</span><span class="v" id="d-pumpcap">—</span></div>
       </div>
+    </div>
+
+    <div class="card" id="advice">
+      <h2>Ask Groq</h2>
+      <div class="row">
+        <textarea id="advice-q" placeholder="e.g. Are my plants ok? Anything I should change today? (Ctrl+Enter to send)"></textarea>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="advice-send" onclick="askGroq()">Ask</button>
+        <span class="muted" id="advice-status"></span>
+      </div>
+      <div class="presets" id="advice-presets">
+        <button data-q="How are my plants doing, and is anything wrong right now?">How are they doing?</button>
+        <button data-q="Is the water level a problem, and what should I do about it?">Water level</button>
+        <button data-q="What should I change today to get the best growth?">What to change today</button>
+      </div>
+      <div id="advice-gate" style="margin-top:12px"></div>
+      <div class="advice-out" id="advice-out"></div>
+      <div class="muted advice-meta" id="advice-usage"></div>
     </div>
 
     <div class="card">
@@ -326,18 +390,18 @@
         </span>
       </h2>
       <div class="cams">
-        <figure class="cam"><img id="cam-upper" alt="upper camera"><figcaption>Upper</figcaption></figure>
-        <figure class="cam"><img id="cam-lower" alt="lower camera"><figcaption>Lower</figcaption></figure>
+        <figure class="cam"><img id="cam-upper" alt="upper camera" onload="fitCam(this)"><figcaption>Upper</figcaption></figure>
+        <figure class="cam" data-lower-camera><img id="cam-lower" alt="lower camera" onload="fitCam(this)"><figcaption>Lower</figcaption></figure>
       </div>
       <h2 style="margin-top:18px">Timelapse
         <span style="display:flex; gap:8px">
           <button class="ghost" onclick="makeTimelapse('upper')">Build upper</button>
-          <button class="ghost" onclick="makeTimelapse('lower')">Build lower</button>
+          <button class="ghost" data-lower-camera onclick="makeTimelapse('lower')">Build lower</button>
         </span>
       </h2>
       <div class="cams">
-        <figure class="cam"><video id="tl-upper" controls preload="none" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
-        <figure class="cam"><video id="tl-lower" controls preload="none" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
+        <figure class="cam"><video id="tl-upper" controls preload="metadata" playsinline muted loop></video><figcaption>Upper timelapse</figcaption></figure>
+        <figure class="cam" data-lower-camera><video id="tl-lower" controls preload="metadata" playsinline muted loop></video><figcaption>Lower timelapse</figcaption></figure>
       </div>
     </div>
 
@@ -357,8 +421,8 @@
 
     <div class="card">
       <h2>Plants <button class="ghost" onclick="savePods()">Save plants</button></h2>
-      <p class="muted" style="margin:-4px 0 12px">Name each pod and tap the shapes to match the code printed on the physical pod.</p>
-      <div class="pods" id="pods"></div>
+      <p class="muted" style="margin:-4px 0 12px">Each row is one level of the tower, top row highest: left pod then right pod, numbered from the top down. Tap the shapes to match a code printed on the physical pod.</p>
+      <div id="pods"></div>
     </div>
 
     <div class="card">
@@ -409,8 +473,14 @@
 
   <script>
     let API_KEY = localStorage.getItem("garden_key") || "";
+    // The Groq key is held the same way as the admin password:
+    // browser-only, sent per request, never stored on the Pi.
+    let GROQ_KEY = localStorage.getItem("groq_key") || "";
     let camTimer = null;
     let camInterval = +localStorage.getItem("camInterval") || 6000;
+    // Temperature display unit; default °C (sensors/API are Celsius).
+    let tempUnit = localStorage.getItem("tempUnit") === "F" ? "F" : "C";
+    let lowerCameraEnabled = true;
     let waterLowCm = null;  // tank-low threshold (cm) from /system; null = disabled
     const SCH_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const emptyDays = () => Object.fromEntries(SCH_DAYS.map(d => [d, []]));
@@ -418,8 +488,20 @@
 
     const $ = id => document.getElementById(id);
     function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
+    // Advice calls additionally carry the Groq key. Scoped to /advice so the
+    // third-party credential is never attached to unrelated endpoints.
+    function adviceHeaders(extra) {
+      return headers(Object.assign(GROQ_KEY ? { "X-Groq-Key": GROQ_KEY } : {}, extra || {}));
+    }
     function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : ""); setTimeout(() => t.className = "", 1600); }
     function conn(ok) { $("conn").className = "dot " + (ok ? "ok" : "bad"); }
+    // API values are °C; format for display in the selected unit (default °C).
+    function fmtTemp(value) {
+      const celsius = Number(value);
+      if (!Number.isFinite(celsius)) return "n/a";
+      const v = tempUnit === "F" ? (celsius * 9 / 5) + 32 : celsius;
+      return v.toFixed(1);
+    }
 
     // fetch with a timeout so a hung/unreachable Pi never freezes the UI.
     async function fetchT(path, opts, ms) {
@@ -456,6 +538,107 @@
     async function setPump(on) { await post(on ? "/pump/on" : "/pump/off"); setActive("pump", on); }
     async function runPump() { const s = +$("run-secs").value; await post("/pump/run", { seconds: s }); setActive("pump", true); }
 
+    // What this browser still has to supply before Ask Groq can be used.
+    // Only the admin password qualifies: the endpoint answers 401 without it,
+    // and no server-side setting can stand in for it. The Groq key deliberately
+    // does NOT gate the control, because the Pi can hold GROQ_API_KEY in its
+    // own .env and the endpoint falls back to it. Gating on the key here would
+    // grey out a control that would have worked fine. If no key exists in
+    // either place the request returns 503 with instructions, which the send
+    // path renders in the output box.
+    function missingAdviceCreds() {
+      return API_KEY ? [] : ["your admin password"];
+    }
+    function syncAdviceGate() {
+      const need = missingAdviceCreds();
+      const ready = need.length === 0;
+      $("advice-send").disabled = !ready;
+      $("advice-presets").querySelectorAll("button[data-q]").forEach(b => { b.disabled = !ready; });
+      $("advice-gate").textContent = ready ? "" :
+        "Set " + need.join(" and ") + " in Settings to use this.";
+      $("advice-gate").style.display = ready ? "none" : "";
+      $("advice-q").disabled = !ready;
+    }
+
+    // Ask Groq for advice. Deliberately does not reuse post(): that helper
+    // toasts and drops the status code, but here we need to distinguish
+    // "not configured" (503) from an upstream failure (502), and a Groq
+    // round trip takes seconds rather than milliseconds.
+    async function askGroq(question) {
+      const q = (question || $("advice-q").value || "").trim();
+      const out = $("advice-out"), status = $("advice-status"), send = $("advice-send");
+      if (!API_KEY || !GROQ_KEY) {
+        // Normally unreachable (the gate disables these controls), but the
+        // browser can swallow a click on a disabled button with no feedback at
+        // all, and a key can be cleared in another tab after the gate ran.
+        // Never return silently: say exactly what is missing and where.
+        syncAdviceGate();
+        const msg = "Set " + missingAdviceCreds().join(" and ") + " in Settings first.";
+        toast(msg, true);
+        out.className = "advice-out err";
+        out.textContent = msg;
+        return;
+      }
+      if (!q) { toast("type a question first", true); return; }
+      send.disabled = true;
+      status.textContent = "asking…";
+      out.className = "advice-out";
+      out.textContent = "";
+      $("advice-usage").textContent = "";
+      try {
+        const r = await fetchT("/advice", {
+          method: "POST",
+          headers: adviceHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ question: q }),
+        }, 90000);
+        let d = {}; try { d = await r.json(); } catch {}
+        conn(r.ok);
+        if (r.status === 503) {
+          out.className = "advice-out err";
+          out.textContent = d.error || "Groq rejected the API key, or none was supplied.";
+        } else if (r.status === 401) {
+          out.className = "advice-out err";
+          out.textContent = "Unauthorized — your admin password is wrong or missing.";
+        } else if (!r.ok) {
+          out.className = "advice-out err";
+          out.textContent = d.error || "request failed (HTTP " + r.status + ")";
+        } else {
+          out.className = "advice-out";
+          out.textContent = d.advice || "(empty response)";
+          const u = d.usage || {};
+          $("advice-usage").textContent = d.model +
+            (u.input_tokens != null ? " · " + u.input_tokens + " in / " + u.output_tokens + " out tokens" : "");
+        }
+      } catch (e) {
+        conn(false);
+        out.className = "advice-out err";
+        out.textContent = e.name === "AbortError" ? "Groq took too long to respond." : "error: " + e.message;
+      } finally {
+        send.disabled = false;
+        status.textContent = "";
+      }
+    }
+
+    function setupAdvice() {
+      $("advice-presets").querySelectorAll("button[data-q]").forEach(b => {
+        b.addEventListener("click", () => {
+          $("advice-q").value = b.dataset.q;
+          askGroq(b.dataset.q);
+        });
+      });
+      $("advice-q").addEventListener("keydown", e => {
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); askGroq(); }
+      });
+      syncAdviceGate();
+    }
+
+    function saveGroqKey() {
+      GROQ_KEY = $("groq-key").value.trim();
+      localStorage.setItem("groq_key", GROQ_KEY);
+      syncAdviceGate();
+      toast(GROQ_KEY ? "groq key saved" : "groq key cleared");
+    }
+
     async function refresh() {
       const sensors = {
         "/temperature": ["s-temp", "temperature"],
@@ -463,7 +646,10 @@
         "/pcb-temp": ["s-pcb", "pcb-temp"],
       };
       for (const [path, [id, key]] of Object.entries(sensors)) {
-        try { $(id).textContent = (await get(path))[key]; } catch { $(id).textContent = "n/a"; }
+        try {
+          const value = (await get(path))[key];
+          $(id).textContent = id === "s-temp" || id === "s-pcb" ? fmtTemp(value) : value;
+        } catch { $(id).textContent = "n/a"; }
       }
       try {
         const w = await get("/distance"); const cm = w.distance;
@@ -482,12 +668,43 @@
       } catch { $("s-water").textContent = "n/a"; $("s-water-gal").textContent = "n/a"; $("s-water-status").textContent = ""; }
       try {
         const p = await get("/pump/stats");
-        if (p.BusVoltage != null) { $("p-volt").textContent = p.BusVoltage; $("p-curr").textContent = p.BusCurrent; $("p-pow").textContent = p.Power; $("p-shunt").textContent = p.ShuntVoltage ?? "—"; }
-        else { $("p-volt").textContent = $("p-curr").textContent = $("p-pow").textContent = $("p-shunt").textContent = "—"; }
+        // INA219 returns raw floats; round for display (fmt -> "—" on null/NaN).
+        const fmt = (v, d) => (v != null && Number.isFinite(+v)) ? (+v).toFixed(d) : "—";
+        $("p-volt").textContent = fmt(p.BusVoltage, 1);    // V
+        $("p-curr").textContent = fmt(p.BusCurrent, 2);    // mA
+        $("p-pow").textContent = fmt(p.Power, 2);          // mW
+        $("p-shunt").textContent = fmt(p.ShuntVoltage, 1); // mV
       } catch { /* optional */ }
       $("updated").textContent = "updated " + new Date().toLocaleTimeString();
     }
 
+    // Populate the model dropdown and show where the active model came from, so
+    // a stale GARDYN_MODEL in .env cannot silently disagree with what the UI shows.
+    function renderModelOptions(s) {
+      const sel = $("set-model");
+      if (!sel) return;
+      const models = (s && s.available_models) || ["auto"];
+      const current = (s && s.model_override) || "auto";
+      if (sel.dataset.filled !== models.join("|")) {
+        sel.innerHTML = models.map(m =>
+          `<option value="${m}">${m === "auto" ? "Auto (detect)" : m}</option>`).join("");
+        sel.dataset.filled = models.join("|");
+      }
+      sel.value = models.indexOf(current) === -1 ? "auto" : current;
+      const src = s && s.model_source;
+      const note = { settings: "chosen here", environment: "from GARDYN_MODEL in .env", auto: "detected from the sensor" };
+      $("set-model-note").textContent = src && note[src] ? note[src] : "";
+    }
+    async function setModel(value) {
+      try {
+        const s = await post("/system/model", { model: value });
+        if (s && s.error) toast(s.error, true);
+        renderModelOptions(s);
+        toast(value === "auto" ? "model: auto-detect" : "model: " + value);
+        await loadSystem();
+        loadPods();
+      } catch (e) { toast("could not set model: " + e.message, true); }
+    }
     async function loadSystem() {
       try {
         const s = await get("/system");
@@ -499,22 +716,42 @@
         waterLowCm = (s.water_low_cm != null && s.water_low_cm !== 0) ? s.water_low_cm : null;
         $("d-waterlow").textContent = waterLowCm != null ? `> ${waterLowCm} cm` : "off";
         $("d-pumpcap").textContent = s.pump_max_run_seconds != null ? `${Math.round(s.pump_max_run_seconds / 60)} min` : "—";
+        lowerCameraEnabled = !(s.profile && s.profile.lower_camera === false);
+        renderModelOptions(s);
+        document.querySelectorAll("[data-lower-camera]").forEach(el => { el.hidden = !lowerCameraEnabled; });
+        // Single-camera units (e.g. Gardyn 3.0): collapse to one full-width column.
+        document.querySelectorAll(".cams").forEach(el => { el.style.gridTemplateColumns = lowerCameraEnabled ? "" : "1fr"; });
         conn(true);
       } catch { $("meta").textContent = "offline"; conn(false); }
     }
 
     function loadCams() {
       $("cam-upper").src = "/camera/upper?t=" + Date.now();
-      $("cam-lower").src = "/camera/lower?t=" + Date.now();
+      if (lowerCameraEnabled) $("cam-lower").src = "/camera/lower?t=" + Date.now();
     }
+    // Match the figure's aspect ratio to the actual media so object-fit:cover
+    // never crops (the rotated upper feed is portrait 3:4, not 4:3).
+    function fitCam(media) {
+      const fig = media.closest(".cam");
+      const w = media.naturalWidth || media.videoWidth;
+      const h = media.naturalHeight || media.videoHeight;
+      if (fig && w && h) fig.style.aspectRatio = w + " / " + h;
+    }
+    // The videos use preload="metadata" (not "none") so loadedmetadata fires
+    // as soon as a src is set and fitCam can measure them without waiting
+    // for playback.
+    document.querySelectorAll(".cam video").forEach(v =>
+      v.addEventListener("loadedmetadata", () => fitCam(v)));
     function toggleCamAuto() {
       if ($("cam-auto").checked) { loadCams(); camTimer = setInterval(loadCams, camInterval); }
       else { clearInterval(camTimer); camTimer = null; }
     }
     function loadTimelapses() {
-      ["upper", "lower"].forEach(c => { $("tl-" + c).src = "/camera/timelapse/" + c + "?t=" + Date.now(); });
+      const cameras = lowerCameraEnabled ? ["upper", "lower"] : ["upper"];
+      cameras.forEach(c => { $("tl-" + c).src = "/camera/timelapse/" + c + "?t=" + Date.now(); });
     }
     async function makeTimelapse(cam) {
+      if (cam === "lower" && !lowerCameraEnabled) return;
       toast("Building " + cam + " timelapse… (can take a minute)");
       const r = await post("/camera/timelapse/" + cam);
       if (r && !r.error) { const v = $("tl-" + cam); v.src = "/camera/timelapse/" + cam + "?t=" + Date.now(); v.load(); }
@@ -627,11 +864,12 @@
 
     // ---- Per-pod plant tracking (name + shape code) ----
     const SHAPE_GLYPH = { circle: "●", square: "■", triangle: "▲", diamond: "◆", star: "★", hexagon: "⬢", heart: "♥", plus: "✚" };
-    let pods = [], podShapes = [], plantCatalog = [];
+    let pods = [], podShapes = [], plantCatalog = [], podLayout = { columns: 1, side_pattern: "" };
     async function loadPods() {
       try {
         const d = await get("/pods");
         pods = d.pods || []; podShapes = d.shapes || []; plantCatalog = d.catalog || [];
+        if (d.layout) podLayout = d.layout;
         renderPods();
       } catch {}
     }
@@ -650,39 +888,78 @@
       const p = plantCatalog.find(x => x.name === name);
       return p ? `${p.guide} · ${p.light_need} light · ~${p.days_to_harvest}d · ${p.difficulty}` : "";
     };
+    // Label a pod by where it physically sits: "A1 R" = column A, level 1 from
+    // the top, sticking out to the right. Falls back to a flat pod number on a
+    // unit with no configured tower geometry.
+    function podLabel(p) {
+      const pos = p.position || {};
+      if (!pos.column || (podLayout.columns || 1) < 2) return "POD " + p.id;
+      const col = String.fromCharCode(64 + pos.column);
+      const side = pos.side === "l" ? "L" : pos.side === "r" ? "R" : "";
+      return col + (pos.level || "?") + (side ? " " + side : "");
+    }
+    // Display order is one row per tower level, left pod then right pod, so
+    // the grid reads across the tower. This is presentation only: it does not
+    // match how the right-hand column actually sits relative to the left one,
+    // but it is far easier to scan a level at a time than to read down two
+    // separate columns.
+    function podOrder() {
+      const columns = Math.max(1, podLayout.columns || 1);
+      if (columns < 2 || !pods.some(p => p.position)) return pods.slice();
+      const levels = pods.map(p => ((p.position || {}).level) || 0);
+      const out = [];
+      for (let level = 1; level <= Math.max.apply(null, levels); level++) {
+        for (let col = 1; col <= columns; col++) {
+          const hit = pods.find(p =>
+            ((p.position || {}).column) === col && ((p.position || {}).level) === level);
+          if (hit) out.push(hit);
+        }
+      }
+      // Anything the position map did not account for still gets shown.
+      return out.concat(pods.filter(p => out.indexOf(p) === -1));
+    }
     function renderPods() {
       const box = $("pods"); box.innerHTML = "";
       const opts = catalogOptionsHTML();
-      pods.forEach((p, i) => {
+      const cell = p => {
+        const c = document.createElement("div"); c.className = "pod";
         if (!p.symbols) p.symbols = [];
-        const cell = document.createElement("div"); cell.className = "pod";
-        const pn = document.createElement("div"); pn.className = "pn"; pn.textContent = "POD " + p.id;
+        const pn = document.createElement("div"); pn.className = "pn";
+        pn.textContent = podLabel(p); pn.title = "pod " + p.id;
         const isCustom = p.name && !plantCatalog.some(x => x.name === p.name);
         const sel = document.createElement("select"); sel.innerHTML = opts;
         sel.value = isCustom ? "__other__" : (p.name || "");
-        const custom = document.createElement("input"); custom.placeholder = "custom name"; custom.value = isCustom ? p.name : "";
+        const custom = document.createElement("input");
+        custom.placeholder = "custom name"; custom.value = isCustom ? p.name : "";
         custom.style.display = isCustom ? "" : "none";
-        const guide = document.createElement("div"); guide.className = "pguide muted"; guide.textContent = guideFor(p.name);
+        const guide = document.createElement("div");
+        guide.className = "pguide muted"; guide.textContent = guideFor(p.name);
         sel.onchange = () => {
-          if (sel.value === "__other__") { custom.style.display = ""; pods[i].name = custom.value; }
-          else { custom.style.display = "none"; custom.value = ""; pods[i].name = sel.value; }
-          guide.textContent = guideFor(pods[i].name);
+          if (sel.value === "__other__") { custom.style.display = ""; p.name = custom.value; }
+          else { custom.style.display = "none"; custom.value = ""; p.name = sel.value; }
+          guide.textContent = guideFor(p.name);
         };
-        custom.onchange = () => { pods[i].name = custom.value; };
+        custom.onchange = () => { p.name = custom.value; };
         const shapes = document.createElement("div"); shapes.className = "shapes";
         podShapes.forEach(s => {
-          const b = document.createElement("button"); b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
+          const b = document.createElement("button");
+          b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
           if (p.symbols.includes(s)) b.classList.add("on");
           b.onclick = () => {
-            const arr = pods[i].symbols;
+            const arr = p.symbols;
             const at = arr.indexOf(s);
             if (at >= 0) arr.splice(at, 1); else if (arr.length < 5) arr.push(s);
             b.classList.toggle("on", arr.includes(s));
           };
           shapes.appendChild(b);
         });
-        cell.append(pn, sel, custom, guide, shapes); box.appendChild(cell);
-      });
+        c.append(pn, sel, custom, guide, shapes);
+        return c;
+      };
+
+      const grid = document.createElement("div"); grid.className = "pods";
+      podOrder().forEach(p => grid.appendChild(cell(p)));
+      box.appendChild(grid);
     }
     function savePods() { post("/pods", pods); }
 
@@ -762,6 +1039,16 @@
       camInterval = ms; localStorage.setItem("camInterval", ms);
       if ($("cam-auto").checked) { clearInterval(camTimer); camTimer = setInterval(loadCams, camInterval); }
     }
+    function applyTempUnit() {
+      $("set-tempunit").value = tempUnit;
+      document.querySelectorAll(".tempunit").forEach(el => { el.textContent = "°" + tempUnit; });
+    }
+    function setTempUnit(unit) {
+      tempUnit = unit === "F" ? "F" : "C";
+      localStorage.setItem("tempUnit", tempUnit);
+      applyTempUnit();
+      refresh();  // re-render readings already on screen in the new unit
+    }
     // Wrap each card's content below its <h2> so the header can collapse it.
     function setupCollapsible() {
       document.querySelectorAll(".card").forEach((card, i) => {
@@ -778,13 +1065,19 @@
         });
       });
     }
-    function toggleSettings() { $("settings").classList.toggle("open"); $("api-key").value = API_KEY; }
-    function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); loadSystem(); refresh(); }
+    function toggleSettings() {
+      $("settings").classList.toggle("open");
+      $("api-key").value = API_KEY;
+      $("groq-key").value = GROQ_KEY;
+    }
+    function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); syncAdviceGate(); loadSystem(); refresh(); }
 
     setupCollapsible();
+    setupAdvice();
     $("theme-btn").textContent = document.documentElement.dataset.theme === "dark" ? "🌙" : "☀️";
     $("set-theme").value = localStorage.getItem("theme") || "dark";
     $("set-caminterval").value = camInterval;
+    applyTempUnit();
     loadSystem(); refresh(); loadGrow(); loadSchedule(); loadPods(); loadCams(); loadTimelapses(); syncToggles(); ping();
     setInterval(refresh, 30000);
     setInterval(ping, 10000);

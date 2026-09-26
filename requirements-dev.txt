@@ -8,6 +8,7 @@ paho-mqtt==2.0.0
 python-dotenv==1.0.1
 parameterized==0.9.0
 mock==5.1.0
+pytest==8.3.3
 
 # Linting / formatting (CI gate)
 ruff==0.6.9

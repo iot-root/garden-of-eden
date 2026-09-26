@@ -1,6 +1,7 @@
 Adafruit-Blinka==8.37.0
 adafruit-circuitpython-ahtx0==1.0.21
 adafruit-circuitpython-am2320==1.2.20
+groq==1.7.0
 adafruit-circuitpython-busdevice==5.2.6
 adafruit-circuitpython-connectionmanager==1.0.1
 adafruit-circuitpython-pct2075==1.1.21
@@ -30,6 +31,7 @@ pipdeptree==2.16.1
 pyftdi==0.55.0
 pyserial==3.5
 python-dotenv==1.0.1
+waitress==3.0.2
 pyusb==1.2.1
 rpi-ws281x==5.0.0
 RPi.GPIO==0.7.1

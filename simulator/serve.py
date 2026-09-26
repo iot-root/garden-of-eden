@@ -12,6 +12,9 @@ import os
 # Seed sim-friendly config BEFORE importing config/app (config reads env at import).
 os.environ.setdefault("SENSOR_TYPE", "DHT20")
 os.environ.setdefault("GARDYN_MODEL", "gardyn 3.0 (simulated)")
+# Keep both cameras simulated so the UI/MQTT expose the full entity set, even
+# though the impersonated unit may not have one (see the Studio profile).
+os.environ.setdefault("LOWER_CAMERA_ENABLED", "true")
 os.environ.setdefault("WATER_LOW_CM", "11")
 os.environ.setdefault("LOG_LEVEL", "INFO")
 # Keep simulated state files out of the real home dir.
@@ -43,7 +46,7 @@ _PLACEHOLDER_JPEG = base64.b64decode(
 )
 
 
-def _fake_capture(device, output_path, resolution=None):
+def _fake_capture(device, output_path, resolution=None, rotate=None):
     with open(output_path, "wb") as fh:
         fh.write(_PLACEHOLDER_JPEG)
     return output_path

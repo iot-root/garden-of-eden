@@ -11,6 +11,19 @@ def _get_bool(name, default=False):
     return os.getenv(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _get_bool_auto(name):
+    """Parse a truthy/falsy env var, returning None when it is unset.
+
+    None means "unspecified" so callers can fall back to a value derived from
+    hardware instead of forcing an explicit choice (e.g. the camera count
+    implied by the detected Gardyn model).
+    """
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return None
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 def _get_int(name, default):
     """Parse an int env var, accepting decimal ("72") or hex ("0x48")."""
     raw = os.getenv(name)
@@ -66,16 +79,11 @@ PIGPIO_PORT = _get_int("PIGPIO_PORT", 8888)
 SENSOR_TYPE = os.getenv("SENSOR_TYPE")
 MODEL_OVERRIDE = os.getenv("GARDYN_MODEL") or None
 
-# Per-model hardware profiles (issues #72, #84). Differences between Gardyn
-# generations are captured here so detection/UX can adapt. Pin defaults still
-# come from the env vars above; this table documents expected sensors and any
-# known per-model deviations (extend as hardware is characterized).
-MODELS = {
-    "gardyn 1.0": {"temp_humidity": "AM2320", "cameras": 2},
-    "gardyn 2.0": {"temp_humidity": "AM2320", "cameras": 2},
-    "gardyn 3.0": {"temp_humidity": "DHT20", "cameras": 2},
-    "gardyn studio": {"temp_humidity": "DHT20", "cameras": 2},
-}
+# Per-model hardware profiles (issues #72, #84) live in app/lib/models.py as
+# Gardyn model classes with shared defaults on a base Gardyn. The env vars
+# above still take precedence at runtime: SENSOR_TYPE picks the temp/humidity
+# driver, an explicit LOWER_CAMERA_ENABLED overrides the model's camera
+# layout, and GARDYN_MODEL forces the model instead of auto-detecting it.
 
 # ---------------------------------------------------------------------------
 # GPIO pin assignments (BCM numbering)
@@ -132,11 +140,23 @@ WATER_CHECK_SECONDS = _get_int("WATER_CHECK_SECONDS", 180)
 # ---------------------------------------------------------------------------
 # Camera
 # ---------------------------------------------------------------------------
+# Whether this unit has a lower camera. Unset means "follow the detected model
+# profile": the Gardyn 3.0 ships with the upper camera only. Set
+# LOWER_CAMERA_ENABLED=true/false in .env for units that differ from their
+# profile (the simulator sets it true to keep both cameras). Resolve it through
+# app/lib/hardware.lower_camera_enabled().
+LOWER_CAMERA_ENABLED = _get_bool_auto("LOWER_CAMERA_ENABLED")
 UPPER_CAMERA_DEVICE = os.getenv("UPPER_CAMERA_DEVICE", "/dev/video0")
 LOWER_CAMERA_DEVICE = os.getenv("LOWER_CAMERA_DEVICE", "/dev/video2")
 UPPER_IMAGE_PATH = os.getenv("UPPER_IMAGE_PATH", "/tmp/upper_camera.jpg")
 LOWER_IMAGE_PATH = os.getenv("LOWER_IMAGE_PATH", "/tmp/lower_camera.jpg")
 CAMERA_RESOLUTION = os.getenv("CAMERA_RESOLUTION", "640x480")
+# Rotate the upper camera at capture time (right angles: 0, 90, 180, 270). The
+# module is mounted sideways in the enclosure, so the default is 90, which
+# fswebcam applies clockwise; use 270 for counter-clockwise and 0 to disable.
+# Rotating in fswebcam keeps the web UI, MQTT image entity, and timelapse frames
+# consistently oriented.
+UPPER_CAMERA_ROTATE = _get_int("UPPER_CAMERA_ROTATE", 90)
 IMAGE_INTERVAL_SECONDS = _get_int("IMAGE_INTERVAL_SECONDS", 3600)
 
 # Timelapse: archive a timestamped frame on each capture, capped at MAX_FRAMES,
@@ -148,10 +168,20 @@ TIMELAPSE_MAX_FRAMES = _get_int("TIMELAPSE_MAX_FRAMES", 720)
 TIMELAPSE_FPS = _get_int("TIMELAPSE_FPS", 12)
 
 # ---------------------------------------------------------------------------
-# REST API auth (optional). When GARDEN_API_KEY is set, non-localhost
+# REST API auth (optional). When GARDEN_ADMIN_PASSWORD is set, non-localhost
 # requests must send it via the X-API-Key header. Localhost (cron) bypasses.
+# We trim surrounding whitespace so values stored in .env or copied by hand do
+# not fail unexpectedly.
+#
+# GARDEN_API_KEY is the deprecated name for this same value. It is still
+# honoured as a fallback on purpose: an empty password disables the auth hook
+# entirely (see app/__init__.py), so a rename that missed a .env file would
+# silently reopen the API on the network instead of erroring. The fallback
+# keeps that failure loud (app logs a deprecation warning) rather than quiet.
 # ---------------------------------------------------------------------------
-GARDEN_API_KEY = os.getenv("GARDEN_API_KEY", "")
+GARDEN_ADMIN_PASSWORD = (
+    os.getenv("GARDEN_ADMIN_PASSWORD") or os.getenv("GARDEN_API_KEY") or ""
+).strip()
 
 # ---------------------------------------------------------------------------
 # State persistence (actuator + grow-cycle state, for power-loss recovery)
@@ -159,9 +189,30 @@ GARDEN_API_KEY = os.getenv("GARDEN_API_KEY", "")
 STATE_FILE = os.path.expanduser(os.getenv("STATE_FILE", "~/.garden_state.json"))
 SCHEDULE_FILE = os.path.expanduser(os.getenv("SCHEDULE_FILE", "~/.garden_schedule.json"))
 
-# Per-pod plant tracking (name + shape code). POD_COUNT pods (Gardyn Home = 30).
-POD_COUNT = _get_int("POD_COUNT", 30)
+# Per-pod plant tracking (name + shape code).
+# Tower geometry, so the UI can organise pods the way the unit is actually
+# built rather than as a flat 1..N list. Both default to 0, meaning "unset" --
+# the detected model profile then decides (see hardware.pod_capacity and
+# hardware.tower_count), so a fresh install needs no pod configuration. Set
+# either only for a unit that differs from its profile.
+#
+# POD_SIDE_PATTERN lists the side each pod sticks out on, ordered from the
+# highest pod down ("l" or "r"), and every tower shares that pattern. It is
+# geometry the software cannot infer, so it has no per-model default.
+POD_COUNT = _get_int("POD_COUNT", 0)
+POD_COLUMNS = _get_int("POD_COLUMNS", 0)
+POD_SIDE_PATTERN = os.getenv("POD_SIDE_PATTERN", "").strip().lower()
 PODS_FILE = os.path.expanduser(os.getenv("PODS_FILE", "~/.garden_pods.json"))
+
+# ---------------------------------------------------------------------------
+# Hardware profile chosen from the web UI
+# ---------------------------------------------------------------------------
+
+# Stores the model picked in Settings. Deliberately a separate file from .env:
+# .env holds credentials and is written by bin/setup.sh, so rewriting it from a
+# web request would risk corrupting the service config. Read on every call, so a
+# change applies without restarting the service.
+HARDWARE_FILE = os.path.expanduser(os.getenv("HARDWARE_FILE", "~/.garden_hardware.json"))
 
 # ---------------------------------------------------------------------------
 # Grow-cycle & notifications
@@ -184,3 +235,24 @@ THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "")
 THINGSBOARD_TOKEN = os.getenv("THINGSBOARD_TOKEN", "")
 
 TELEGRAF_ENABLED = _get_bool("TELEGRAF_ENABLED", False)
+
+# Groq advice integration -- see app/integrations/groq.py.
+# This is an OUTBOUND credential and is unrelated to GARDEN_ADMIN_PASSWORD,
+# which authenticates inbound REST calls. Never reuse one for the other.
+# The integration stays inert (is_enabled() -> False) until a key is set.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+# qwen/qwen3.8-27b is the only current Groq model that takes image input, which
+# this integration needs for the camera frame. The free plan allows 30 requests
+# per minute and 1000 per day; note each image counts as 2048 input tokens
+# against an 8K tokens-per-minute ceiling, so a handful of image calls a minute
+# is the practical limit. Override for a text-only, cheaper model if you do not
+# want the photo, e.g. openai/gpt-oss-20b.
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+# The free plan enforces an output-tokens-per-minute (OTPM) ceiling of 1000 and
+# rejects any request whose *requested* max output exceeds it, with a 429
+# before the model runs. 1024 therefore fails on a free key; 800 leaves headroom
+# and still fits a full answer. Raise it only on a paid tier.
+GROQ_MAX_TOKENS = _get_int("GROQ_MAX_TOKENS", 800)
+# A round trip normally takes a few seconds; fail fast rather than let a
+# request hang against Waitress's worker threads.
+GROQ_TIMEOUT = _get_int("GROQ_TIMEOUT", 30)

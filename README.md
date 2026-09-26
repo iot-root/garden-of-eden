@@ -49,6 +49,10 @@ A set of changes closing out the open milestones:
 See [`docs/design.md`](docs/design.md) for architecture, and
 [`docs/maintenance.md`](docs/maintenance.md) for upkeep.
 
+For contributor and coding-assistant context, see the [`context_documentation/`](context_documentation/)
+documentation bank. Pi-only operational scripts and private SSH configuration are
+covered in [`context_documentation/pi-operations.md`](context_documentation/pi-operations.md).
+
 ### REST API endpoints
 
 | Method | Path | Purpose |
@@ -72,6 +76,10 @@ cp .env-dist .env          # edit MQTT + identity
 sudo pigpiod -p 8888       # pigpiod on the Pi host
 docker compose up -d       # api (:5000) + mqtt + optional broker
 ```
+
+For private remote access over HTTPS, use Tailscale Serve described in
+[`docs/access.md`](docs/access.md). Do not expose port 5000 directly to the
+internet.
 
 See [`docs/integrations/`](docs/integrations/README.md) for Telegraf, ThingsBoard,
 and Alexa.
@@ -498,11 +506,25 @@ Notes:
 
 ### Camera
 
-Two USB cameras.
+One or two USB cameras, depending on the model. The **Home line** (1.0, 2.0,
+3.0, 4.0) is the max-yield architecture: 3 towers, 2 full-spectrum LED light
+bars, 2 cameras, 30 plant pods. The **Studio line** (Studio, Studio 2) is the
+trimmed profile for compact spaces: 2 towers, 1 light bar, 1 camera, 16 pods.
+
+The count comes from the detected model profile, so no configuration is needed.
+Set `LOWER_CAMERA_ENABLED=true|false` in `.env` only for a unit that differs
+from its profile. `POD_COUNT` and `POD_COLUMNS` follow the same rule: leave them
+at `0` (unset) to take the model default, and set them only to override.
 
 #### Method
 
 - image capture with fswebcam
+- the upper module sits sideways in the enclosure, so `UPPER_CAMERA_ROTATE` (in
+  `.env`) rotates it at capture time with `fswebcam --rotate`. Right angles only
+  (`0`, `90`, `180`, `270`). `90` is the default and rotates the image clockwise;
+  `270` rotates counter-clockwise and `0` disables it. Because the rotation is
+  baked into the JPEG, the web UI, MQTT image entity, and timelapse frames all
+  stay consistently oriented.
 
 #### Devices
 

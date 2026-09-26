@@ -9,6 +9,7 @@ of opening its own (see issue #67).
 import logging
 
 import config
+from app.lib.models import profile_for  # re-exported for the /system route
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,40 @@ def get_pin_factory():
     return _pin_factory
 
 
+class GPIOController:
+    """Thin pigpiod client for PWM frequency control on a single pin.
+
+    Shared by the light and pump drivers, which previously each carried a
+    copy-pasted copy of this class — the same single-connection goal as the
+    shared pin factory above (issue #67). ``pi_factory`` is injectable so
+    tests can substitute ``pigpio.pi``; when omitted the real client is
+    imported lazily.
+    """
+
+    def __init__(self, pin, pin_factory=None, pi_factory=None):
+        if pi_factory is None:
+            import pigpio
+
+            pi_factory = pigpio.pi
+        self.pin = pin
+        self.pin_factory = pin_factory
+        if config.PIGPIO_HOST:
+            self.pi = pi_factory(config.PIGPIO_HOST, config.PIGPIO_PORT)
+        else:
+            self.pi = pi_factory()
+
+        if not self.pi.connected:
+            raise RuntimeError(
+                "Failed to connect to pigpiod daemon. Ensure it's running and accessible."
+            )
+
+    def set_frequency(self, frequency):
+        if self.pi:
+            self.pi.set_PWM_frequency(self.pin, frequency)
+        else:
+            raise RuntimeError("pigpio.pi client is not initialized.")
+
+
 def i2c_device_present(address):
     """Return True if an I2C device ACKs at ``address`` on bus 1."""
     try:
@@ -69,12 +104,21 @@ def i2c_device_present(address):
 
 
 def detect_model():
-    """Best-effort Gardyn model inference.
+    """Best-effort Gardyn model resolution.
 
-    Returns a string like ``"gardyn 3.0"``. ``GARDYN_MODEL`` (config
-    ``MODEL_OVERRIDE``) short-circuits detection. Falls back to the configured
-    ``MODEL`` when hardware can't be probed (e.g. off-Pi).
+    Returns a string like ``"gardyn studio"``. A model chosen in the web UI
+    wins, then ``GARDYN_MODEL`` (config ``MODEL_OVERRIDE``), then inference
+    from the temp/humidity chip, then the configured ``MODEL`` when hardware
+    can't be probed (e.g. off-Pi). The UI choice is read per call, so changing
+    it takes effect without a restart.
     """
+    # Imported here rather than at module scope: settings imports models, and
+    # hardware is imported by that same path.
+    from app.lib.settings import get_model_override
+
+    chosen = get_model_override()
+    if chosen:
+        return chosen
     if config.MODEL_OVERRIDE:
         return config.MODEL_OVERRIDE
 
@@ -86,3 +130,40 @@ def detect_model():
     if config.SENSOR_TYPE == "AM2320":
         return "gardyn 2.0"
     return config.MODEL
+
+
+def lower_camera_enabled(model=None):
+    """Return True when this unit has a lower camera.
+
+    An explicit ``LOWER_CAMERA_ENABLED`` in the environment always wins; when it
+    is unset the model profile decides, so a Studio reports the upper camera
+    only without any manual configuration. Unknown models keep both cameras.
+    """
+    if config.LOWER_CAMERA_ENABLED is not None:
+        return config.LOWER_CAMERA_ENABLED
+    profile = profile_for(model if model is not None else detect_model())
+    return bool(profile.get("lower_camera", True))
+
+
+def pod_capacity(model=None):
+    """Total number of plant pods on this unit.
+
+    ``POD_COUNT`` in the environment wins when set, otherwise the model
+    profile decides: a Studio has 16, a Home has 30.
+    """
+    if config.POD_COUNT:
+        return int(config.POD_COUNT)
+    profile = profile_for(model if model is not None else detect_model())
+    return int(profile.get("pods", 30))
+
+
+def tower_count(model=None):
+    """Number of pod towers/columns on this unit.
+
+    ``POD_COLUMNS`` in the environment wins when set, otherwise the model
+    profile decides: a Studio has 2, a Home has 3.
+    """
+    if config.POD_COLUMNS:
+        return int(config.POD_COLUMNS)
+    profile = profile_for(model if model is not None else detect_model())
+    return int(profile.get("towers", 3))

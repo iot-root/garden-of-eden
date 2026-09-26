@@ -62,7 +62,37 @@ restore `config.txt` from `config.txt.garden.bak` on the boot partition.
 
 If `gardyn.local` doesn't resolve (some Android/Windows setups), use the Pi's IP
 (`hostname -I` over SSH, or check your router). To lock down the API over the
-network, set `GARDEN_API_KEY` in `.env` and enter it in the web UI's ⚙ settings.
+network, set `GARDEN_ADMIN_PASSWORD` in `.env` and enter it in the web UI's ⚙ settings.
+
+## Private HTTPS access with Tailscale
+
+Tailscale is the recommended no-domain option for private remote access. It
+creates an encrypted tailnet connection and exposes the local Garden of Eden API
+over HTTPS without opening a router port.
+
+On the Pi, enable Serve for the systemd API:
+
+```bash
+sudo tailscale serve --bg http://127.0.0.1:5000
+tailscale serve status
+```
+
+Install Tailscale and sign in with the same account on the phone or computer
+that will view the UI. Open the HTTPS URL printed by `tailscale serve status`.
+It normally has this form:
+
+```text
+https://<device>.<tailnet>.ts.net/
+```
+
+This address is tailnet-only. Stop the proxy with:
+
+```bash
+sudo tailscale serve --https=443 off
+```
+
+The generated Tailscale hostname is account/device configuration and should not
+be hard-coded into the repository.
 
 ## Services
 

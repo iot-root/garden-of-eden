@@ -10,6 +10,7 @@ import json
 import os
 
 import config
+from app.lib import hardware
 from app.lib.persist import write_json_atomic
 
 _CATALOG_PATH = os.path.join(os.path.dirname(__file__), "plants.json")
@@ -21,7 +22,7 @@ MAX_NAME = 40
 
 
 def default_pods():
-    return [{"id": i + 1, "name": "", "symbols": []} for i in range(config.POD_COUNT)]
+    return [{"id": i + 1, "name": "", "symbols": []} for i in range(hardware.pod_capacity())]
 
 
 def load_catalog():
@@ -41,7 +42,14 @@ def _clean(pod):
 
 
 def normalize(data):
-    """Return exactly POD_COUNT pods (id 1..N), merging any saved entries by id."""
+    """Return exactly one pod per plant port, merging any saved entries by id.
+
+    The count comes from ``hardware.pod_capacity()``, so it follows the
+    detected model unless ``POD_COUNT`` overrides it. Only durable state lives
+    here (id, name, symbols). Physical position is derived, not stored, so it
+    can never go stale when the layout config changes -- see
+    :func:`with_positions`.
+    """
     by_id = {}
     if isinstance(data, list):
         for pod in data:
@@ -50,11 +58,41 @@ def normalize(data):
             except (TypeError, ValueError):
                 continue
     pods = []
-    for i in range(config.POD_COUNT):
+    for i in range(hardware.pod_capacity()):
         pid = i + 1
         name, symbols = _clean(by_id.get(pid, {}))
         pods.append({"id": pid, "name": name, "symbols": symbols})
     return pods
+
+
+def position_for(pod_id):
+    """Where a pod sits in the tower, derived from its id.
+
+    ``column`` is 1-based and counted left to right; pods fill down a column
+    before moving to the next. ``level`` is 1-based *from the top*, because
+    that is the axis that matters: the grow light is at the top of the tower,
+    so level 1 is the brightest pod and the highest level is the dimmest.
+    ``side`` is the side the pod sticks out on, or None when the unit has no
+    configured side pattern.
+    """
+    columns = max(1, hardware.tower_count())
+    total = hardware.pod_capacity()
+    per_column = -(-total // columns)  # ceil, so a short last column works
+    index = max(0, int(pod_id) - 1)
+    level = (index % per_column) + 1
+    pattern = config.POD_SIDE_PATTERN or ""
+    side = pattern[level - 1] if level <= len(pattern) else None
+    return {"column": index // per_column + 1, "level": level, "side": side}
+
+
+def with_positions(pods):
+    """Return pods with their derived ``position`` attached, for the API."""
+    out = []
+    for pod in pods:
+        entry = dict(pod)
+        entry["position"] = position_for(pod["id"])
+        out.append(entry)
+    return out
 
 
 def load_pods():

@@ -10,7 +10,7 @@ services:
   api:
     build: .
     image: garden-of-eden:latest
-    command: ["python", "run.py"]
+    command: ["waitress-serve", "--listen=0.0.0.0:5000", "run:app"]
     ports:
       - "5000:5000"
     env_file:

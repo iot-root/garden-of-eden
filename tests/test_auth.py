@@ -1,8 +1,11 @@
-"""API-key auth (issue #7). Auth only activates when GARDEN_API_KEY is set;
-localhost and the public UI/health paths always bypass it.
+"""Admin-password auth (issue #7). Auth only activates when
+GARDEN_ADMIN_PASSWORD is set; localhost and the public UI/health paths always
+bypass it.
 """
 
+import os
 import unittest
+import warnings
 from unittest.mock import patch
 
 import config
@@ -17,38 +20,87 @@ def _client():
     return app.test_client()
 
 
+class DeprecatedAliasTestCase(unittest.TestCase):
+    """GARDEN_API_KEY is the deprecated spelling of GARDEN_ADMIN_PASSWORD.
+
+    It must keep working, and the new name must win when both are present.
+    """
+
+    def test_falls_back_to_deprecated_name(self):
+        with patch.dict(os.environ, {"GARDEN_API_KEY": "legacy", "GARDEN_ADMIN_PASSWORD": ""}):
+            import importlib
+
+            importlib.reload(config)
+            self.assertEqual(config.GARDEN_ADMIN_PASSWORD, "legacy")
+        importlib.reload(config)
+
+    def test_new_name_wins_over_deprecated(self):
+        import importlib
+
+        with patch.dict(
+            os.environ, {"GARDEN_API_KEY": "legacy", "GARDEN_ADMIN_PASSWORD": "current"}
+        ):
+            importlib.reload(config)
+            self.assertEqual(config.GARDEN_ADMIN_PASSWORD, "current")
+        importlib.reload(config)
+
+    def test_both_absent_is_empty(self):
+        import importlib
+
+        with patch.dict(os.environ, {"GARDEN_API_KEY": "", "GARDEN_ADMIN_PASSWORD": ""}):
+            importlib.reload(config)
+            self.assertEqual(config.GARDEN_ADMIN_PASSWORD, "")
+        importlib.reload(config)
+
+
 class AuthDisabledTestCase(unittest.TestCase):
-    @patch.object(config, "GARDEN_API_KEY", "")
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "")
     def test_no_key_means_open(self):
         # With no key configured, remote requests are not challenged.
         self.assertEqual(_client().get("/system", environ_base=REMOTE).status_code, 200)
 
 
 class AuthEnabledTestCase(unittest.TestCase):
-    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "s3cret")
     def test_remote_without_key_is_401(self):
         self.assertEqual(_client().get("/system", environ_base=REMOTE).status_code, 401)
 
-    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "s3cret")
     def test_remote_with_wrong_key_is_401(self):
         r = _client().get("/system", headers={"X-API-Key": "nope"}, environ_base=REMOTE)
         self.assertEqual(r.status_code, 401)
 
-    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", " s3cret ")
+    def test_remote_with_trimmed_key_ok(self):
+        r = _client().get("/system", headers={"X-API-Key": "s3cret"}, environ_base=REMOTE)
+        self.assertEqual(r.status_code, 200)
+
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", " s3cret ")
+    def test_remote_with_whitespace_in_header_is_accepted(self):
+        r = _client().get("/system", headers={"X-API-Key": "  s3cret  "}, environ_base=REMOTE)
+        self.assertEqual(r.status_code, 200)
+
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "s3cret")
     def test_remote_with_correct_key_ok(self):
         r = _client().get("/system", headers={"X-API-Key": "s3cret"}, environ_base=REMOTE)
         self.assertEqual(r.status_code, 200)
 
-    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "s3cret")
     def test_localhost_bypasses_auth(self):
         # Default test client REMOTE_ADDR is 127.0.0.1 -> cron/local bypass.
         self.assertEqual(_client().get("/system").status_code, 200)
 
-    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "s3cret")
     def test_public_paths_open_without_key(self):
         c = _client()
         self.assertEqual(c.get("/", environ_base=REMOTE).status_code, 200)
         self.assertEqual(c.get("/health", environ_base=REMOTE).status_code, 200)
+
+    @patch.object(config, "GARDEN_ADMIN_PASSWORD", "s3cret")
+    def test_root_page_does_not_leak_file_handles(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ResourceWarning)
+            self.assertEqual(_client().get("/", environ_base=REMOTE).status_code, 200)
 
 
 if __name__ == "__main__":

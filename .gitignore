@@ -16,3 +16,10 @@ simulator/.sim/
 .playwright-mcp/
 garden-*.png
 timelapse/
+
+# Claude local overrides and session settings
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Gemini local overrides
+GEMINI.local.md

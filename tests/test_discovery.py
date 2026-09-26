@@ -7,6 +7,7 @@ entity is announced with a sane config payload.
 
 import json
 import unittest
+from unittest.mock import patch
 
 
 class FakeClient:
@@ -23,6 +24,14 @@ class DiscoveryTestCase(unittest.TestCase):
         import mqtt  # noqa: F401  (imports under stubs)
 
         cls.mqtt = mqtt
+
+    def setUp(self):
+        # The lower camera is optional (LOWER_CAMERA_ENABLED). A local .env may
+        # disable it, so force it on here and assert the full entity set
+        # regardless of the host's configuration.
+        patcher = patch.object(self.mqtt, "LOWER_CAMERA_ENABLED", True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_all_entities_announced(self):
         client = FakeClient()
@@ -70,11 +79,41 @@ class DiscoveryTestCase(unittest.TestCase):
             self.assertIn("device", data, f"{topic} missing device block")
             self.assertIn("identifiers", data["device"])
 
+    def test_every_entity_has_a_matching_unique_id(self):
+        # The ent() helper is the single place unique_id is generated. If its
+        # `obj` argument ever disagreed with the entity it describes, Home
+        # Assistant would silently orphan the entity and re-create it under a
+        # new id, leaving the old one behind as unavailable. Tie the two
+        # together: the config topic is
+        # homeassistant/<component>/gardyn/<unique_id>/config.
+        client = FakeClient()
+        self.mqtt.send_discovery_messages(client)
+        seen = set()
+        for topic, payload in client.published:
+            data = json.loads(payload)
+            unique_id = data.get("unique_id")
+            self.assertTrue(unique_id, f"{topic} missing unique_id")
+            self.assertEqual(
+                unique_id,
+                topic.split("/")[-2],
+                f"{topic} unique_id does not match its config topic",
+            )
+            self.assertNotIn(unique_id, seen, f"duplicate unique_id {unique_id!r}")
+            seen.add(unique_id)
+
     def test_button_event_types(self):
         client = FakeClient()
         self.mqtt.send_discovery_messages(client)
         button = [json.loads(p) for t, p in client.published if "/event/" in t][0]
         self.assertEqual(set(button["event_types"]), {"single", "double", "long"})
+
+    def test_lower_camera_omitted_when_disabled(self):
+        client = FakeClient()
+        with patch.object(self.mqtt, "LOWER_CAMERA_ENABLED", False):
+            self.mqtt.send_discovery_messages(client)
+        topics = [t for t, _ in client.published]
+        self.assertTrue(any("_upper_camera/config" in t for t in topics))
+        self.assertFalse(any("_lower_camera/config" in t for t in topics))
 
 
 if __name__ == "__main__":

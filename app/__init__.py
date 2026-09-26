@@ -1,10 +1,12 @@
 import logging
+import os
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 import config
 
+from .sensors.advice.routes import advice_blueprint
 from .sensors.camera.routes import camera_blueprint
 from .sensors.distance.routes import distance_blueprint
 from .sensors.grow.routes import grow_blueprint
@@ -42,6 +44,7 @@ def create_app(config_name=None):
     app.register_blueprint(grow_blueprint, url_prefix="/grow")
     app.register_blueprint(pods_blueprint, url_prefix="/pods")
     app.register_blueprint(system_blueprint, url_prefix="/system")
+    app.register_blueprint(advice_blueprint, url_prefix="/advice")
     app.register_blueprint(web_blueprint)
 
     @app.route("/health")
@@ -52,14 +55,19 @@ def create_app(config_name=None):
 
 
 def _register_auth(app):
-    """Optional API-key auth (issue #7).
+    """Optional admin-password auth (issue #7).
 
-    Enabled only when GARDEN_API_KEY is set. Localhost requests (e.g. the Pi's
-    own cron jobs) and CORS preflight bypass the check so automation keeps
-    working without a key.
+    Enabled only when GARDEN_ADMIN_PASSWORD (or its deprecated alias
+    GARDEN_API_KEY) is set. Localhost requests (e.g. the Pi's own cron jobs)
+    and CORS preflight bypass the check so automation keeps working without a
+    password.
     """
-    if not config.GARDEN_API_KEY:
+    api_key = (config.GARDEN_ADMIN_PASSWORD or "").strip()
+    if not api_key:
         return
+
+    if not os.getenv("GARDEN_ADMIN_PASSWORD") and os.getenv("GARDEN_API_KEY"):
+        logger.warning("GARDEN_API_KEY is deprecated; rename it to GARDEN_ADMIN_PASSWORD")
 
     # The UI shell and static assets load without a key so the page can prompt
     # for one; API calls it makes still carry the key.
@@ -71,6 +79,6 @@ def _register_auth(app):
             return None
         if request.path in ("/", "/health") or request.path.startswith("/static"):
             return None
-        if request.headers.get("X-API-Key") != config.GARDEN_API_KEY:
+        if request.headers.get("X-API-Key", "").strip() != api_key:
             return jsonify(error="Unauthorized"), 401
         return None
