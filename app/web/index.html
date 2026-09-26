@@ -195,9 +195,10 @@
     .alert-banner { display:flex; align-items:center; gap:10px; background:var(--amber-bg); border:1px solid var(--amber);
       color:var(--amber); border-radius:14px; padding:12px 16px; font-size:.88rem; font-weight:600; box-shadow:var(--shadow); }
     .alert-banner button { margin-left:auto; }
-    /* Per-pod plant tracking */
-    .pods { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-    @media (max-width:640px){ .pods { grid-template-columns:1fr 1fr; } }
+    /* Per-pod plant tracking. One row per tower level: left pod then right
+       pod, so the grid reads across the tower rather than down one column. */
+    .pods { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+    @media (max-width:640px){ .pods { grid-template-columns:1fr; } }
     .pod { border:1px solid var(--line); background:var(--surface-2); border-radius:10px; padding:8px; }
     .pod .pn { font-size:.6rem; color:var(--faint); font-weight:700; letter-spacing:.05em; }
     .pod input { width:100%; margin:4px 0; font-size:.8rem; padding:4px 6px; border-radius:7px; }
@@ -414,8 +415,8 @@
 
     <div class="card">
       <h2>Plants <button class="ghost" onclick="savePods()">Save plants</button></h2>
-      <p class="muted" style="margin:-4px 0 12px">Name each pod and tap the shapes to match the code printed on the physical pod.</p>
-      <div class="pods" id="pods"></div>
+      <p class="muted" style="margin:-4px 0 12px">Each row is one level of the tower, top row highest: left pod then right pod, numbered from the top down. Tap the shapes to match a code printed on the physical pod.</p>
+      <div id="pods"></div>
     </div>
 
     <div class="card">
@@ -829,11 +830,12 @@
 
     // ---- Per-pod plant tracking (name + shape code) ----
     const SHAPE_GLYPH = { circle: "●", square: "■", triangle: "▲", diamond: "◆", star: "★", hexagon: "⬢", heart: "♥", plus: "✚" };
-    let pods = [], podShapes = [], plantCatalog = [];
+    let pods = [], podShapes = [], plantCatalog = [], podLayout = { columns: 1, side_pattern: "" };
     async function loadPods() {
       try {
         const d = await get("/pods");
         pods = d.pods || []; podShapes = d.shapes || []; plantCatalog = d.catalog || [];
+        if (d.layout) podLayout = d.layout;
         renderPods();
       } catch {}
     }
@@ -852,39 +854,78 @@
       const p = plantCatalog.find(x => x.name === name);
       return p ? `${p.guide} · ${p.light_need} light · ~${p.days_to_harvest}d · ${p.difficulty}` : "";
     };
+    // Label a pod by where it physically sits: "A1 R" = column A, level 1 from
+    // the top, sticking out to the right. Falls back to a flat pod number on a
+    // unit with no configured tower geometry.
+    function podLabel(p) {
+      const pos = p.position || {};
+      if (!pos.column || (podLayout.columns || 1) < 2) return "POD " + p.id;
+      const col = String.fromCharCode(64 + pos.column);
+      const side = pos.side === "l" ? "L" : pos.side === "r" ? "R" : "";
+      return col + (pos.level || "?") + (side ? " " + side : "");
+    }
+    // Display order is one row per tower level, left pod then right pod, so
+    // the grid reads across the tower. This is presentation only: it does not
+    // match how the right-hand column actually sits relative to the left one,
+    // but it is far easier to scan a level at a time than to read down two
+    // separate columns.
+    function podOrder() {
+      const columns = Math.max(1, podLayout.columns || 1);
+      if (columns < 2 || !pods.some(p => p.position)) return pods.slice();
+      const levels = pods.map(p => ((p.position || {}).level) || 0);
+      const out = [];
+      for (let level = 1; level <= Math.max.apply(null, levels); level++) {
+        for (let col = 1; col <= columns; col++) {
+          const hit = pods.find(p =>
+            ((p.position || {}).column) === col && ((p.position || {}).level) === level);
+          if (hit) out.push(hit);
+        }
+      }
+      // Anything the position map did not account for still gets shown.
+      return out.concat(pods.filter(p => out.indexOf(p) === -1));
+    }
     function renderPods() {
       const box = $("pods"); box.innerHTML = "";
       const opts = catalogOptionsHTML();
-      pods.forEach((p, i) => {
+      const cell = p => {
+        const c = document.createElement("div"); c.className = "pod";
         if (!p.symbols) p.symbols = [];
-        const cell = document.createElement("div"); cell.className = "pod";
-        const pn = document.createElement("div"); pn.className = "pn"; pn.textContent = "POD " + p.id;
+        const pn = document.createElement("div"); pn.className = "pn";
+        pn.textContent = podLabel(p); pn.title = "pod " + p.id;
         const isCustom = p.name && !plantCatalog.some(x => x.name === p.name);
         const sel = document.createElement("select"); sel.innerHTML = opts;
         sel.value = isCustom ? "__other__" : (p.name || "");
-        const custom = document.createElement("input"); custom.placeholder = "custom name"; custom.value = isCustom ? p.name : "";
+        const custom = document.createElement("input");
+        custom.placeholder = "custom name"; custom.value = isCustom ? p.name : "";
         custom.style.display = isCustom ? "" : "none";
-        const guide = document.createElement("div"); guide.className = "pguide muted"; guide.textContent = guideFor(p.name);
+        const guide = document.createElement("div");
+        guide.className = "pguide muted"; guide.textContent = guideFor(p.name);
         sel.onchange = () => {
-          if (sel.value === "__other__") { custom.style.display = ""; pods[i].name = custom.value; }
-          else { custom.style.display = "none"; custom.value = ""; pods[i].name = sel.value; }
-          guide.textContent = guideFor(pods[i].name);
+          if (sel.value === "__other__") { custom.style.display = ""; p.name = custom.value; }
+          else { custom.style.display = "none"; custom.value = ""; p.name = sel.value; }
+          guide.textContent = guideFor(p.name);
         };
-        custom.onchange = () => { pods[i].name = custom.value; };
+        custom.onchange = () => { p.name = custom.value; };
         const shapes = document.createElement("div"); shapes.className = "shapes";
         podShapes.forEach(s => {
-          const b = document.createElement("button"); b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
+          const b = document.createElement("button");
+          b.textContent = SHAPE_GLYPH[s] || "?"; b.title = s;
           if (p.symbols.includes(s)) b.classList.add("on");
           b.onclick = () => {
-            const arr = pods[i].symbols;
+            const arr = p.symbols;
             const at = arr.indexOf(s);
             if (at >= 0) arr.splice(at, 1); else if (arr.length < 5) arr.push(s);
             b.classList.toggle("on", arr.includes(s));
           };
           shapes.appendChild(b);
         });
-        cell.append(pn, sel, custom, guide, shapes); box.appendChild(cell);
-      });
+        c.append(pn, sel, custom, guide, shapes);
+        return c;
+      };
+
+      const grid = document.createElement("div"); grid.className = "pods";
+      podOrder().forEach(p => grid.appendChild(cell(p)));
+      box.appendChild(grid);
     }
     function savePods() { post("/pods", pods); }
 

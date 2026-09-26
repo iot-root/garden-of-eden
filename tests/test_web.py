@@ -88,6 +88,19 @@ class WebUITestCase(unittest.TestCase):
         # The preset hover effect must not survive the disabled state.
         self.assertIn(".presets button[disabled]:hover", html)
 
+    def test_pods_grid_is_two_up_and_interleaved(self):
+        html = self.client.get("/").data.decode()
+        # One row per tower level, two pods across: max 2 panes per row.
+        self.assertIn("grid-template-columns:repeat(2,1fr)", html)
+        self.assertNotIn("podwrap", html)
+        # Display order must interleave left/right per level rather than
+        # reading down one column and then the other.
+        self.assertIn("function podOrder()", html)
+        order = html[html.index("function podOrder()") :]
+        order = order[: order.index("function renderPods(")]
+        self.assertIn("col <= columns", order)
+        self.assertIn("level", order)
+
     def test_advice_send_never_fails_silently(self):
         html = self.client.get("/").data.decode()
         # If the gate is stale -- a key cleared in another tab after the page

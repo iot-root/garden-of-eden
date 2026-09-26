@@ -41,7 +41,12 @@ def _clean(pod):
 
 
 def normalize(data):
-    """Return exactly POD_COUNT pods (id 1..N), merging any saved entries by id."""
+    """Return exactly POD_COUNT pods (id 1..N), merging any saved entries by id.
+
+    Only durable state lives here (id, name, symbols). Physical position is
+    derived, not stored, so it can never go stale when the layout config
+    changes -- see :func:`with_positions`.
+    """
     by_id = {}
     if isinstance(data, list):
         for pod in data:
@@ -55,6 +60,35 @@ def normalize(data):
         name, symbols = _clean(by_id.get(pid, {}))
         pods.append({"id": pid, "name": name, "symbols": symbols})
     return pods
+
+
+def position_for(pod_id):
+    """Where a pod sits in the tower, derived from its id.
+
+    ``column`` is 1-based and counted left to right; pods fill down a column
+    before moving to the next. ``level`` is 1-based *from the top*, because
+    that is the axis that matters: the grow light is at the top of the tower,
+    so level 1 is the brightest pod and the highest level is the dimmest.
+    ``side`` is the side the pod sticks out on, or None when the unit has no
+    configured side pattern.
+    """
+    columns = max(1, int(config.POD_COLUMNS or 1))
+    per_column = -(-config.POD_COUNT // columns)  # ceil, so a short last column works
+    index = max(0, int(pod_id) - 1)
+    level = (index % per_column) + 1
+    pattern = config.POD_SIDE_PATTERN or ""
+    side = pattern[level - 1] if level <= len(pattern) else None
+    return {"column": index // per_column + 1, "level": level, "side": side}
+
+
+def with_positions(pods):
+    """Return pods with their derived ``position`` attached, for the API."""
+    out = []
+    for pod in pods:
+        entry = dict(pod)
+        entry["position"] = position_for(pod["id"])
+        out.append(entry)
+    return out
 
 
 def load_pods():
