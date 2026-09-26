@@ -1,18 +1,25 @@
-"""Claude (Anthropic) gardening advice.
+"""Groq gardening advice.
 
 Sends a snapshot of the current garden state -- sensor readings, actuator
 state, grow-cycle progress -- plus the most recent upper-camera frame to the
-Claude Messages API and returns practical instructions for the operator.
+Groq chat completions API and returns practical instructions for the operator.
 
-Unlike alexa.py and thingsboard.py, which are transport scaffolds, this is a
-working integration (issue #101). Two deliberate constraints:
+This replaced the earlier Anthropic/Claude integration. Groq is used because it
+offers a genuine free tier (no credit card, 30 requests/minute and 1000
+requests/day on the free plan), whereas the Anthropic API is prepaid-credit
+only and rejects calls once the balance is exhausted.
 
-- The ``anthropic`` SDK is imported lazily inside ``_client()`` so the module
+Three deliberate constraints:
+
+- The ``groq`` SDK is imported lazily inside ``_client()`` so the module
   imports cleanly on a host that has not installed the dependency yet, which
   keeps the test suite and the rest of the app runnable without it.
-- ``ANTHROPIC_API_KEY`` is an *outbound* credential. It is unrelated to
-  ``GARDEN_ADMIN_PASSWORD``, which authenticates inbound REST callers. Nothing here
-  logs the key.
+- ``GROQ_API_KEY`` is an *outbound* credential. It is unrelated to
+  ``GARDEN_ADMIN_PASSWORD``, which authenticates inbound REST callers. Nothing
+  here logs the key.
+- The Groq API is OpenAI-compatible, so requests go to
+  ``/openai/v1/chat/completions`` with the system prompt as a ``system``
+  message rather than a separate ``system=`` argument.
 
 Only the most recent upper-camera frame is sent. The timelapse archive
 (``camera.archive_frame``) would be the natural source for historical frames,
@@ -49,32 +56,32 @@ SYSTEM_PROMPT = (
 
 
 class AdviceError(Exception):
-    """Raised when a Claude call cannot be completed."""
+    """Raised when a Groq call cannot be completed."""
 
 
 def is_enabled(api_key=None):
-    """True when a Claude key is available.
+    """True when a Groq key is available.
 
     ``api_key`` is the optional per-request key supplied by the browser (the
-    web UI keeps it in localStorage and sends it as X-Claude-Key, the same way
+    web UI keeps it in localStorage and sends it as X-Groq-Key, the same way
     it supplies the admin password). Falling back to the server-side
-    ``ANTHROPIC_API_KEY`` keeps the endpoint usable from scripts/curl.
+    ``GROQ_API_KEY`` keeps the endpoint usable from scripts/curl.
     """
-    return bool((api_key or "").strip() or config.ANTHROPIC_API_KEY)
+    return bool((api_key or "").strip() or config.GROQ_API_KEY)
 
 
 def _client(api_key=None):
-    """Build an Anthropic client, importing the SDK lazily.
+    """Build a Groq client, importing the SDK lazily.
 
     Prefers the caller-supplied key over the server-side one.
     """
     try:
-        import anthropic
+        from groq import Groq
     except ImportError as exc:  # pragma: no cover - depends on host install
-        raise AdviceError("the 'anthropic' package is not installed on this host") from exc
-    return anthropic.Anthropic(
-        api_key=(api_key or "").strip() or config.ANTHROPIC_API_KEY,
-        timeout=config.ANTHROPIC_TIMEOUT,
+        raise AdviceError("the 'groq' package is not installed on this host") from exc
+    return Groq(
+        api_key=(api_key or "").strip() or config.GROQ_API_KEY,
+        timeout=config.GROQ_TIMEOUT,
     )
 
 
@@ -148,7 +155,12 @@ def snapshot():
 
 
 def _image_block(path):
-    """Return a base64 image content block, or None if unavailable."""
+    """Return a base64 image content part, or None if unavailable.
+
+    Groq takes OpenAI-style ``image_url`` parts, where a data URI carries the
+    base64 payload inline. The upstream JPEG is typically well under the 20MB
+    per-request image limit.
+    """
     if not path or not os.path.exists(path):
         return None
     try:
@@ -157,14 +169,14 @@ def _image_block(path):
     except OSError as exc:
         logger.warning("Advice snapshot: could not read %s (%s)", path, exc)
         return None
-    return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}}
+    return {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{data}"}}
 
 
 def build_content(question, include_image=True):
-    """Assemble the user message: image block first, then the text context.
+    """Assemble the user message: image part first, then the text context.
 
-    Anthropic's guidance is to place images before text, since the model then
-    reads them while the question is freshest.
+    Images are placed before text, since the model then reads them while the
+    question is freshest.
     """
     content = []
     if include_image:
@@ -188,42 +200,99 @@ def build_content(question, include_image=True):
     return content
 
 
+def _error_detail(exc):
+    """Extract a safe, human-readable reason from an SDK/API error.
+
+    Prefers the API's own ``error.type`` / ``error.message`` from the response
+    body, which is what actually explains a failure (unknown model id, image
+    over the size limit, rate limit, revoked key). Falls back to the exception
+    class name. Deliberately never uses ``repr(exc)`` or the full body: SDK
+    errors can embed request headers, and the request carries the caller's API
+    key.
+    """
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        err = body.get("error", body)
+        if isinstance(err, dict):
+            msg = err.get("message")
+            kind = err.get("type")
+            if msg and kind:
+                return f"{kind}: {msg}"
+            if msg:
+                return str(msg)
+            if kind:
+                return str(kind)
+    status = getattr(exc, "status_code", None)
+    if status:
+        return f"HTTP {status}"
+    return type(exc).__name__
+
+
+def _response_text(response):
+    """Pull the answer text out of a chat completion.
+
+    The configured model can run in a reasoning mode, where the visible answer
+    arrives in ``content`` and the chain of thought in ``reasoning``. If
+    ``content`` comes back empty we fall back to ``reasoning`` rather than
+    reporting an empty response, since a truncated or fully-reasoned turn still
+    tells the operator something.
+    """
+    choices = getattr(response, "choices", None) or []
+    if not choices:
+        return ""
+    message = getattr(choices[0], "message", None)
+    if message is None:
+        return ""
+    text = (getattr(message, "content", None) or "").strip()
+    if text:
+        return text
+    return (getattr(message, "reasoning", None) or "").strip()
+
+
 def advise(question, api_key=None, include_image=True):
-    """Ask Claude for advice about the current state.
+    """Ask the model for advice about the current state.
 
     ``api_key`` is the optional per-request key from the browser; when absent
-    the server-side ``ANTHROPIC_API_KEY`` is used instead.
+    the server-side ``GROQ_API_KEY`` is used instead.
 
     Returns ``{"advice", "model", "usage"}``. Raises ``AdviceError`` if no key
     is available or the API call fails.
     """
     if not is_enabled(api_key):
-        raise AdviceError("no Claude API key available")
+        raise AdviceError("no Groq API key available")
 
     try:
-        response = _client(api_key).messages.create(
-            model=config.ANTHROPIC_MODEL,
-            max_tokens=config.ANTHROPIC_MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": build_content(question, include_image)}],
+        response = _client(api_key).chat.completions.create(
+            model=config.GROQ_MODEL,
+            max_completion_tokens=config.GROQ_MAX_TOKENS,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": build_content(question, include_image)},
+            ],
         )
     except AdviceError:
         raise
     except Exception as exc:  # noqa: BLE001 - SDK/network errors vary widely
-        # Never echo the exception repr: SDK errors can embed request headers
-        # (and therefore the key). Log the type, return a generic message.
-        logger.error("Claude advice call failed: %s", type(exc).__name__)
-        raise AdviceError(f"Claude request failed ({type(exc).__name__})") from exc
+        detail = _error_detail(exc)
+        # Never log the exception repr: SDK errors can embed request headers
+        # (and therefore the key). The API's own error type/message is safe and
+        # is the only thing that makes a failure diagnosable.
+        logger.error("Groq advice call failed: %s (%s)", type(exc).__name__, detail)
+        raise AdviceError(f"Groq request failed: {detail}") from exc
 
-    text = "".join(block.text for block in response.content if block.type == "text")
+    text = _response_text(response)
+    if not text:
+        raise AdviceError("Groq returned an empty response")
+
+    usage_obj = getattr(response, "usage", None)
     usage = {
-        "input_tokens": getattr(response.usage, "input_tokens", None),
-        "output_tokens": getattr(response.usage, "output_tokens", None),
+        "input_tokens": getattr(usage_obj, "prompt_tokens", None),
+        "output_tokens": getattr(usage_obj, "completion_tokens", None),
     }
     logger.info(
-        "Claude advice from %s (in=%s out=%s tokens)",
-        config.ANTHROPIC_MODEL,
+        "Groq advice from %s (in=%s out=%s tokens)",
+        config.GROQ_MODEL,
         usage["input_tokens"],
         usage["output_tokens"],
     )
-    return {"advice": text, "model": config.ANTHROPIC_MODEL, "usage": usage}
+    return {"advice": text, "model": config.GROQ_MODEL, "usage": usage}

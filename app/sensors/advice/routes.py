@@ -1,6 +1,6 @@
-"""Ask Claude for gardening advice about the current machine state.
+"""Ask Groq for gardening advice about the current machine state.
 
-POST a JSON body of ``{"question": "..."}`` to get back Claude's answer plus
+POST a JSON body of ``{"question": "..."}`` to get back the model's answer plus
 the token usage for the call.
 
 This route is not wrapped in ``check_sensor_guard``: that guard models a single
@@ -18,7 +18,7 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
-from app.integrations import claude
+from app.integrations import groq
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ advice_blueprint = Blueprint("advice", __name__)
 @advice_blueprint.route("", methods=["POST"])
 @advice_blueprint.route("/ask", methods=["POST"])
 def ask():
-    """Return Claude's advice for the current garden state."""
+    """Return the model's advice for the current garden state."""
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     if not question:
@@ -36,23 +36,23 @@ def ask():
 
     include_image = bool(payload.get("include_image", True))
 
-    # The web UI keeps the Claude key in localStorage and sends it per request,
+    # The web UI keeps the Groq key in localStorage and sends it per request,
     # mirroring how it supplies the admin password, so the Pi never has to
-    # store it. Falls back to the server-side ANTHROPIC_API_KEY when absent.
-    api_key = request.headers.get("X-Claude-Key", "")
+    # store it. Falls back to the server-side GROQ_API_KEY when absent.
+    api_key = request.headers.get("X-Groq-Key", "")
 
-    if not claude.is_enabled(api_key):
+    if not groq.is_enabled(api_key):
         return (
             jsonify(
-                error="no Claude API key: add one in the web UI settings, or set "
-                "ANTHROPIC_API_KEY in the Pi's .env"
+                error="no Groq API key: add one in the web UI settings, or set "
+                "GROQ_API_KEY in the Pi's .env"
             ),
             503,
         )
 
     try:
-        result = claude.advise(question, api_key=api_key, include_image=include_image)
-    except claude.AdviceError as exc:
+        result = groq.advise(question, api_key=api_key, include_image=include_image)
+    except groq.AdviceError as exc:
         return jsonify(error=str(exc)), 502
 
     return jsonify(result), 200

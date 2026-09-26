@@ -215,16 +215,23 @@ THINGSBOARD_TOKEN = os.getenv("THINGSBOARD_TOKEN", "")
 
 TELEGRAF_ENABLED = _get_bool("TELEGRAF_ENABLED", False)
 
-# Claude (Anthropic) advice integration -- see app/integrations/claude.py.
+# Groq advice integration -- see app/integrations/groq.py.
 # This is an OUTBOUND credential and is unrelated to GARDEN_ADMIN_PASSWORD,
 # which authenticates inbound REST calls. Never reuse one for the other.
 # The integration stays inert (is_enabled() -> False) until a key is set.
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
-# Haiku 4.5 is the cheapest and fastest current model and handles both text and
-# image input, which is all this integration needs. Override to step up, e.g.
-# claude-sonnet-5, at roughly 2x the input / 2x the output cost.
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
-ANTHROPIC_MAX_TOKENS = _get_int("ANTHROPIC_MAX_TOKENS", 1024)
-# A Claude round trip normally takes a few seconds; fail fast rather than let a
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+# qwen/qwen3.8-27b is the only current Groq model that takes image input, which
+# this integration needs for the camera frame. The free plan allows 30 requests
+# per minute and 1000 per day; note each image counts as 2048 input tokens
+# against an 8K tokens-per-minute ceiling, so a handful of image calls a minute
+# is the practical limit. Override for a text-only, cheaper model if you do not
+# want the photo, e.g. openai/gpt-oss-20b.
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+# The free plan enforces an output-tokens-per-minute (OTPM) ceiling of 1000 and
+# rejects any request whose *requested* max output exceeds it, with a 429
+# before the model runs. 1024 therefore fails on a free key; 800 leaves headroom
+# and still fits a full answer. Raise it only on a paid tier.
+GROQ_MAX_TOKENS = _get_int("GROQ_MAX_TOKENS", 800)
+# A round trip normally takes a few seconds; fail fast rather than let a
 # request hang against Waitress's worker threads.
-ANTHROPIC_TIMEOUT = _get_int("ANTHROPIC_TIMEOUT", 30)
+GROQ_TIMEOUT = _get_int("GROQ_TIMEOUT", 30)

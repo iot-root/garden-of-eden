@@ -24,7 +24,7 @@ class WebUITestCase(unittest.TestCase):
             'id="advice-out"',
             'id="advice-usage"',
             'id="advice-presets"',
-            "function askClaude(",
+            "function askGroq(",
             "setupAdvice();",
         ):
             with self.subTest(needle=needle):
@@ -38,35 +38,66 @@ class WebUITestCase(unittest.TestCase):
         self.assertIn('"/advice"', html)
         self.assertIn("headers(", html)
 
-    def test_claude_key_is_settable_in_settings(self):
+    def test_groq_key_is_settable_in_settings(self):
         html = self.client.get("/").data.decode()
         for needle in (
-            'id="claude-key"',
-            "function saveClaudeKey()",
-            'localStorage.setItem("claude_key"',
+            'id="groq-key"',
+            "function saveGroqKey()",
+            'localStorage.setItem("groq_key"',
             "adviceHeaders(",
-            'localStorage.getItem("claude_key")',
+            'localStorage.getItem("groq_key")',
         ):
             with self.subTest(needle=needle):
                 self.assertIn(needle, html)
 
-    def test_advice_is_gated_on_both_credentials(self):
+    def test_advice_is_gated_on_the_admin_password(self):
         html = self.client.get("/").data.decode()
-        # Ask Claude must be refused unless BOTH the admin password and a
-        # Claude key are present in the browser.
+        # Only the admin password gates the control: the endpoint 401s without
+        # it and no server-side setting can replace it. The Groq key must NOT
+        # gate it, because the Pi can hold GROQ_API_KEY in its own .env and the
+        # endpoint falls back to that -- gating on the key would grey out a
+        # control that works. A missing key everywhere surfaces as a 503 whose
+        # message the send path shows.
         self.assertIn("function syncAdviceGate()", html)
-        self.assertIn("if (!API_KEY || !CLAUDE_KEY)", html)
-        self.assertIn('need.push("your admin password")', html)
-        self.assertIn('need.push("a Claude API key")', html)
+        self.assertIn("if (!API_KEY || !GROQ_KEY)", html)
+        self.assertIn("your admin password", html)
         self.assertIn('id="advice-gate"', html)
+        # The gate itself must only ever ask for the admin password.
+        gate = html[html.index("function missingAdviceCreds(") :]
+        gate = gate[: gate.index("function syncAdviceGate(")]
+        self.assertIn("API_KEY ? []", gate)
+        self.assertNotIn("GROQ_KEY", gate)
 
-    def test_claude_key_only_attached_to_advice(self):
+    def test_groq_key_only_attached_to_advice(self):
         html = self.client.get("/").data.decode()
         # The third-party credential must not ride along on every request.
-        self.assertIn('CLAUDE_KEY ? { "X-Claude-Key": CLAUDE_KEY } : {}', html)
+        self.assertIn('GROQ_KEY ? { "X-Groq-Key": GROQ_KEY } : {}', html)
         # ...and the ask call must use adviceHeaders, not bare headers.
-        ask = html[html.index("async function askClaude(") :]
+        ask = html[html.index("async function askGroq(") :]
         self.assertIn("adviceHeaders(", ask)
+
+    def test_disabled_advice_controls_look_disabled(self):
+        html = self.client.get("/").data.decode()
+        # A disabled button swallows clicks with zero feedback, so every disabled
+        # control has to be visibly disabled. This rule used to target only
+        # button.btn, which left the Ask Groq presets full-colour with a
+        # pointer cursor while being unclickable: a dead control that looked
+        # alive, so clicking a preset did nothing at all.
+        self.assertIn("button[disabled]", html)
+        self.assertNotIn("button.btn[disabled]", html)
+        # The preset hover effect must not survive the disabled state.
+        self.assertIn(".presets button[disabled]:hover", html)
+
+    def test_advice_send_never_fails_silently(self):
+        html = self.client.get("/").data.decode()
+        # If the gate is stale -- a key cleared in another tab after the page
+        # loaded -- the send path must name what is missing instead of returning
+        # without a word.
+        ask = html[html.index("async function askGroq(") :]
+        self.assertIn("missingAdviceCreds()", ask)
+        self.assertIn("in Settings first.", ask)
+        # The gate hint is an instruction, not faint fine print.
+        self.assertIn("#advice-gate:not(:empty)", html)
 
 
 if __name__ == "__main__":

@@ -113,7 +113,7 @@
     input:focus,select:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
     .muted { color:var(--faint); font-size:.76rem; }
 
-    /* Ask Claude (advice endpoint) */
+    /* Ask Groq (advice endpoint) */
     textarea{ font:inherit; font-size:.85rem; padding:9px 11px; border:1px solid var(--line-2);
       border-radius:10px; background:#fff; color:var(--ink); width:100%; min-height:60px; resize:vertical; }
     textarea:focus{ outline:none; border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,155,110,.15); }
@@ -126,7 +126,17 @@
     .advice-out:empty{ display:none; }
     .advice-out.err{ border-color:var(--red); color:var(--red); }
     .advice-meta{ margin-top:8px; }
-    button.btn[disabled]{ opacity:.55; cursor:default; }
+    /* Every disabled control must LOOK disabled. This used to target only
+       button.btn, so the Ask Groq presets kept their full colour and pointer
+       cursor while being unclickable: a dead control that looked alive, and
+       clicking it did nothing at all. */
+    button[disabled]{ opacity:.5; cursor:not-allowed; }
+    .presets button[disabled]:hover{ border-color:var(--line); color:var(--muted); }
+    /* The gate hint is an instruction, not fine print: it must be readable at a
+       glance next to the controls it explains. */
+    #advice-gate:not(:empty){ padding:10px 12px; border-radius:12px;
+      background:var(--surface-2); border:1px dashed var(--line-2);
+      color:var(--muted); font-size:.78rem; }
 
     /* Toggle switch */
     .switch { position:relative; display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-size:.82rem; color:var(--muted); }
@@ -258,11 +268,11 @@
       </div>
       <p class="muted" style="margin-top:10px">Grants full control of the pump, light and camera. Stored in this browser only. Needed when the firmware sets <code>GARDEN_ADMIN_PASSWORD</code> and you connect from another machine.</p>
       <div class="row" style="margin-top:14px">
-        <label>Claude API key</label>
-        <input type="password" id="claude-key" placeholder="sk-ant-..." style="flex:1; min-width:160px">
-        <button class="btn" onclick="saveClaudeKey()">Save</button>
+        <label>Groq API key</label>
+        <input type="password" id="groq-key" placeholder="gsk_..." style="flex:1; min-width:160px">
+        <button class="btn" onclick="saveGroqKey()">Save</button>
       </div>
-      <p class="muted" style="margin-top:10px">Your Anthropic key from console.anthropic.com. Stored in this browser only and sent with each Ask Claude request — the Pi does not keep it. Required to use the Ask Claude card.</p>
+      <p class="muted" style="margin-top:10px">Your Groq key from console.groq.com. Stored in this browser only and sent with each Ask Groq request — the Pi does not keep it. Required to use the Ask Groq card.</p>
       <div class="row" style="margin-top:14px">
         <label>Theme</label>
         <select id="set-theme" onchange="setThemePref(this.value)">
@@ -314,12 +324,12 @@
     </div>
 
     <div class="card" id="advice">
-      <h2>Ask Claude</h2>
+      <h2>Ask Groq</h2>
       <div class="row">
         <textarea id="advice-q" placeholder="e.g. Are my plants ok? Anything I should change today? (Ctrl+Enter to send)"></textarea>
       </div>
       <div class="row" style="margin-top:12px">
-        <button class="btn" id="advice-send" onclick="askClaude()">Ask</button>
+        <button class="btn" id="advice-send" onclick="askGroq()">Ask</button>
         <span class="muted" id="advice-status"></span>
       </div>
       <div class="presets" id="advice-presets">
@@ -327,7 +337,7 @@
         <button data-q="Is the water level a problem, and what should I do about it?">Water level</button>
         <button data-q="What should I change today to get the best growth?">What to change today</button>
       </div>
-      <div class="muted" id="advice-gate" style="margin-top:12px"></div>
+      <div id="advice-gate" style="margin-top:12px"></div>
       <div class="advice-out" id="advice-out"></div>
       <div class="muted advice-meta" id="advice-usage"></div>
     </div>
@@ -456,9 +466,9 @@
 
   <script>
     let API_KEY = localStorage.getItem("garden_key") || "";
-    // The Claude/Anthropic key is held the same way as the admin password:
+    // The Groq key is held the same way as the admin password:
     // browser-only, sent per request, never stored on the Pi.
-    let CLAUDE_KEY = localStorage.getItem("claude_key") || "";
+    let GROQ_KEY = localStorage.getItem("groq_key") || "";
     let camTimer = null;
     let camInterval = +localStorage.getItem("camInterval") || 6000;
     // Temperature display unit; default °C (sensors/API are Celsius).
@@ -471,10 +481,10 @@
 
     const $ = id => document.getElementById(id);
     function headers(extra) { return Object.assign(API_KEY ? { "X-API-Key": API_KEY } : {}, extra || {}); }
-    // Advice calls additionally carry the Claude key. Scoped to /advice so the
+    // Advice calls additionally carry the Groq key. Scoped to /advice so the
     // third-party credential is never attached to unrelated endpoints.
     function adviceHeaders(extra) {
-      return headers(Object.assign(CLAUDE_KEY ? { "X-Claude-Key": CLAUDE_KEY } : {}, extra || {}));
+      return headers(Object.assign(GROQ_KEY ? { "X-Groq-Key": GROQ_KEY } : {}, extra || {}));
     }
     function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "show" + (err ? " err" : ""); setTimeout(() => t.className = "", 1600); }
     function conn(ok) { $("conn").className = "dot " + (ok ? "ok" : "bad"); }
@@ -521,14 +531,19 @@
     async function setPump(on) { await post(on ? "/pump/on" : "/pump/off"); setActive("pump", on); }
     async function runPump() { const s = +$("run-secs").value; await post("/pump/run", { seconds: s }); setActive("pump", true); }
 
-    // Ask Claude is gated on BOTH credentials being present in this browser:
-    // the admin password (the endpoint is 401 without it) and a Claude key
-    // (the endpoint is 503 without one). Disabling the controls up front makes
-    // the requirement obvious instead of surfacing it as a failed request.
+    // What this browser still has to supply before Ask Groq can be used.
+    // Only the admin password qualifies: the endpoint answers 401 without it,
+    // and no server-side setting can stand in for it. The Groq key deliberately
+    // does NOT gate the control, because the Pi can hold GROQ_API_KEY in its
+    // own .env and the endpoint falls back to it. Gating on the key here would
+    // grey out a control that would have worked fine. If no key exists in
+    // either place the request returns 503 with instructions, which the send
+    // path renders in the output box.
+    function missingAdviceCreds() {
+      return API_KEY ? [] : ["your admin password"];
+    }
     function syncAdviceGate() {
-      const need = [];
-      if (!API_KEY) need.push("your admin password");
-      if (!CLAUDE_KEY) need.push("a Claude API key");
+      const need = missingAdviceCreds();
       const ready = need.length === 0;
       $("advice-send").disabled = !ready;
       $("advice-presets").querySelectorAll("button[data-q]").forEach(b => { b.disabled = !ready; });
@@ -538,14 +553,25 @@
       $("advice-q").disabled = !ready;
     }
 
-    // Ask Claude for advice. Deliberately does not reuse post(): that helper
+    // Ask Groq for advice. Deliberately does not reuse post(): that helper
     // toasts and drops the status code, but here we need to distinguish
-    // "not configured" (503) from an upstream failure (502), and a Claude
+    // "not configured" (503) from an upstream failure (502), and a Groq
     // round trip takes seconds rather than milliseconds.
-    async function askClaude(question) {
+    async function askGroq(question) {
       const q = (question || $("advice-q").value || "").trim();
       const out = $("advice-out"), status = $("advice-status"), send = $("advice-send");
-      if (!API_KEY || !CLAUDE_KEY) { syncAdviceGate(); return; }
+      if (!API_KEY || !GROQ_KEY) {
+        // Normally unreachable (the gate disables these controls), but the
+        // browser can swallow a click on a disabled button with no feedback at
+        // all, and a key can be cleared in another tab after the gate ran.
+        // Never return silently: say exactly what is missing and where.
+        syncAdviceGate();
+        const msg = "Set " + missingAdviceCreds().join(" and ") + " in Settings first.";
+        toast(msg, true);
+        out.className = "advice-out err";
+        out.textContent = msg;
+        return;
+      }
       if (!q) { toast("type a question first", true); return; }
       send.disabled = true;
       status.textContent = "asking…";
@@ -562,7 +588,7 @@
         conn(r.ok);
         if (r.status === 503) {
           out.className = "advice-out err";
-          out.textContent = d.error || "Claude rejected the API key, or none was supplied.";
+          out.textContent = d.error || "Groq rejected the API key, or none was supplied.";
         } else if (r.status === 401) {
           out.className = "advice-out err";
           out.textContent = "Unauthorized — your admin password is wrong or missing.";
@@ -579,7 +605,7 @@
       } catch (e) {
         conn(false);
         out.className = "advice-out err";
-        out.textContent = e.name === "AbortError" ? "Claude took too long to respond." : "error: " + e.message;
+        out.textContent = e.name === "AbortError" ? "Groq took too long to respond." : "error: " + e.message;
       } finally {
         send.disabled = false;
         status.textContent = "";
@@ -590,20 +616,20 @@
       $("advice-presets").querySelectorAll("button[data-q]").forEach(b => {
         b.addEventListener("click", () => {
           $("advice-q").value = b.dataset.q;
-          askClaude(b.dataset.q);
+          askGroq(b.dataset.q);
         });
       });
       $("advice-q").addEventListener("keydown", e => {
-        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); askClaude(); }
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); askGroq(); }
       });
       syncAdviceGate();
     }
 
-    function saveClaudeKey() {
-      CLAUDE_KEY = $("claude-key").value.trim();
-      localStorage.setItem("claude_key", CLAUDE_KEY);
+    function saveGroqKey() {
+      GROQ_KEY = $("groq-key").value.trim();
+      localStorage.setItem("groq_key", GROQ_KEY);
       syncAdviceGate();
-      toast(CLAUDE_KEY ? "claude key saved" : "claude key cleared");
+      toast(GROQ_KEY ? "groq key saved" : "groq key cleared");
     }
 
     async function refresh() {
@@ -967,7 +993,7 @@
     function toggleSettings() {
       $("settings").classList.toggle("open");
       $("api-key").value = API_KEY;
-      $("claude-key").value = CLAUDE_KEY;
+      $("groq-key").value = GROQ_KEY;
     }
     function saveKey() { API_KEY = $("api-key").value.trim(); localStorage.setItem("garden_key", API_KEY); toast("key saved"); syncAdviceGate(); loadSystem(); refresh(); }
 
