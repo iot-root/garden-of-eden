@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -5,7 +7,29 @@ import config
 from app.lib import hardware
 
 
-class DetectModelTestCase(unittest.TestCase):
+class _NoStoredModelMixin:
+    """Isolate from the operator's real ~/.garden_hardware.json.
+
+    detect_model() reads the web-UI override from disk, so without this the
+    suite would depend on whatever the running Pi last selected and pass or
+    fail depending on the machine it runs on.
+    """
+
+    def setUp(self):
+        handle, self.hardware_path = tempfile.mkstemp(suffix=".json")
+        os.close(handle)
+        os.unlink(self.hardware_path)  # no stored choice
+        patcher = patch.object(config, "HARDWARE_FILE", self.hardware_path)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(self._remove_hardware_file)
+
+    def _remove_hardware_file(self):
+        if os.path.exists(self.hardware_path):
+            os.unlink(self.hardware_path)
+
+
+class DetectModelTestCase(_NoStoredModelMixin, unittest.TestCase):
     @patch.object(config, "MODEL_OVERRIDE", "gardyn studio")
     def test_override_wins(self):
         self.assertEqual(hardware.detect_model(), "gardyn studio")
@@ -21,6 +45,20 @@ class DetectModelTestCase(unittest.TestCase):
     @patch.object(hardware, "i2c_device_present", return_value=False)
     def test_am2320_implies_2_0(self, _present):
         self.assertEqual(hardware.detect_model(), "gardyn 2.0")
+
+    def test_a_stored_choice_beats_inference_and_the_environment(self):
+        # The web-UI override is the top of the precedence chain, and it is
+        # read from disk rather than from the environment.
+        from app.lib import settings
+
+        settings.set_model_override("gardyn studio")
+        with (
+            patch.object(config, "MODEL_OVERRIDE", "gardyn 1.0"),
+            patch.object(config, "SENSOR_TYPE", "DHT20"),
+            patch.object(hardware, "i2c_device_present", return_value=True),
+        ):
+            self.assertEqual(hardware.detect_model(), "gardyn studio")
+        self.assertEqual(settings.describe_source(), "settings")
 
 
 class LowerCameraEnabledTestCase(unittest.TestCase):
