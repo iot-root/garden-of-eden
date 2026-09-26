@@ -28,12 +28,29 @@ class LowerCameraEnabledTestCase(unittest.TestCase):
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", None)
     def test_model_profile_decides(self):
-        # The 3.0 and the Studio have no lower camera; earlier models do.
-        self.assertFalse(hardware.lower_camera_enabled("gardyn 3.0"))
-        self.assertFalse(hardware.lower_camera_enabled("gardyn 3.0 (simulated)"))
+        # The Studio line has no lower camera; the Home line does.
         self.assertFalse(hardware.lower_camera_enabled("gardyn studio"))
+        self.assertFalse(hardware.lower_camera_enabled("gardyn studio 2"))
         self.assertTrue(hardware.lower_camera_enabled("gardyn 1.0"))
         self.assertTrue(hardware.lower_camera_enabled("gardyn 2.0"))
+        self.assertTrue(hardware.lower_camera_enabled("gardyn 3.0"))
+        self.assertTrue(hardware.lower_camera_enabled("gardyn 3.0 (simulated)"))
+
+    @patch.object(config, "POD_COUNT", 0)
+    @patch.object(config, "POD_COLUMNS", 0)
+    def test_pod_geometry_follows_the_model(self):
+        # With nothing in .env, the model profile decides both numbers.
+        self.assertEqual(hardware.pod_capacity("gardyn studio"), 16)
+        self.assertEqual(hardware.tower_count("gardyn studio"), 2)
+        self.assertEqual(hardware.pod_capacity("gardyn 3.0"), 30)
+        self.assertEqual(hardware.tower_count("gardyn 3.0"), 3)
+
+    @patch.object(config, "POD_COUNT", 12)
+    @patch.object(config, "POD_COLUMNS", 4)
+    def test_env_overrides_pod_geometry(self):
+        # An explicit .env value wins for a unit that differs from its profile.
+        self.assertEqual(hardware.pod_capacity("gardyn studio"), 12)
+        self.assertEqual(hardware.tower_count("gardyn studio"), 4)
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", None)
     def test_unknown_model_keeps_both_cameras(self):
@@ -62,9 +79,13 @@ class SystemRouteTestCase(unittest.TestCase):
         body = resp.get_json()
         self.assertEqual(body["model"], "gardyn 3.0")
         self.assertEqual(body["profile"]["temp_humidity"], "DHT20")
-        # Real 3.0 hardware has a single camera, so the profile reports one.
-        self.assertIs(body["profile"]["lower_camera"], False)
-        self.assertEqual(body["profile"]["cameras"], 1)
+        # The 3.0 is a Home-line unit, so it has both cameras.
+        self.assertIs(body["profile"]["lower_camera"], True)
+        self.assertEqual(body["profile"]["cameras"], 2)
+        # ...and the Home line's physical layout.
+        self.assertEqual(body["profile"]["towers"], 3)
+        self.assertEqual(body["profile"]["light_bars"], 2)
+        self.assertEqual(body["profile"]["pods"], 30)
 
     @patch.object(config, "LOWER_CAMERA_ENABLED", None)
     @patch("app.sensors.system.routes.detect_model", return_value="gardyn studio")
@@ -88,8 +109,8 @@ class SystemRouteTestCase(unittest.TestCase):
         # Custom/suffixed model strings still resolve to the closest profile.
         body = self.client.get("/system").get_json()
         self.assertEqual(body["profile"]["temp_humidity"], "DHT20")
-        self.assertIs(body["profile"]["lower_camera"], False)
-        self.assertEqual(body["profile"]["cameras"], 1)
+        self.assertIs(body["profile"]["lower_camera"], True)
+        self.assertEqual(body["profile"]["cameras"], 2)
 
 
 if __name__ == "__main__":

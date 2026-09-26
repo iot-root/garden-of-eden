@@ -18,8 +18,8 @@ import runpy
 # Seed sim-friendly config before mqtt.py imports config.
 os.environ.setdefault("SENSOR_TYPE", "DHT20")
 os.environ.setdefault("GARDYN_MODEL", "gardyn 3.0 (simulated)")
-# Keep both cameras simulated so HA discovers them, even though the Gardyn 3.0
-# profile has no lower camera.
+# Keep both cameras simulated so HA discovers them, whatever profile is
+# impersonated (the Studio line has no lower camera).
 os.environ.setdefault("LOWER_CAMERA_ENABLED", "true")
 os.environ.setdefault("WATER_LOW_CM", "11")
 os.environ.setdefault("MQTT_BROKER", "localhost")

@@ -4,12 +4,15 @@ import unittest
 from unittest import mock
 
 import config
+from app.lib import hardware
 from app.lib import pods as pods_lib
 
 
 class PodsTestCase(unittest.TestCase):
     def test_default_count(self):
-        self.assertEqual(len(pods_lib.default_pods()), config.POD_COUNT)
+        # The pod list length follows the resolved capacity, which is the model
+        # profile unless .env overrides it.
+        self.assertEqual(len(pods_lib.default_pods()), hardware.pod_capacity())
 
     def test_normalize_cleans_and_fills(self):
         raw = [
@@ -20,7 +23,7 @@ class PodsTestCase(unittest.TestCase):
             }
         ]
         pods = pods_lib.normalize(raw)
-        self.assertEqual(len(pods), config.POD_COUNT)
+        self.assertEqual(len(pods), hardware.pod_capacity())
         self.assertEqual(pods[0]["name"], "Basil")
         # 'bogus' dropped; capped at 5 symbols.
         self.assertEqual(pods[0]["symbols"], ["circle", "square", "star", "heart", "plus"])

@@ -60,7 +60,7 @@ def capture_lower():
 
 # --- Timelapse: archive frames over time, assemble into mp4 with ffmpeg --------
 
-# Timelapse cameras available on this unit (Gardyn 3.0 has no lower camera).
+# Timelapse cameras available on this unit (the Studio line has no lower camera).
 CAMERAS = ("upper", "lower") if lower_camera_enabled() else ("upper",)
 
 

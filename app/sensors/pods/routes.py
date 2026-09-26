@@ -12,13 +12,16 @@ pods_blueprint = Blueprint("pods", __name__)
 
 @pods_blueprint.route("", methods=["GET"])
 def get_pods():
+    from app.lib import hardware
+
     return jsonify(
         {
             "pods": pods_lib.with_positions(pods_lib.load_pods()),
             "shapes": pods_lib.SHAPES,
             "catalog": pods_lib.load_catalog(),
             "layout": {
-                "columns": max(1, int(config.POD_COLUMNS or 1)),
+                "columns": hardware.tower_count(),
+                "pods": hardware.pod_capacity(),
                 "side_pattern": config.POD_SIDE_PATTERN or "",
             },
         }

@@ -10,6 +10,7 @@ import json
 import os
 
 import config
+from app.lib import hardware
 from app.lib.persist import write_json_atomic
 
 _CATALOG_PATH = os.path.join(os.path.dirname(__file__), "plants.json")
@@ -21,7 +22,7 @@ MAX_NAME = 40
 
 
 def default_pods():
-    return [{"id": i + 1, "name": "", "symbols": []} for i in range(config.POD_COUNT)]
+    return [{"id": i + 1, "name": "", "symbols": []} for i in range(hardware.pod_capacity())]
 
 
 def load_catalog():
@@ -41,11 +42,13 @@ def _clean(pod):
 
 
 def normalize(data):
-    """Return exactly POD_COUNT pods (id 1..N), merging any saved entries by id.
+    """Return exactly one pod per plant port, merging any saved entries by id.
 
-    Only durable state lives here (id, name, symbols). Physical position is
-    derived, not stored, so it can never go stale when the layout config
-    changes -- see :func:`with_positions`.
+    The count comes from ``hardware.pod_capacity()``, so it follows the
+    detected model unless ``POD_COUNT`` overrides it. Only durable state lives
+    here (id, name, symbols). Physical position is derived, not stored, so it
+    can never go stale when the layout config changes -- see
+    :func:`with_positions`.
     """
     by_id = {}
     if isinstance(data, list):
@@ -55,7 +58,7 @@ def normalize(data):
             except (TypeError, ValueError):
                 continue
     pods = []
-    for i in range(config.POD_COUNT):
+    for i in range(hardware.pod_capacity()):
         pid = i + 1
         name, symbols = _clean(by_id.get(pid, {}))
         pods.append({"id": pid, "name": name, "symbols": symbols})
@@ -72,8 +75,9 @@ def position_for(pod_id):
     ``side`` is the side the pod sticks out on, or None when the unit has no
     configured side pattern.
     """
-    columns = max(1, int(config.POD_COLUMNS or 1))
-    per_column = -(-config.POD_COUNT // columns)  # ceil, so a short last column works
+    columns = max(1, hardware.tower_count())
+    total = hardware.pod_capacity()
+    per_column = -(-total // columns)  # ceil, so a short last column works
     index = max(0, int(pod_id) - 1)
     level = (index % per_column) + 1
     pattern = config.POD_SIDE_PATTERN or ""

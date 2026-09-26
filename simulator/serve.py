@@ -13,7 +13,7 @@ import os
 os.environ.setdefault("SENSOR_TYPE", "DHT20")
 os.environ.setdefault("GARDYN_MODEL", "gardyn 3.0 (simulated)")
 # Keep both cameras simulated so the UI/MQTT expose the full entity set, even
-# though the Gardyn 3.0 profile has no lower camera.
+# though the impersonated unit may not have one (see the Studio profile).
 os.environ.setdefault("LOWER_CAMERA_ENABLED", "true")
 os.environ.setdefault("WATER_LOW_CM", "11")
 os.environ.setdefault("LOG_LEVEL", "INFO")
