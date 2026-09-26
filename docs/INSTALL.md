@@ -48,7 +48,9 @@ Set at least:
 `SENSOR_TYPE` is **auto-detected** by setup (AM2320 vs DHT20) — leave it unset.
 If automatic detection is unavailable, set `SENSOR_TYPE` explicitly and use
 `GARDYN_MODEL` to select a known hardware profile (`gardyn 1.0`, `gardyn 2.0`,
-`gardyn 3.0`, or `gardyn studio`).
+`gardyn 3.0`, `gardyn 4.0`, `gardyn studio`, or `gardyn studio 2`). The model
+can also be changed later from the Settings card in the web UI, which takes
+precedence over `GARDYN_MODEL` and applies without a restart.
 
 ## 3. Install (safe)
 

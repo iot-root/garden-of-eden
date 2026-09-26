@@ -42,9 +42,11 @@ The project uses Python 3.9 or newer. Hardware dependencies are stubbed by the t
 
 ## Hardware model selection
 
-The `/system` endpoint reports the selected model and its hardware profile. Set `GARDYN_MODEL` in the Pi-local `.env` to explicitly choose one of the supported profiles: `gardyn 1.0`, `gardyn 2.0`, `gardyn 3.0`, or `gardyn studio`.
+The `/system` endpoint reports the selected model and its hardware profile. Set `GARDYN_MODEL` in the Pi-local `.env` to explicitly choose one of the supported profiles: `gardyn 1.0`, `gardyn 2.0`, `gardyn 3.0`, `gardyn 4.0`, `gardyn studio`, or `gardyn studio 2`.
 
-Without an override, the application infers the model family from the temperature/humidity sensor when possible. `DHT20` implies the Gardyn 3.0 family and `AM2320` implies the Gardyn 1.0/2.0 family; this is a best-effort hardware inference, not a definitive serial-number identification.
+The two hardware lines differ in their physical layout. The **Home line** (1.0 through 4.0) is the max-yield architecture: 3 towers, 2 full-spectrum LED light bars, 2 cameras, 30 plant pods. The **Studio line** (Studio, Studio 2) is the trimmed profile for compact spaces: 2 towers, 1 light bar, 1 camera, 16 pods. Pod capacity and tower count follow the selected model automatically; set `POD_COUNT` or `POD_COLUMNS` in `.env` only for a unit that differs from its profile.
+
+Without an override, the application infers the model family from the temperature/humidity sensor when possible. `DHT20` implies the Home 3.0 and `AM2320` implies Home 1.0/2.0. This is a best-effort inference, not a definitive identification, and it cannot separate the two lines at all: a Studio is also `DHT20`, so a Studio is inferred as a 3.0 until the model is set explicitly — either in `.env` or from the Settings card in the web UI.
 
 The API reports temperatures in Celsius for integrations. The web UI converts air and PCB temperatures to Fahrenheit for display.
 

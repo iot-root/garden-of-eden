@@ -506,11 +506,15 @@ Notes:
 
 ### Camera
 
-One or two USB cameras, depending on the model: the Gardyn 3.0 and the Studio
-ship with the upper camera only, while 1.0/2.0 have both. The count comes from
-the detected model profile, so no configuration is needed. Set
-`LOWER_CAMERA_ENABLED=true|false` in `.env` only for a unit that differs from
-its profile.
+One or two USB cameras, depending on the model. The **Home line** (1.0, 2.0,
+3.0, 4.0) is the max-yield architecture: 3 towers, 2 full-spectrum LED light
+bars, 2 cameras, 30 plant pods. The **Studio line** (Studio, Studio 2) is the
+trimmed profile for compact spaces: 2 towers, 1 light bar, 1 camera, 16 pods.
+
+The count comes from the detected model profile, so no configuration is needed.
+Set `LOWER_CAMERA_ENABLED=true|false` in `.env` only for a unit that differs
+from its profile. `POD_COUNT` and `POD_COLUMNS` follow the same rule: leave them
+at `0` (unset) to take the model default, and set them only to override.
 
 #### Method
 
