@@ -33,6 +33,8 @@ from config import (
     BROKER,
     BUTTON_PIN,
     CAMERA_RESOLUTION,
+    DEFAULT_BRIGHTNESS,
+    DEFAULT_PUMP_SPEED,
     IDENTIFIER,
     IMAGE_INTERVAL_SECONDS,
     KEEP_ALIVE_INTERVAL,
@@ -126,6 +128,15 @@ def _safety_pump_off():
         state_lib.save_state(pump_on=False, speed=speed)
     except Exception as exc:
         logger.error("Safety pump-off failed: %s", exc)
+
+
+def _parse_level(payload):
+    """A 0-100 percentage from an MQTT payload, or None when out of range."""
+    try:
+        value = int(payload)
+    except ValueError:
+        return None
+    return value if 0 <= value <= 100 else None
 
 
 def _arm_pump_safety():
@@ -861,36 +872,60 @@ def on_message(client, userdata, msg):
                         return
                     else:
                         client.publish(BASE_TOPIC + "/water/low/state", "OFF", retain=True)
+                # A remembered speed of 0 would report ON with the pump stopped.
+                if speed <= 0:
+                    speed = DEFAULT_PUMP_SPEED
                 pump.set_speed(speed)
                 _arm_pump_safety()
                 client.publish(BASE_TOPIC + "/pump/state", "ON")
+                client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
             elif payload.upper() == "OFF":
                 pump.off()
                 _cancel_pump_safety()
                 client.publish(BASE_TOPIC + "/pump/state", "OFF")
 
-        elif topic_suffix == "pump/speed/set" and payload.isdigit():
-            speed = int(payload)
-            pump.set_speed(speed)
-            if speed > 0:
-                _arm_pump_safety()
-            else:
+        elif topic_suffix == "pump/speed/set":
+            level = _parse_level(payload)
+            if level is None:
+                # Validate before storing: a bad value kept in `speed` would
+                # make every later pump/command ON fail.
+                logger.warning(f"Ignoring pump speed {payload!r}: expected 0-100")
+            elif level == 0:
+                # 0 means off; keep the last running speed for the next ON.
+                pump.off()
                 _cancel_pump_safety()
-            client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
+                client.publish(BASE_TOPIC + "/pump/state", "OFF")
+            else:
+                speed = level
+                pump.set_speed(speed)
+                _arm_pump_safety()
+                client.publish(BASE_TOPIC + "/pump/state", "ON")
+                client.publish(BASE_TOPIC + "/pump/speed/state", str(speed))
 
         # === Light Logic ===
         elif topic_suffix == "light/command":
             if payload.upper() == "ON":
+                if brightness <= 0:
+                    brightness = DEFAULT_BRIGHTNESS
                 light.set_duty_cycle(brightness)
                 client.publish(BASE_TOPIC + "/light/state", "ON")
+                client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
             elif payload.upper() == "OFF":
                 light.off()
                 client.publish(BASE_TOPIC + "/light/state", "OFF")
 
-        elif topic_suffix == "light/brightness/set" and payload.isdigit():
-            brightness = int(payload)
-            light.set_duty_cycle(brightness)
-            client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
+        elif topic_suffix == "light/brightness/set":
+            level = _parse_level(payload)
+            if level is None:
+                logger.warning(f"Ignoring light brightness {payload!r}: expected 0-100")
+            elif level == 0:
+                light.off()
+                client.publish(BASE_TOPIC + "/light/state", "OFF")
+            else:
+                brightness = level
+                light.set_duty_cycle(brightness)
+                client.publish(BASE_TOPIC + "/light/state", "ON")
+                client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
 
         # === Water Level ===
         elif topic_suffix == "water/level/get":
