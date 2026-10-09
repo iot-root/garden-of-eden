@@ -136,6 +136,8 @@ See [`docs/simulator.md`](docs/simulator.md).
 
 ## Getting Started
 
+For a step-by-step installation guide, check out the [From-Scratch Installation Guide](https://github.com/iot-root/garden-of-eden/wiki/From%E2%80%90Scratch-Installation-Guide) in the wiki.
+
 ### Prerequisites
 
 Start with a clean install of Linux. Use the [RaspberryPi Imager](https://www.raspberrypi.com/software/). Ensure ssh and wifi is setup. Once the image is written, pop the SDcard into the pi and ssh into it.
