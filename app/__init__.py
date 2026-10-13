@@ -16,7 +16,7 @@ from .sensors.pump.routes import pump_blueprint
 from .sensors.schedule.routes import schedule_blueprint
 from .sensors.system.routes import system_blueprint
 from .sensors.temperature.routes import temperature_blueprint
-from .web.routes import web_blueprint
+from .web.routes import ICON_PATHS, web_blueprint
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,8 @@ def _register_auth(app):
         if request.remote_addr in ("127.0.0.1", "::1"):
             return None
         if request.path in ("/", "/health") or request.path.startswith("/static"):
+            return None
+        if request.path in ICON_PATHS:
             return None
         if request.headers.get("X-API-Key") != config.GARDEN_API_KEY:
             return jsonify(error="Unauthorized"), 401
