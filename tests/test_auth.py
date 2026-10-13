@@ -50,6 +50,14 @@ class AuthEnabledTestCase(unittest.TestCase):
         self.assertEqual(c.get("/", environ_base=REMOTE).status_code, 200)
         self.assertEqual(c.get("/health", environ_base=REMOTE).status_code, 200)
 
+    @patch.object(config, "GARDEN_API_KEY", "s3cret")
+    def test_icons_open_without_key(self):
+        # Password managers and Safari fetch icons without the UI's key.
+        c = _client()
+        for path in ("/favicon.ico", "/apple-touch-icon.png", "/site.webmanifest"):
+            with c.get(path, environ_base=REMOTE) as resp:
+                self.assertEqual(resp.status_code, 200, path)
+
 
 if __name__ == "__main__":
     unittest.main()
