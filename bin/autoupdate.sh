@@ -56,7 +56,7 @@ fi
 
 # Restart only the installed services. This is reached only when code changed.
 for svc in mqtt.service garden-api.service; do
-    if systemctl list-unit-files | grep -q "^${svc}"; then
+    if systemctl cat "$svc" >/dev/null 2>&1; then
         sudo systemctl restart "$svc" && log "restarted $svc"
     fi
 done
